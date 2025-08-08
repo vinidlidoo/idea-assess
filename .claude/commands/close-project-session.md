@@ -1,0 +1,44 @@
+---
+allowed-tools: Bash(git add:*), Bash(git status:*), Bash(git commit:*), Bash(date:*)
+description: Tasks to wrap up the current session using session logs
+---
+# Tasks to wrap up a session
+
+## Context
+
+- Current git status: !`git status`
+- Current git diff (staged and unstaged changes): !`git diff HEAD`
+- Current branch: !`git branch --show-current`
+- Recent commits: !`git log --oneline -10`
+- Current timestamp: !`date '+%Y-%m-%d %H:%M %Z'`
+
+## Your task
+
+Based on the above:
+
+1. Delete any test files that were created for troubleshooting and which can be discarded
+
+2. Update or create session log in `session-logs/` directory:
+   - If session log doesn't exist yet: copy from `SESSION_TEMPLATE.md`
+   - If it already exists: update it with final session details
+   - Name format: `YYYY-MM-DD-brief-description.md`
+   - Fill in all sections based on work completed this session
+   - Use actual timestamps from bash `date` command
+   - Set end time and ensure all work is documented
+   - Mark all commit fields as "end of session" since commit happens at close
+
+3. Update the project's CLAUDE.md file:
+   - Update "Current Phase & Focus" section with latest session reference
+   - Update "Immediate Focus" with next priority
+   - Keep it minimal - detailed history goes in session logs
+   - Do NOT add implementation details or decisions (those go in session log)
+
+4. Review all changes and create a single git commit:
+   - Add all necessary files (check if cwd is a sub-directory)
+   - Include session log in the commit
+   - Suggest a commit message and ask for user confirmation before committing
+
+5. Final check:
+   - Confirm session log captures all important decisions and work
+   - Verify CLAUDE.md points to the new session log
+   - Ensure handoff notes are clear for next session

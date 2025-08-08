@@ -1,43 +1,33 @@
 # CLAUDE.md - Project Context for Business Idea Evaluator
 
+## Purpose of This File
+
+This file contains **stable project context** that rarely changes. For detailed work history and specific implementation decisions, see session logs.
+
 ## Project Overview
 
 Building an AI-powered business idea evaluation system using Claude SDK and MCP tools. The system takes one-liner business ideas and produces comprehensive market analyses with comparative rankings.
 
-## Current Status
+## Current Phase & Focus
 
-✅ **Requirements Phase Complete** (2025-08-07)
-
-- Finalized comprehensive requirements document
-- Clarified workflow and agent responsibilities
-- Defined P0 (MVP) and P1 (future) features
+**Phase:** Technical Design  
+**Latest Session:** `session-logs/2025-01-08-archiving-and-setup.md`  
+**Immediate Focus:** Research Claude SDK capabilities for agent architecture
 
 ## Key Documents
 
-1. **requirements.md** - Complete requirements specification (READ THIS FIRST)
-2. **starter-qa.md** - Q&A that led to requirements refinement
-3. **starter-convo-transcript.txt** - Original ideation conversation
-4. **work-plan.md** - Initial rough plan (superseded by requirements.md)
+### Core Requirements
 
-## Next Steps
+- **requirements.md** - Complete requirements specification (READ FIRST)
 
-### Immediate Priority: Technical Design Phase
+### Session History
 
-1. **Research Claude SDK capabilities**:
-   - Agent patterns and sub-agents
-   - MCP protocol integration
-   - Hooks and slash commands
-   - Review latest Anthropic docs
+- **session-logs/** - Detailed work logs per session
+- Latest: `2025-01-08-archiving-and-setup.md`
 
-2. **Design agent architecture**:
-   - Define agent interfaces and communication
-   - Prompt engineering for each agent
-   - Error handling and retry logic
+### Archive
 
-3. **Create implementation plan**:
-   - Break down into specific tasks
-   - Set up project structure
-   - Begin Phase 1 implementation
+- **archive/initial-planning/** - Original planning documents
 
 ## Critical Workflow Understanding
 
@@ -102,13 +92,6 @@ idea-assess/
 - Evidence-based reasoning is critical
 - Each agent must have clear, unique role
 
-## Questions to Resolve in Design Phase
-
-1. How to structure agent prompts for consistency?
-2. Best approach for web search via MCP?
-3. How to handle partial failures in pipeline?
-4. Optimal checkpoint/resume implementation?
-
 ## Owner Preferences
 
 - Direct, concise communication
@@ -116,8 +99,16 @@ idea-assess/
 - Git-based version control essential
 - Letter grades (A-D) not numeric scores
 - Narrative quality > raw data
+- Aggressive timelines preferred
+- Emphasis on learning Claude SDK features
+
+## Session Workflow
+
+1. **Start**: Read this file + latest session log
+2. **Work**: Track progress in todos, make changes
+3. **End**: Create new session log from template
+4. **Update**: Update "Current Phase & Focus" section here
 
 ---
 
-*Last updated: 2025-08-07*
-*Phase: Requirements Complete → Design Next*
+*CLAUDE.md is for stable context. Session logs are for detailed history.*
