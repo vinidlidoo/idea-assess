@@ -10,9 +10,9 @@ Building an AI-powered business idea evaluation system using Claude SDK and MCP 
 
 ## Current Phase & Focus
 
-**Phase:** Technical Design  
-**Latest Session:** `session-logs/2025-01-08-archiving-and-setup.md`  
-**Immediate Focus:** Research Claude SDK capabilities for agent architecture
+**Phase:** Technical Design - Awaiting Review  
+**Latest Session:** `session-logs/2025-01-11-claude-sdk-research.md`  
+**Immediate Focus:** Get user feedback on architecture design before implementation
 
 ## Key Documents
 

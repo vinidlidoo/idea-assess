@@ -2,6 +2,7 @@
 
 ## Session Context
 
+**Claude Code Session ID**: [Use CURRENT session. Check slash command output or use claude-sessions.sh]
 **Start Time:** [Get with: date '+%Y-%m-%d %H:%M %Z']  
 **End Time:** [Fill at session end]  
 **Previous Session:** [filename or "first session"]  

@@ -1,5 +1,5 @@
 ---
-allowed-tools: Bash(git add:*), Bash(git status:*), Bash(git commit:*), Bash(date:*)
+allowed-tools: Bash(git add:*), Bash(git status:*), Bash(git commit:*), Bash(date:*), Bash(/Users/vincent/dotfiles/utils/claude-sessions.sh:*)
 description: Tasks to wrap up the current session using session logs
 ---
 # Tasks to wrap up a session
@@ -11,6 +11,7 @@ description: Tasks to wrap up the current session using session logs
 - Current branch: !`git branch --show-current`
 - Recent commits: !`git log --oneline -10`
 - Current timestamp: !`date '+%Y-%m-%d %H:%M %Z'`
+- Latest Claude Code session IDs: !`/Users/vincent/dotfiles/utils/claude-sessions.sh -Users-vincent-Projects-recursive-experiments-idea-assess -n 5`
 
 ## Your task
 
@@ -25,6 +26,7 @@ Based on the above:
    - Fill in all sections based on work completed this session
    - Use actual timestamps from bash `date` command
    - Set end time and ensure all work is documented
+   - Make sure the correct Claude Code session ID is entered
    - Mark all commit fields as "end of session" since commit happens at close
 
 3. Update the project's CLAUDE.md file:
