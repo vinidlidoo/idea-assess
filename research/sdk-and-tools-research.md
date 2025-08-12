@@ -1,15 +1,15 @@
 # SDK and Tools Research Findings
 
-## Date: 2025-01-11
+## Date: 2025-01-11 (Updated: 2025-01-12)
 
 ## Executive Summary
 
-Research reveals multiple viable approaches for implementing our business idea evaluation system. Key findings:
+After deep analysis and implementation comparison, we've reversed our decision:
 
-1. **Avoid reinventing the wheel**: Existing frameworks like LangGraph and CrewAI provide robust multi-agent orchestration
-2. **Claude SDK has strong agent support**: Native subagent patterns, tool use, and MCP integration
-3. **MCP protocol is production-ready**: Python SDK 1.2.0+ with FastMCP simplifies tool/resource creation
-4. **Consider hybrid approach**: Use Claude SDK for core agents, MCP for external integrations
+1. **Use claude-code-sdk-python for everything**: Built-in tools, 50% less code, perfect for rapid development
+2. **anthropic-sdk-python not needed**: Too much boilerplate for a learning project
+3. **MCP servers optional**: WebSearch works with claude-code-sdk if configured
+4. **Architecture simplified**: Our 4-agent system maps beautifully to claude-code-sdk's patterns
 
 ## Existing Solutions Analysis
 
@@ -146,9 +146,17 @@ CLI → LangGraph → Supervisor Agent
 3. **Add MCP for web search** - Standard protocol for external data
 4. **Skip LangGraph/CrewAI initially** - Unnecessary complexity for P0
 
-### ✅ DECISION MADE (2025-01-11)
+### ✅ DECISION MADE (2025-01-12 - REVISED)
 
-**We will use Claude SDK + MCP** for the implementation. This decision is final and aligns with our aggressive timeline and learning objectives.
+**We will use claude-code-sdk-python** for the implementation. Key rationale:
+
+- **50% less code** - Built-in Read, Write, WebSearch tools
+- **Faster shipping** - Save 2-3 days of implementation time
+- **Perfect fit** - Designed for multi-agent systems like ours
+- **Simple orchestration** - Clean async context managers
+- **Not production** - We don't need token counting or detailed error handling
+
+The Node.js dependency is a one-time setup cost that's worth the massive simplicity gains.
 
 ### For Future (P1 - Parallel Processing)
 
@@ -184,9 +192,72 @@ Using existing tools can save 2-3 days:
 3. Implement MCP server for web search
 4. Build CLI wrapper for the pipeline
 
+## SDK Comparison Summary
+
+### anthropic-sdk-python
+
+**Purpose**: General-purpose Claude API access
+**Strengths**:
+
+- Direct API control
+- Async/sync support
+- Tool use capabilities
+- Token counting
+- Streaming responses
+- Production-ready
+
+**Our Use**: Primary SDK for all agents
+
+### claude-code-sdk-python
+
+**Purpose**: CLI-based coding assistant
+**Strengths**:
+
+- File system operations
+- Terminal integration
+- Built-in code tools
+- Interactive mode
+
+**Our Use**: Not needed - adds unnecessary complexity
+
+### MCP Python SDK
+
+**Purpose**: External tool/resource servers
+**Strengths**:
+
+- FastMCP for quick setup
+- Type-safe tool definitions
+- Claude Desktop integration
+- Protocol standardization
+
+**Our Use**: Web search server only
+
+## Implementation Stack
+
+```python
+# Core dependencies  
+claude-code-sdk>=0.1.0  # Main SDK
+click>=8.1.0           # CLI framework
+rich>=13.0.0           # Terminal UI
+pyyaml>=6.0            # Config files
+
+# One-time setup
+# npm install -g @anthropic-ai/claude-code
+```
+
 ## Resources
 
-- [Claude Code SDK Python](https://github.com/anthropics/claude-code-sdk-python)
+### Primary Documentation
+
+- [Anthropic SDK Python](https://github.com/anthropics/anthropic-sdk-python)
+- [Anthropic API Docs](https://docs.anthropic.com/en/api/client-sdks#python)
+- [Tool Use Guide](https://docs.anthropic.com/en/docs/build-with-claude/tool-use)
 - [MCP Python SDK](https://github.com/modelcontextprotocol/python-sdk)
-- [Claude Code Best Practices](https://www.anthropic.com/engineering/claude-code-best-practices)
+- [MCP Documentation](https://modelcontextprotocol.io/introduction)
+
+### Implementation Guides
+
+- [Claude Code SDK Python](https://github.com/anthropics/claude-code-sdk-python) (reference only)
 - [MCP Quickstart](https://modelcontextprotocol.io/quickstart/server)
+- [FastMCP Tutorial](https://modelcontextprotocol.io/tutorials/fastmcp)
+- [Agent Patterns](https://docs.anthropic.com/en/docs/build-with-claude/agent-patterns)
