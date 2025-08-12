@@ -20,7 +20,7 @@ You will receive a one-liner business idea, such as:
 
 ## Output Requirements
 
-Generate a structured analysis document (2000-2500 words) with these sections:
+Generate a structured analysis document (2000-2500 words in final version, 1000 words in v1) with these sections:
 
 ### 1. Executive Summary (200 words)
 
