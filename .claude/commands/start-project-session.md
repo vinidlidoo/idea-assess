@@ -1,5 +1,5 @@
 ---
-allowed-tools: Bash(date:*), Bash(/Users/vincent/dotfiles/utils/claude-sessions.sh:*), TodoWrite
+allowed-tools: Bash(date:*), Bash(/Users/vincent/dotfiles/utils/claude-sessions.sh:*), Bash(tree:*), TodoWrite
 description: Start a new project work session with session logging
 ---
 # Start a new project work session
@@ -10,6 +10,7 @@ description: Start a new project work session with session logging
 - Latest session log: !`ls -t session-logs/*.md 2>/dev/null | grep -v TEMPLATE | head -1`
 - Current git status: !`git status --short`
 - Current branch: !`git branch --show-current`
+- Current project file tree: !`tree -L 3`
 - Latest Claude Code session IDs: !`/Users/vincent/dotfiles/utils/claude-sessions.sh -Users-vincent-Projects-recursive-experiments-idea-assess -n 5`
 
 ## Your task
@@ -25,7 +26,7 @@ description: Start a new project work session with session logging
    - Any open questions or blockers
 
 3. Create a new session log in `session-logs/`:
-   - Copy from `SESSION_TEMPLATE.md`
+   - Copy from `session-logs/SESSION_TEMPLATE.md`
    - Name format: `YYYY-MM-DD-descriptive-title.md`
    - Fill in Start Time using bash `date` command
    - Add current Claude Code session ID

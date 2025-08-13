@@ -10,9 +10,9 @@ Building an AI-powered business idea evaluation system using Claude SDK and MCP 
 
 ## Current Phase & Focus
 
-**Phase:** Implementation Planning - Complete  
-**Latest Session:** `session-logs/2025-08-12-implementation-foundation.md`  
-**Immediate Focus:** Begin Phase 1 implementation - Analyst-only prototype
+**Phase:** Phase 1 Implementation - In Progress  
+**Latest Session:** `session-logs/2025-08-12-websearch-fix-cleanup.md`  
+**Immediate Focus:** Test analyzer with multiple ideas and refine prompt quality
 
 ## Key Documents
 
@@ -23,7 +23,7 @@ Building an AI-powered business idea evaluation system using Claude SDK and MCP 
 ### Session History
 
 - **session-logs/** - Detailed work logs per session
-- Latest: `2025-08-12-implementation-foundation.md`
+- Latest: `2025-08-12-websearch-fix-cleanup.md`
 - **implementation-plan.md** - Phased implementation strategy
 
 ### Archive
@@ -50,6 +50,8 @@ The system workflow is:
 ## Technical Constraints
 
 - Python CLI using Claude SDK
+- Python package management via `uv`
+- API key from console.anthropic.com (pay-as-you-go)
 - MCP protocol for external tools
 - Git for version control
 - 1.5 week timeline (10 days total)
@@ -115,3 +117,5 @@ idea-assess/
 ---
 
 *CLAUDE.md is for stable context. Session logs are for detailed history.*
+
+- always activate the virtual environment before running python files

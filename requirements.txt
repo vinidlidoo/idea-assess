@@ -1,0 +1,4 @@
+# Core dependencies for Business Idea Evaluator
+# Install with: uv pip install -r requirements.txt
+claude-code-sdk==0.0.19  # Latest version as of Aug 12 2025
+python-dotenv>=1.0.0  # For environment variable management
