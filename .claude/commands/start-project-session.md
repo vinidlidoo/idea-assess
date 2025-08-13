@@ -1,17 +1,20 @@
 ---
-allowed-tools: Bash(date:*), Bash(/Users/vincent/dotfiles/utils/claude-sessions.sh:*), Bash(tree:*), TodoWrite
+allowed-tools: Bash(date:*), Bash(/Users/vincent/dotfiles/utils/claude-sessions.sh:*), Bash(tree:*), Bash(echo:*), TodoWrite
 description: Start a new project work session with session logging
 ---
+
 # Start a new project work session
 
 ## Context
 
 - Current timestamp: !`date '+%Y-%m-%d %H:%M %Z'`
-- Latest session log: !`ls -t session-logs/*.md 2>/dev/null | grep -v TEMPLATE | head -1`
+- Latest session log: @!`ls -t session-logs/*.md 2>/dev/null | grep -v TEMPLATE | head -1`
 - Current git status: !`git status --short`
 - Current branch: !`git branch --show-current`
 - Current project file tree: !`tree -L 3`
+- Project overview: @requirements.md, @implementation-plan.md
 - Latest Claude Code session IDs: !`/Users/vincent/dotfiles/utils/claude-sessions.sh -Users-vincent-Projects-recursive-experiments-idea-assess -n 5`
+- Session objective: !`echo "${ARGUMENTS:-No specific objective provided}"`
 
 ## Your task
 
@@ -32,6 +35,7 @@ description: Start a new project work session with session logging
    - Add current Claude Code session ID
    - Set Previous Session reference
    - Define clear objectives based on handoff notes
+     - If this slash command includes an objective passed as an argument, prioritize it for the session.
 
 4. Use TodoWrite to create initial task list:
    - Based on objectives from session log
