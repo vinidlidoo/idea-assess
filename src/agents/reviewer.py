@@ -1,4 +1,4 @@
-"""Reviewer agent implementation for providing feedback on business analyses."""
+"""Reviewer agent implementation that reads analysis from file."""
 
 import json
 import asyncio
@@ -9,13 +9,14 @@ from claude_code_sdk import ClaudeSDKClient, ClaudeCodeOptions
 
 from ..core.agent_base import BaseAgent, AgentResult
 from ..core.config import AnalysisConfig
+from ..core.constants import MAX_REVIEW_ITERATIONS, REVIEWER_MAX_TURNS
 from ..core.message_processor import MessageProcessor
 from ..utils.debug_logging import DebugLogger, setup_debug_logger
 from ..utils.file_operations import load_prompt
 
 
 class ReviewerAgent(BaseAgent):
-    """Agent responsible for reviewing and providing feedback on analyses."""
+    """Agent responsible for reviewing analyses by reading from files."""
     
     def __init__(self, config: AnalysisConfig, prompt_version: str = "v1"):
         """
@@ -39,24 +40,58 @@ class ReviewerAgent(BaseAgent):
     
     def get_allowed_tools(self) -> list[str]:
         """Return list of allowed tools for this agent."""
-        # Reviewer doesn't need external tools, just analyzes the document
-        return []
+        # Reviewer needs Read and Write tools to read analysis and write feedback
+        return ['Read', 'Write']
+    
+    def _validate_analysis_path(self, file_path: str) -> Path:
+        """Validate that path is within analyses directory.
+        
+        Args:
+            file_path: Path to validate
+            
+        Returns:
+            Validated Path object
+            
+        Raises:
+            ValueError: If path is outside analyses directory
+            FileNotFoundError: If file doesn't exist
+        """
+        # Convert to absolute path and resolve any .. or symlinks
+        path = Path(file_path).resolve()
+        
+        # Get the analyses directory (relative to project root)
+        project_root = Path(__file__).parent.parent.parent
+        analyses_dir = (project_root / "analyses").resolve()
+        
+        # Check if path is within analyses directory
+        try:
+            path.relative_to(analyses_dir)
+        except ValueError:
+            raise ValueError(f"Invalid path: must be within analyses directory")
+        
+        # Check if file exists
+        if not path.exists():
+            raise FileNotFoundError(f"Analysis file not found: {path}")
+            
+        return path
     
     async def process(self, input_data: str, **kwargs) -> AgentResult:
         """
-        Review a business analysis and provide structured feedback.
+        Review a business analysis by reading from file and write feedback to JSON.
         
         Args:
-            input_data: The analysis document to review
+            input_data: Path to the analysis file to review
             **kwargs: Additional options:
                 - debug: Enable debug logging
                 - iteration_count: Current iteration number (for context)
+                - idea_slug: The idea slug for file naming
                 
         Returns:
-            AgentResult containing structured feedback as JSON
+            AgentResult containing path to feedback JSON file
         """
         debug = kwargs.get('debug', False)
         iteration_count = kwargs.get('iteration_count', 1)
+        idea_slug = kwargs.get('idea_slug', 'unknown')
         
         # Setup debug logging if requested
         debug_logger = None
@@ -67,39 +102,47 @@ class ReviewerAgent(BaseAgent):
             debug_logger.log_event("review_start", {
                 "agent": "Reviewer",
                 "iteration": iteration_count,
-                "input_length": len(input_data)
+                "analysis_file": input_data,
+                "idea_slug": idea_slug
             })
         
         try:
+            # Validate input path for security
+            analysis_path = self._validate_analysis_path(input_data)
+            
             # Load the reviewer prompt
             prompt_content = load_prompt(self.get_prompt_file(), Path("config/prompts"))
+            feedback_file = analysis_path.parent / f"reviewer_feedback_iteration_{iteration_count}.json"
             
-            # Create the review request
-            review_prompt = f"""Please review the following business analysis and provide structured feedback according to your instructions.
+            # Create the review request - just pass the filename
+            review_prompt = f"""Please review the business analysis document and provide structured feedback.
 
-Current iteration: {iteration_count} of maximum 3
+Current iteration: {iteration_count} of maximum {MAX_REVIEW_ITERATIONS}
 
-ANALYSIS TO REVIEW:
----
-{input_data}
----
+ANALYSIS FILE TO REVIEW: {analysis_path}
 
-Provide your feedback as a properly formatted JSON object as specified in your instructions."""
+INSTRUCTIONS:
+1. Use the Read tool to read the analysis document at the path above
+2. Review it according to your system instructions
+3. Generate structured JSON feedback as specified
+4. Use the Write tool to save your feedback to: {feedback_file}
 
-            # Setup Claude SDK options
+The feedback JSON should follow the format specified in your system prompt.
+After writing the feedback file, respond with "REVIEW_COMPLETE" to confirm."""
+
+            # Setup Claude SDK options with tools enabled
             options = ClaudeCodeOptions(
                 system_prompt=prompt_content,
-                max_turns=1,  # Single response for review
-                allowed_tools=[],  # No tools needed for review
-                permission_mode='acceptEdits'
+                max_turns=REVIEWER_MAX_TURNS,  # Allow multiple turns for reading, analyzing, writing
+                allowed_tools=['Read', 'Write'],  # Enable file operations
+                permission_mode='default'  # Use default permission mode for automation
             )
             
             # Initialize message processor
             processor = MessageProcessor(debug_logger)
             
             # Query Claude for review
-            feedback_json = None
-            collected_content = []
+            review_complete = False
             
             async with ClaudeSDKClient(options=options) as client:
                 await client.query(review_prompt)
@@ -109,9 +152,8 @@ Provide your feedback as a properly formatted JSON object as specified in your i
                     if debug_logger:
                         debug_logger.log_event(f"raw_message_{type(message).__name__}", {
                             "agent": "Reviewer",
-                            "has_content_attr": hasattr(message, 'content'),
-                            "has_result_attr": hasattr(message, 'result'),
-                            "message_attrs": [attr for attr in dir(message) if not attr.startswith('_')][:10]
+                            "message_type": type(message).__name__,
+                            "has_content_attr": hasattr(message, 'content')
                         })
                     
                     result = processor.process_message(message)
@@ -120,71 +162,45 @@ Provide your feedback as a properly formatted JSON object as specified in your i
                         debug_logger.log_event(f"reviewer_message_{result.message_type}", {
                             "agent": "Reviewer",
                             "has_content": bool(result.content),
-                            "content_length": len(result.content[0]) if result.content else 0
+                            "content_preview": result.content[0][:100] if result.content else None
                         })
                     
-                    # Collect content from AssistantMessages
+                    # Check if review is complete
                     if result.message_type == "AssistantMessage" and result.content:
-                        collected_content.extend(result.content)
+                        if any("REVIEW_COMPLETE" in content for content in result.content):
+                            review_complete = True
                     
                     # Process when we hit ResultMessage (end of stream)
                     if result.message_type == "ResultMessage":
-                        # Check if ResultMessage has content in metadata
-                        if 'result' in dir(message) and message.result:
-                            content = str(message.result)
-                        else:
-                            # Join all collected content
-                            content = "\n".join(collected_content)
-                        
                         if debug_logger:
-                            debug_logger.log_event("reviewer_content_check", {
+                            debug_logger.log_event("review_stream_end", {
                                 "agent": "Reviewer",
-                                "content_length": len(content),
-                                "content_preview": content[:200] if content else "No content"
+                                "review_complete": review_complete,
+                                "feedback_file_expected": str(feedback_file)
                             })
-                        try:
-                            # Try to find JSON in the content
-                            if '```json' in content:
-                                json_start = content.find('```json') + 7
-                                json_end = content.find('```', json_start)
-                                json_str = content[json_start:json_end].strip()
-                            else:
-                                # Assume the entire content is JSON
-                                json_str = content.strip()
-                            
-                            feedback_json = json.loads(json_str)
-                            
-                            if debug_logger:
-                                debug_logger.log_event("review_complete", {
-                                    "agent": "Reviewer",
-                                    "iteration": iteration_count,
-                                    "recommendation": feedback_json.get('iteration_recommendation'),
-                                    "critical_issues": len(feedback_json.get('critical_issues', [])),
-                                    "improvements": len(feedback_json.get('improvements', []))
-                                })
-                                
-                        except json.JSONDecodeError as e:
-                            if debug_logger:
-                                debug_logger.log_event("json_parse_error", {
-                                    "agent": "Reviewer",
-                                    "error": str(e),
-                                    "content_preview": content[:500]
-                                })
-                            # Return raw content if JSON parsing fails
-                            feedback_json = {
-                                "error": "Failed to parse JSON feedback",
-                                "raw_feedback": content,
-                                "iteration_recommendation": "continue"
-                            }
-                        
-                        # Break after processing ResultMessage
                         break
             
-            if feedback_json:
+            # Check if the feedback file was created
+            if feedback_file.exists():
+                # Read the feedback to verify and get metadata
+                with open(feedback_file, 'r') as f:
+                    feedback_json = json.load(f)
+                
+                if debug_logger:
+                    debug_logger.log_event("review_complete", {
+                        "agent": "Reviewer",
+                        "iteration": iteration_count,
+                        "feedback_file": str(feedback_file),
+                        "recommendation": feedback_json.get('iteration_recommendation'),
+                        "critical_issues": len(feedback_json.get('critical_issues', [])),
+                        "improvements": len(feedback_json.get('improvements', []))
+                    })
+                
                 return AgentResult(
-                    content=json.dumps(feedback_json, indent=2),
+                    content=str(feedback_file),  # Return the path to the feedback file
                     metadata={
                         'iteration': iteration_count,
+                        'feedback_file': str(feedback_file),
                         'recommendation': feedback_json.get('iteration_recommendation', 'unknown'),
                         'critical_issues_count': len(feedback_json.get('critical_issues', [])),
                         'improvements_count': len(feedback_json.get('improvements', [])),
@@ -193,11 +209,12 @@ Provide your feedback as a properly formatted JSON object as specified in your i
                     success=True
                 )
             else:
+                # Reviewer failed to create feedback file
                 return AgentResult(
                     content="",
                     metadata={'iteration': iteration_count},
                     success=False,
-                    error="No feedback generated"
+                    error="Reviewer did not create the expected feedback file"
                 )
                 
         except Exception as e:
@@ -223,20 +240,21 @@ class FeedbackProcessor:
     """Utility class to process reviewer feedback and apply it to analyses."""
     
     @staticmethod
-    def parse_feedback(feedback_json: str) -> Dict[str, Any]:
+    def load_feedback(feedback_file: str) -> Dict[str, Any]:
         """
-        Parse JSON feedback from reviewer.
+        Load JSON feedback from file.
         
         Args:
-            feedback_json: JSON string containing feedback
+            feedback_file: Path to the feedback JSON file
             
         Returns:
             Parsed feedback dictionary
         """
         try:
-            return json.loads(feedback_json)
-        except json.JSONDecodeError:
-            return {"error": "Invalid feedback format"}
+            with open(feedback_file, 'r') as f:
+                return json.load(f)
+        except (json.JSONDecodeError, FileNotFoundError) as e:
+            return {"error": f"Failed to load feedback: {str(e)}"}
     
     @staticmethod
     def should_continue_iteration(feedback: Dict[str, Any], iteration_count: int) -> bool:

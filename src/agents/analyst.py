@@ -11,6 +11,7 @@ from claude_code_sdk import ClaudeSDKClient, ClaudeCodeOptions
 
 from ..core.agent_base import BaseAgent, AgentResult
 from ..core.config import AnalysisConfig
+from ..core.constants import ANALYST_MAX_TURNS, PREVIEW_CHAR_LIMIT
 from ..core.message_processor import MessageProcessor
 from ..utils.text_processing import create_slug
 from ..utils.debug_logging import DebugLogger, setup_debug_logger

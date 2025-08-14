@@ -1,10 +1,9 @@
 """Agent implementations for the idea assessment system."""
 
 from .analyst import AnalystAgent
-from .reviewer_fixed import ReviewerAgent, FeedbackProcessor
+from .reviewer import ReviewerAgent
 
 __all__ = [
     'AnalystAgent',
     'ReviewerAgent',
-    'FeedbackProcessor',
 ]

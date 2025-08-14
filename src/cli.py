@@ -18,7 +18,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 from dotenv import load_dotenv
 
 from src.core import get_default_config
-from src.core.pipeline_file import AnalysisPipeline, SimplePipeline
+from src.core.pipeline import AnalysisPipeline, SimplePipeline
 from src.agents import AnalystAgent
 from src.utils.file_operations import save_analysis, AnalysisResult
 from src.utils.text_processing import show_preview

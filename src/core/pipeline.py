@@ -1,4 +1,4 @@
-"""Pipeline orchestrator for coordinating multiple agents."""
+"""Pipeline orchestrator that uses file-based communication between agents."""
 
 import asyncio
 import json
@@ -7,7 +7,7 @@ from datetime import datetime
 from pathlib import Path
 
 from ..agents import AnalystAgent
-from ..agents.reviewer_fixed import ReviewerAgent, FeedbackProcessor
+from ..agents.reviewer import ReviewerAgent
 from ..core.agent_base import AgentResult
 from ..core.config import AnalysisConfig
 from ..utils.debug_logging import DebugLogger, setup_debug_logger
@@ -16,7 +16,7 @@ from ..utils.text_processing import create_slug
 
 
 class AnalysisPipeline:
-    """Orchestrates the flow of data between agents."""
+    """Orchestrates the flow of data between agents using file-based communication."""
     
     def __init__(self, config: AnalysisConfig):
         """
@@ -47,7 +47,7 @@ class AnalysisPipeline:
         use_websearch: bool = True
     ) -> Dict[str, Any]:
         """
-        Run the analyst-reviewer feedback loop.
+        Run the analyst-reviewer feedback loop using file-based communication.
         
         Args:
             idea: Business idea to analyze
@@ -74,9 +74,15 @@ class AnalysisPipeline:
         analyst = AnalystAgent(self.config)
         reviewer = ReviewerAgent(self.config)
         
+        # Setup file paths
+        slug = create_slug(idea)
+        analysis_dir = Path("analyses") / slug
+        analysis_dir.mkdir(parents=True, exist_ok=True)
+        
         # Track iterations
         iteration_count = 0
         current_analysis = None
+        current_analysis_file = None
         feedback_history = []
         iteration_results = []
         
@@ -97,29 +103,32 @@ class AnalysisPipeline:
                     analyst_input = idea
                 else:
                     # Refined analysis based on feedback
-                    latest_feedback = feedback_history[-1]
-                    formatted_feedback = self.feedback_processor.format_feedback_for_analyst(
-                        latest_feedback
-                    )
+                    latest_feedback_file = analysis_dir / f"reviewer_feedback_iteration_{iteration_count-1}.json"
                     
-                    analyst_input = f"""Please revise your analysis based on the following feedback:
-
-{formatted_feedback}
+                    # Create revision prompt that references the feedback file
+                    analyst_input = f"""Please revise your analysis based on the reviewer feedback.
 
 ORIGINAL IDEA: {idea}
 
-PREVIOUS ANALYSIS:
----
-{current_analysis}
----
+PREVIOUS ANALYSIS FILE: {current_analysis_file}
+REVIEWER FEEDBACK FILE: {latest_feedback_file}
 
-Please provide an improved analysis that addresses the feedback while maintaining all the strong points identified."""
+INSTRUCTIONS:
+1. Use the Read tool to read your previous analysis from the file above
+2. Use the Read tool to read the reviewer feedback JSON from the file above
+3. Revise your analysis to address all critical issues and important improvements
+4. Maintain all the strong points identified in the feedback
+5. Write your revised analysis using the Write tool
+
+Please provide an improved analysis that addresses the feedback."""
                 
                 # Run analyst
                 analyst_result = await analyst.process(
                     analyst_input,
                     debug=debug,
-                    use_websearch=use_websearch and iteration_count == 1  # Only search on first iteration
+                    use_websearch=use_websearch and iteration_count == 1,  # Only search on first iteration
+                    iteration=iteration_count,
+                    analysis_dir=str(analysis_dir)
                 )
                 
                 if not analyst_result.success:
@@ -133,18 +142,35 @@ Please provide an improved analysis that addresses the feedback while maintainin
                 
                 current_analysis = analyst_result.content
                 
+                # Save analysis to file for reviewer
+                timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+                analysis_file = analysis_dir / f"analysis_iteration_{iteration_count}_{timestamp}.md"
+                with open(analysis_file, 'w') as f:
+                    f.write(current_analysis)
+                current_analysis_file = str(analysis_file)
+                
+                if debug_logger:
+                    debug_logger.log_event("analysis_saved", {
+                        "agent": "Pipeline",
+                        "iteration": iteration_count,
+                        "file": str(analysis_file),
+                        "size": len(current_analysis)
+                    })
+                
                 # Save iteration result
                 iteration_results.append({
                     "iteration": iteration_count,
-                    "analysis": current_analysis,
+                    "analysis_file": str(analysis_file),
+                    "analysis_length": len(current_analysis),
                     "metadata": analyst_result.metadata
                 })
                 
-                # Step 2: Get reviewer feedback
+                # Step 2: Get reviewer feedback (pass filename, not content)
                 reviewer_result = await reviewer.process(
-                    current_analysis,
+                    str(analysis_file),  # Pass the filename instead of content
                     debug=debug,
-                    iteration_count=iteration_count
+                    iteration_count=iteration_count,
+                    idea_slug=slug
                 )
                 
                 if not reviewer_result.success:
@@ -154,16 +180,19 @@ Please provide an improved analysis that addresses the feedback while maintainin
                             "iteration": iteration_count,
                             "error": reviewer_result.error
                         })
+                    # If reviewer fails, accept the analysis by default
                     break
                 
-                # Parse feedback
-                feedback = self.feedback_processor.parse_feedback(reviewer_result.content)
+                # Load feedback from file
+                feedback_file = reviewer_result.content  # This should be the path to feedback file
+                feedback = self.feedback_processor.load_feedback(feedback_file)
                 feedback_history.append(feedback)
                 
                 if debug_logger:
                     debug_logger.log_event("iteration_complete", {
                         "agent": "Pipeline",
                         "iteration": iteration_count,
+                        "feedback_file": feedback_file,
                         "recommendation": feedback.get('iteration_recommendation'),
                         "critical_issues": len(feedback.get('critical_issues', [])),
                         "reason": feedback.get('iteration_reason')
@@ -189,8 +218,6 @@ Please provide an improved analysis that addresses the feedback while maintainin
                         })
             
             # Prepare final result
-            slug = create_slug(idea)
-            
             # Determine if analysis was accepted or hit max iterations
             final_status = "accepted"
             if feedback_history:
@@ -202,6 +229,7 @@ Please provide an improved analysis that addresses the feedback while maintainin
                 "success": True,
                 "idea": idea,
                 "slug": slug,
+                "final_analysis_file": current_analysis_file,
                 "final_analysis": current_analysis,
                 "iteration_count": iteration_count,
                 "final_status": final_status,
@@ -210,26 +238,22 @@ Please provide an improved analysis that addresses the feedback while maintainin
                 "timestamp": datetime.now().isoformat()
             }
             
-            # Save the final analysis
+            # Save the final analysis with standard naming
             if current_analysis:
-                # Create an AnalysisResult for compatibility with save_analysis
-                from ..utils.file_operations import AnalysisResult
-                analysis_result = AnalysisResult(
-                    content=current_analysis,
-                    idea=idea,
-                    slug=slug,
-                    timestamp=datetime.now(),
-                    search_count=0,  # Will be in metadata
-                    message_count=0,  # Will be in metadata
-                    duration=0.0,  # Will be in metadata
-                    interrupted=False
-                )
-                save_path = save_analysis(analysis_result, Path("analyses"))
-                result["file_path"] = str(save_path)
+                timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+                final_analysis_path = analysis_dir / f"analysis_{timestamp}.md"
+                with open(final_analysis_path, 'w') as f:
+                    f.write(current_analysis)
+                result["file_path"] = str(final_analysis_path)
+                
+                # Create symlink to latest analysis
+                latest_link = analysis_dir / "analysis.md"
+                if latest_link.exists():
+                    latest_link.unlink()
+                latest_link.symlink_to(final_analysis_path.name)
                 
                 # Save iteration history
-                timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-                history_path = save_path.parent / f"iteration_history_{timestamp}.json"
+                history_path = analysis_dir / f"iteration_history_{timestamp}.json"
                 with open(history_path, 'w') as f:
                     json.dump({
                         "iterations": iteration_results,
@@ -241,19 +265,19 @@ Please provide an improved analysis that addresses the feedback while maintainin
                 
                 # Save latest reviewer feedback separately for easy access
                 if feedback_history:
-                    feedback_path = save_path.parent / f"reviewer_feedback_{timestamp}.json"
+                    feedback_path = analysis_dir / f"reviewer_feedback_{timestamp}.json"
                     with open(feedback_path, 'w') as f:
                         json.dump(feedback_history[-1], f, indent=2)
                     result["feedback_path"] = str(feedback_path)
                     
                     # Create symlink to latest feedback
-                    latest_feedback_link = save_path.parent / "reviewer_feedback.json"
+                    latest_feedback_link = analysis_dir / "reviewer_feedback.json"
                     if latest_feedback_link.exists():
                         latest_feedback_link.unlink()
                     latest_feedback_link.symlink_to(feedback_path.name)
                 
                 # Create symlink to latest iteration history
-                latest_history_link = save_path.parent / "iteration_history.json"
+                latest_history_link = analysis_dir / "iteration_history.json"
                 if latest_history_link.exists():
                     latest_history_link.unlink()
                 latest_history_link.symlink_to(history_path.name)
@@ -321,14 +345,28 @@ class SimplePipeline:
         
         if result.success:
             slug = create_slug(idea)
-            save_path = save_analysis(result.content, idea, slug)
+            
+            # Save to file
+            analysis_dir = Path("analyses") / slug
+            analysis_dir.mkdir(parents=True, exist_ok=True)
+            
+            timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+            analysis_path = analysis_dir / f"analysis_{timestamp}.md"
+            with open(analysis_path, 'w') as f:
+                f.write(result.content)
+            
+            # Create symlink to latest
+            latest_link = analysis_dir / "analysis.md"
+            if latest_link.exists():
+                latest_link.unlink()
+            latest_link.symlink_to(analysis_path.name)
             
             return {
                 "success": True,
                 "idea": idea,
                 "slug": slug,
                 "analysis": result.content,
-                "file_path": str(save_path),
+                "file_path": str(analysis_path),
                 "metadata": result.metadata
             }
         else:
