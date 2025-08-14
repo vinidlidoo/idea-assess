@@ -29,18 +29,20 @@ Based on the above:
    - Make sure the correct Claude Code session ID is entered
    - Mark all commit fields as "end of session" since commit happens at close
 
-3. Update the project's CLAUDE.md file:
+3. Update TODO.md with any nice-to-have or papercut tasks that came up during the session 
+
+4. Update the project's CLAUDE.md file:
    - Update "Current Phase & Focus" section with latest session reference
    - Update "Immediate Focus" with next priority
    - Keep it minimal - detailed history goes in session logs
    - Do NOT add implementation details or decisions (those go in session log)
 
-4. Review all changes and create a single git commit:
+5. Review all changes and create a single git commit:
    - Add all necessary files (check if cwd is a sub-directory)
    - Include session log in the commit
    - Suggest a commit message and ask for user confirmation before committing
 
-5. Final check:
+6. Final check:
    - Confirm session log captures all important decisions and work
    - Verify CLAUDE.md points to the new session log
    - Ensure handoff notes are clear for next session

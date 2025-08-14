@@ -141,7 +141,7 @@ class AnalystAgent(BaseAgent):
         
         try:
             # Load the analyst prompt
-            system_prompt = await load_prompt(self.get_prompt_file(), self.config.prompts_dir)
+            system_prompt = load_prompt(self.get_prompt_file(), self.config.prompts_dir)
             logger.log_event(f"Loaded prompt template: {self.get_prompt_file()}")
             
             # Craft the user prompt with resource constraints

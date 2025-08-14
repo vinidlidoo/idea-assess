@@ -62,7 +62,7 @@ Messages: {result.message_count}{websearch_note}{interrupted_note}
     return output_file
 
 
-async def load_prompt(prompt_file: str, prompts_dir: Path) -> str:
+def load_prompt(prompt_file: str, prompts_dir: Path) -> str:
     """
     Load a prompt template from the prompts directory.
     
