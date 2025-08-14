@@ -1,0 +1,21 @@
+{
+  "iterations": [
+    {
+      "iteration": 1,
+      "analysis_file": "analyses/online-turoring-platform-for-kids/analysis_iteration_1_20250814_143526.md",
+      "analysis_length": 6415,
+      "metadata": {
+        "idea": "Online turoring platform for kids",
+        "slug": "online-turoring-platform-for-kids",
+        "timestamp": "2025-08-14T14:35:26.488442",
+        "search_count": 0,
+        "message_count": 3,
+        "duration": 54.247556924819946,
+        "interrupted": false
+      }
+    }
+  ],
+  "feedback": [],
+  "final_status": "accepted",
+  "idea": "Online turoring platform for kids"
+}
