@@ -10,9 +10,9 @@ Building an AI-powered business idea evaluation system using Claude SDK and MCP 
 
 ## Current Phase & Focus
 
-**Phase:** Phase 1 Implementation - Code Complete  
-**Latest Session:** `session-logs/2025-08-13-code-quality-improvements.md`  
-**Immediate Focus:** Iterate on analyst prompt to improve output quality
+**Phase:** Phase 1 Complete - Analyst v2 Deployed  
+**Latest Session:** `session-logs/2025-08-13-prompt-iteration.md`  
+**Immediate Focus:** Add batch processing capability for analyze.py (TODO.md)
 
 ## Key Documents
 
@@ -117,5 +117,7 @@ idea-assess/
 ---
 
 *CLAUDE.md is for stable context. Session logs are for detailed history.*
+
+## Added via memorize command
 
 - always activate the virtual environment before running python files

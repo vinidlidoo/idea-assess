@@ -37,6 +37,7 @@ LOGS_DIR = PROJECT_ROOT / "logs"
 # Default configuration
 DEFAULT_PROMPT_FILE = "analyst_v1.md"
 DEFAULT_MAX_TURNS = 15
+DEFAULT_MAX_WEBSEARCHES = 5  # Limit WebSearch calls
 SLUG_MAX_LENGTH = 50
 PREVIEW_LINES = 20
 
@@ -203,7 +204,8 @@ class AnalysisInterrupted(Exception):
 async def analyze_idea(
     idea: str, 
     debug: bool = False,
-    use_websearch: bool = True
+    use_websearch: bool = True,
+    prompt_version: str = "v2"
 ) -> Optional[AnalysisResult]:
     """
     Analyze a business idea using ClaudeSDKClient.
@@ -212,6 +214,7 @@ async def analyze_idea(
         idea: One-liner business idea to analyze
         debug: If True, log all messages to logs/ directory
         use_websearch: If True, allow WebSearch tool usage
+        prompt_version: Analyst prompt version to use ("v1" or "v2")
         
     Returns:
         AnalysisResult containing the analysis and metadata, or None if error
@@ -240,18 +243,28 @@ async def analyze_idea(
     
     try:
         # Load the analyst prompt
-        system_prompt = await load_prompt(DEFAULT_PROMPT_FILE)
-        logger.log_event("Loaded prompt template")
+        prompt_file = f"analyst_{prompt_version}.md"
+        system_prompt = await load_prompt(prompt_file)
+        logger.log_event(f"Loaded prompt template: {prompt_file}")
         
-        # Craft the user prompt
+        # Craft the user prompt with resource constraints
         websearch_instruction = (
-            "Use WebSearch to gather relevant market data, competitor information, "
-            "and industry trends where helpful."
+            f"Use WebSearch efficiently (maximum {DEFAULT_MAX_WEBSEARCHES} searches) to gather "
+            "the most critical data: recent market size, key competitor metrics, and major trends."
             if use_websearch else 
             "Note: WebSearch is disabled for this analysis. Use your existing knowledge."
         )
         
+        resource_note = f"""
+Resource constraints for this analysis:
+- Maximum turns: {DEFAULT_MAX_TURNS}
+- Maximum web searches: {DEFAULT_MAX_WEBSEARCHES if use_websearch else 0}
+- Complete the analysis in a single comprehensive response if possible
+"""
+        
         user_prompt = f"""Analyze this business idea: "{idea}"
+
+{resource_note}
 
 Please generate a comprehensive analysis following the structure and word limits 
 specified in your instructions. {websearch_instruction}"""
@@ -498,7 +511,7 @@ def save_analysis(result: AnalysisResult) -> Path:
     header = f"""<!-- 
 Original Idea: {result.idea}
 Generated: {result.timestamp.isoformat()}
-Agent: Analyst v1 (Phase 1)
+Agent: Analyst (Phase 1)
 Duration: {result.duration:.1f}s
 Messages: {result.message_count}{websearch_note}{interrupted_note}
 -->
@@ -573,6 +586,13 @@ Examples:
         help="Disable WebSearch tool for faster analysis (uses existing knowledge only)"
     )
     
+    parser.add_argument(
+        "--prompt-version", "-p",
+        choices=["v1", "v2"],
+        default="v2",
+        help="Analyst prompt version to use (default: v2)"
+    )
+    
     args = parser.parse_args()
     
     # Run the analysis
@@ -583,7 +603,8 @@ Examples:
     result = await analyze_idea(
         idea=args.idea,
         debug=args.debug,
-        use_websearch=not args.no_websearch
+        use_websearch=not args.no_websearch,
+        prompt_version=args.prompt_version
     )
     
     if result:
@@ -599,7 +620,8 @@ Examples:
         print(f"  • Messages: {result.message_count}")
         if not args.no_websearch:
             print(f"  • Web searches: {result.search_count}")
-        print(f"  • Output size: {len(result.content)} characters")
+        word_count = len(result.content.split())
+        print(f"  • Output size: {len(result.content):,} characters ({word_count:,} words)")
         
         # Show preview
         show_preview(result.content)

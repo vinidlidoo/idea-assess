@@ -15,6 +15,7 @@ description: Start a new project work session with session logging
 - Project overview: @requirements.md, @implementation-plan.md
 - Latest Claude Code session IDs: !`/Users/vincent/dotfiles/utils/claude-sessions.sh -Users-vincent-Projects-recursive-experiments-idea-assess -n 5`
 - Session objective: !`echo "${ARGUMENTS:-No specific objective provided}"`
+- Small TODOs: @TODO.md
 
 ## Your task
 
@@ -32,10 +33,11 @@ description: Start a new project work session with session logging
    - Copy from `session-logs/SESSION_TEMPLATE.md`
    - Name format: `YYYY-MM-DD-descriptive-title.md`
    - Fill in Start Time using bash `date` command
-   - Add current Claude Code session ID
+   - Add current Claude Code session ID (look for the session with timestamp closest to Start Time)
    - Set Previous Session reference
    - Define clear objectives based on handoff notes
      - If this slash command includes an objective passed as an argument, prioritize it for the session.
+     - If there is enough time, try to squeeze an item from 'TODO.md' into the session's task list.
 
 4. Use TodoWrite to create initial task list:
    - Based on objectives from session log
