@@ -588,9 +588,9 @@ Examples:
     
     parser.add_argument(
         "--prompt-version", "-p",
-        choices=["v1", "v2"],
-        default="v2",
-        help="Analyst prompt version to use (default: v2)"
+        choices=["v1", "v2", "v3"],
+        default="v3",
+        help="Analyst prompt version to use (default: v3)"
     )
     
     args = parser.parse_args()
