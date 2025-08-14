@@ -2,6 +2,7 @@
 
 import asyncio
 import signal
+import threading
 import time
 from datetime import datetime
 from typing import Optional, Dict, Any
@@ -36,6 +37,8 @@ class AnalystAgent(BaseAgent):
         """
         super().__init__(config)
         self.prompt_version = prompt_version
+        self.interrupt_event = threading.Event()
+        self._interrupted = False
     
     @property
     def agent_name(self) -> str:
@@ -124,18 +127,23 @@ class AnalystAgent(BaseAgent):
         logger = setup_debug_logger(idea, self.config.logs_dir) if debug else DebugLogger()
         start_time = time.time()
         client: Optional[ClaudeSDKClient] = None
-        interrupted = False
+        # Reset interrupt state
+        self.interrupt_event.clear()
+        self._interrupted = False
         
         # Message processor
         processor = MessageProcessor(logger)
         
-        # Signal handler for interrupts
+        # Signal handler for interrupts (thread-safe)
         def handle_interrupt(signum, frame):
-            nonlocal interrupted
-            interrupted = True
+            self.interrupt_event.set()
+            self._interrupted = True
             print("\n⚠️  Interrupt received, attempting graceful shutdown...")
             if client:
                 asyncio.create_task(client.interrupt())
+        
+        # Store original handler for cleanup
+        original_handler = signal.getsignal(signal.SIGINT)
         
         # Register signal handler
         signal.signal(signal.SIGINT, handle_interrupt)
@@ -191,7 +199,7 @@ specified in your instructions. {websearch_instruction}"""
                 
                 async for message in client.receive_response():
                     # Check for interrupt
-                    if interrupted:
+                    if self._interrupted:
                         raise AnalysisInterrupted("User interrupted analysis")
                     
                     # Process message
@@ -221,7 +229,7 @@ specified in your instructions. {websearch_instruction}"""
                                 search_count=stats['search_count'],
                                 message_count=stats['message_count'],
                                 duration=time.time() - start_time,
-                                interrupted=False
+                                interrupted=self._interrupted
                             )
                         break
             
@@ -258,7 +266,7 @@ specified in your instructions. {websearch_instruction}"""
                     search_count=stats['search_count'],
                     message_count=stats['message_count'],
                     duration=time.time() - start_time,
-                    interrupted=True
+                    # Already set by signal handler
                 )
             return None
             
@@ -271,8 +279,8 @@ specified in your instructions. {websearch_instruction}"""
             return None
             
         finally:
-            # Reset signal handler
-            signal.signal(signal.SIGINT, signal.default_int_handler)
+            # Reset signal handler to original
+            signal.signal(signal.SIGINT, original_handler)
             
             # Save debug log
             if logger.enabled:
@@ -281,5 +289,5 @@ specified in your instructions. {websearch_instruction}"""
                     "total_messages": stats['message_count'],
                     "total_searches": stats['search_count'],
                     "total_time": time.time() - start_time,
-                    "interrupted": interrupted
+                    "interrupted": self._interrupted
                 })

@@ -7,7 +7,7 @@ from datetime import datetime
 from pathlib import Path
 
 from ..agents import AnalystAgent
-from ..agents.reviewer import ReviewerAgent
+from ..agents.reviewer import ReviewerAgent, FeedbackProcessor
 from ..core.agent_base import AgentResult
 from ..core.config import AnalysisConfig
 from ..utils.debug_logging import DebugLogger, setup_debug_logger

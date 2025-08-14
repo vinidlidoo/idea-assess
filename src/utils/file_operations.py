@@ -2,7 +2,10 @@
 
 from pathlib import Path
 from datetime import datetime
-from typing import NamedTuple
+from typing import NamedTuple, Optional, Any
+from filelock import FileLock, Timeout
+import json
+import platform
 
 
 class AnalysisResult(NamedTuple):
@@ -50,16 +53,127 @@ Messages: {result.message_count}{websearch_note}{interrupted_note}
 
 """
     
-    with open(output_file, 'w') as f:
-        f.write(header + result.content)
+    # Write with file locking for safety
+    safe_write_file(output_file, header + result.content)
     
-    # Create/update symlink to latest analysis
+    # Create/update symlink to latest analysis (platform-aware)
     latest_link = idea_dir / "analysis.md"
     if latest_link.exists():
         latest_link.unlink()
-    latest_link.symlink_to(output_file.name)
+    
+    # Use symlink on Unix, copy on Windows
+    if platform.system() == "Windows":
+        import shutil
+        shutil.copy2(output_file, latest_link)
+    else:
+        latest_link.symlink_to(output_file.name)
     
     return output_file
+
+
+def safe_write_file(path: Path, content: str, timeout: float = 10.0) -> None:
+    """
+    Write to a file with file locking for concurrent safety.
+    
+    Args:
+        path: Path to the file to write
+        content: Content to write to the file
+        timeout: Maximum time to wait for lock in seconds
+        
+    Raises:
+        TimeoutError: If lock cannot be acquired within timeout
+    """
+    lock_path = f"{path}.lock"
+    lock = FileLock(lock_path, timeout=timeout)
+    
+    try:
+        with lock:
+            with open(path, 'w', encoding='utf-8') as f:
+                f.write(content)
+    except Timeout:
+        raise TimeoutError(f"Could not acquire lock for {path} within {timeout} seconds")
+
+
+def safe_read_file(path: Path, timeout: float = 10.0) -> str:
+    """
+    Read from a file with file locking for concurrent safety.
+    
+    Args:
+        path: Path to the file to read
+        timeout: Maximum time to wait for lock in seconds
+        
+    Returns:
+        Content of the file
+        
+    Raises:
+        TimeoutError: If lock cannot be acquired within timeout
+        FileNotFoundError: If file doesn't exist
+    """
+    if not path.exists():
+        raise FileNotFoundError(f"File not found: {path}")
+    
+    lock_path = f"{path}.lock"
+    lock = FileLock(lock_path, timeout=timeout)
+    
+    try:
+        with lock:
+            with open(path, 'r', encoding='utf-8') as f:
+                return f.read()
+    except Timeout:
+        raise TimeoutError(f"Could not acquire lock for {path} within {timeout} seconds")
+
+
+def safe_write_json(path: Path, data: Any, timeout: float = 10.0) -> None:
+    """
+    Write JSON data to a file with file locking.
+    
+    Args:
+        path: Path to the JSON file
+        data: Data to serialize to JSON
+        timeout: Maximum time to wait for lock in seconds
+        
+    Raises:
+        TimeoutError: If lock cannot be acquired within timeout
+    """
+    lock_path = f"{path}.lock"
+    lock = FileLock(lock_path, timeout=timeout)
+    
+    try:
+        with lock:
+            with open(path, 'w', encoding='utf-8') as f:
+                json.dump(data, f, indent=2, ensure_ascii=False)
+    except Timeout:
+        raise TimeoutError(f"Could not acquire lock for {path} within {timeout} seconds")
+
+
+def safe_read_json(path: Path, timeout: float = 10.0) -> Any:
+    """
+    Read JSON data from a file with file locking.
+    
+    Args:
+        path: Path to the JSON file
+        timeout: Maximum time to wait for lock in seconds
+        
+    Returns:
+        Parsed JSON data
+        
+    Raises:
+        TimeoutError: If lock cannot be acquired within timeout
+        FileNotFoundError: If file doesn't exist
+        json.JSONDecodeError: If file contains invalid JSON
+    """
+    if not path.exists():
+        raise FileNotFoundError(f"File not found: {path}")
+    
+    lock_path = f"{path}.lock"
+    lock = FileLock(lock_path, timeout=timeout)
+    
+    try:
+        with lock:
+            with open(path, 'r', encoding='utf-8') as f:
+                return json.load(f)
+    except Timeout:
+        raise TimeoutError(f"Could not acquire lock for {path} within {timeout} seconds")
 
 
 def load_prompt(prompt_file: str, prompts_dir: Path) -> str:

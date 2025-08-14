@@ -5,6 +5,18 @@ from typing import Optional, List, Dict, Any, Tuple
 from dataclasses import dataclass
 from ..utils.debug_logging import DebugLogger
 
+# Try to import SDK message types
+try:
+    from claude_code_sdk import SystemMessage, ResultMessage, UserMessage, AssistantMessage
+    HAS_SDK_TYPES = True
+except ImportError:
+    # Fallback if SDK doesn't export these types
+    HAS_SDK_TYPES = False
+    SystemMessage = type('SystemMessage', (), {})
+    ResultMessage = type('ResultMessage', (), {})
+    UserMessage = type('UserMessage', (), {})
+    AssistantMessage = type('AssistantMessage', (), {})
+
 
 @dataclass
 class ProcessedMessage:
@@ -40,8 +52,13 @@ class MessageProcessor:
         Returns:
             Session ID if found, None otherwise
         """
-        message_type = type(message).__name__
-        if message_type == "SystemMessage" and hasattr(message, 'data'):
+        # Use isinstance check if SDK types are available
+        if HAS_SDK_TYPES:
+            is_system_message = isinstance(message, SystemMessage)
+        else:
+            is_system_message = type(message).__name__ == "SystemMessage"
+        
+        if is_system_message and hasattr(message, 'data'):
             data_str = str(getattr(message, 'data', ''))
             match = re.search(r"'session_id':\s*'([^']+)'", data_str)
             if match:
@@ -59,7 +76,7 @@ class MessageProcessor:
             ProcessedMessage with extracted data
         """
         self.message_count += 1
-        message_type = type(message).__name__
+        message_type = self._get_message_type(message)
         content = []
         search_queries = []
         metadata = {'message_number': self.message_count}
@@ -76,7 +93,7 @@ class MessageProcessor:
             content, search_queries = self._extract_content(message.content)
             
         # Handle ResultMessage specially
-        if message_type == "ResultMessage":
+        if self._is_result_message(message):
             if hasattr(message, 'result') and message.result:
                 content = [str(message.result)]
             if hasattr(message, 'total_cost_usd') and message.total_cost_usd:
@@ -163,6 +180,43 @@ class MessageProcessor:
             Combined text content from all messages
         """
         return "".join(self.result_text)
+    
+    def _get_message_type(self, message: Any) -> str:
+        """
+        Get the type name of a message using isinstance checks when possible.
+        
+        Args:
+            message: The message to check
+            
+        Returns:
+            String name of the message type
+        """
+        if HAS_SDK_TYPES:
+            if isinstance(message, SystemMessage):
+                return "SystemMessage"
+            elif isinstance(message, ResultMessage):
+                return "ResultMessage"
+            elif isinstance(message, UserMessage):
+                return "UserMessage"
+            elif isinstance(message, AssistantMessage):
+                return "AssistantMessage"
+        
+        # Fallback to string comparison
+        return type(message).__name__
+    
+    def _is_result_message(self, message: Any) -> bool:
+        """
+        Check if a message is a ResultMessage.
+        
+        Args:
+            message: The message to check
+            
+        Returns:
+            True if it's a ResultMessage, False otherwise
+        """
+        if HAS_SDK_TYPES:
+            return isinstance(message, ResultMessage)
+        return type(message).__name__ == "ResultMessage"
     
     def get_statistics(self) -> Dict[str, int]:
         """

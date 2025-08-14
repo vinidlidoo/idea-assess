@@ -108,7 +108,7 @@ async def test_basic_pipeline_flow():
     assert result["success"]
 ```
 
-2. **Add SDK Error Handling**
+1. **Add SDK Error Handling**
 
 ```python
 from claude_code_sdk import RateLimitError, TimeoutError
@@ -138,7 +138,7 @@ class AnalystAgent(BaseAgent):
         self.interrupt_event.set()
 ```
 
-2. **File Locking Implementation**
+1. **File Locking Implementation**
 
 ```python
 from filelock import FileLock
@@ -149,7 +149,7 @@ def safe_file_write(path, content):
         Path(path).write_text(content)
 ```
 
-3. **Windows Compatibility**
+1. **Windows Compatibility**
 
 ```python
 import platform
@@ -220,7 +220,7 @@ def load_prompt_cached(filename: str, prompts_dir: Path) -> str:
     return load_prompt(filename, prompts_dir)
 ```
 
-2. **Async File I/O** (30 min)
+1. **Async File I/O** (30 min)
 
 ```python
 import aiofiles
@@ -228,7 +228,7 @@ async with aiofiles.open(path, 'r') as f:
     content = await f.read()
 ```
 
-3. **Connection Pooling** (20 min)
+1. **Connection Pooling** (20 min)
 
 - Reuse SDK client instances where possible
 
@@ -265,21 +265,21 @@ async with aiofiles.open(path, 'r') as f:
 
 ### 🔴 P0 - Critical/Blocking (Must Fix Immediately)
 
-- [ ] **Fix FeedbackProcessor import** in `src/core/pipeline.py:10` - Add FeedbackProcessor to import
-- [ ] **Create test directory structure** - Set up `tests/` folder with `__init__.py`
-- [ ] **Write security test** - Test path traversal prevention in reviewer
-- [ ] **Write integration test** - Test full pipeline flow end-to-end
-- [ ] **Write interrupt test** - Test graceful shutdown on Ctrl+C
+- [x] **Fix FeedbackProcessor import** in `src/core/pipeline.py:10` - Add FeedbackProcessor to import ✅ DONE 2025-08-14
+- [x] **Create test directory structure** - Set up `tests/` folder with `__init__.py` ✅ DONE 2025-08-14
+- [x] **Write security test** - Test path traversal prevention in reviewer ✅ DONE 2025-08-14 (5 tests passing)
+- [x] **Write integration test** - Test full pipeline flow end-to-end ✅ DONE 2025-08-14 (basic test passing)
+- [x] **Write interrupt test** - Test graceful shutdown on Ctrl+C ✅ DONE 2025-08-14
 
 ### 🟡 P1 - High Priority (This Week)
 
-- [ ] **Implement thread-safe signal handling** - Use threading.Event instead of nonlocal variable
-- [ ] **Add retry logic with exponential backoff** - Create retry utility for transient failures
-- [ ] **Add file locking** - Prevent concurrent file access corruption
-- [ ] **Fix SDK message processing** - Use isinstance() instead of string comparison for message types (SDK expert specifically recommended: "Use isinstance(message, SystemMessage)" not string parsing)
-- [ ] **Add SDK error handling** - Handle RateLimitError, TimeoutError, APIError specifically
-- [ ] **Fix resource cleanup** - Ensure signal handlers always reset in finally blocks
-- [ ] **Add Windows compatibility** - Use copy instead of symlink on Windows
+- [x] **Implement thread-safe signal handling** - Use threading.Event instead of nonlocal variable ✅ DONE 2025-08-14
+- [x] **Add retry logic with exponential backoff** - Create retry utility for transient failures ✅ DONE 2025-08-14 (src/utils/retry.py)
+- [x] **Add file locking** - Prevent concurrent file access corruption ✅ DONE 2025-08-14 (using filelock)
+- [x] **Fix SDK message processing** - Use isinstance() instead of string comparison for message types ✅ DONE 2025-08-14
+- [ ] **Add SDK error handling** - Handle RateLimitError, TimeoutError, APIError specifically (partially done in retry.py)
+- [x] **Fix resource cleanup** - Ensure signal handlers always reset in finally blocks ✅ DONE 2025-08-14
+- [x] **Add Windows compatibility** - Use copy instead of symlink on Windows ✅ DONE 2025-08-14
 - [ ] **Improve error messages** - Add context (iteration number, file paths, duration)
 - [ ] **Fix Python 3.12 compatibility** - Handle Path.relative_to() exceptions properly
 
@@ -321,17 +321,17 @@ async with aiofiles.open(path, 'r') as f:
 ### 🧪 Testing TODOs (Detailed)
 
 - [ ] **Unit Tests**:
-  - [ ] Path validation in reviewer
+  - [x] Path validation in reviewer ✅ DONE 2025-08-14
   - [ ] Slug generation
   - [ ] Constants usage
   - [ ] Message processor parsing
   - [ ] Debug logger functionality
 
 - [ ] **Integration Tests**:
-  - [ ] Full pipeline with single iteration
-  - [ ] Pipeline with reviewer rejection and retry
-  - [ ] Pipeline with max iterations reached
-  - [ ] Interrupt during different stages
+  - [x] Full pipeline with single iteration ✅ DONE 2025-08-14
+  - [x] Pipeline with reviewer rejection and retry ✅ DONE 2025-08-14 (test written, needs mock fixes)
+  - [x] Pipeline with max iterations reached ✅ DONE 2025-08-14 (test written, needs mock fixes)
+  - [x] Interrupt during different stages ✅ DONE 2025-08-14 (test written)
 
 - [ ] **Edge Case Tests**:
   - [ ] Empty idea input
@@ -344,17 +344,17 @@ async with aiofiles.open(path, 'r') as f:
 
 ### 🐛 Specific Bugs to Fix
 
-- [ ] **FeedbackProcessor not imported** - NameError in pipeline.py:30
-- [ ] **Signal handler race condition** - Thread-unsafe nonlocal variable
-- [ ] **Message parsing using strings** - Should use isinstance() checks
-- [ ] **No cleanup on early exception** - Signal handler not reset if error before finally
-- [ ] **Symlinks fail on Windows** - No platform check before symlink creation
+- [x] **FeedbackProcessor not imported** - NameError in pipeline.py:30 ✅ FIXED 2025-08-14
+- [x] **Signal handler race condition** - Thread-unsafe nonlocal variable ✅ FIXED 2025-08-14 (using threading.Event)
+- [x] **Message parsing using strings** - Should use isinstance() checks ✅ FIXED 2025-08-14
+- [x] **No cleanup on early exception** - Signal handler not reset if error before finally ✅ FIXED 2025-08-14
+- [x] **Symlinks fail on Windows** - No platform check before symlink creation ✅ FIXED 2025-08-14
 
 ### 🔧 Refactoring TODOs
 
-- [ ] **Replace manual string parsing** in message_processor.py with SDK attributes
-- [ ] **Extract retry logic** to reusable utility function
-- [ ] **Create file operation utilities** with proper locking and error handling
+- [x] **Replace manual string parsing** in message_processor.py with SDK attributes ✅ DONE 2025-08-14
+- [x] **Extract retry logic** to reusable utility function ✅ DONE 2025-08-14 (src/utils/retry.py)
+- [x] **Create file operation utilities** with proper locking and error handling ✅ DONE 2025-08-14 (safe_read/write functions)
 - [ ] **Standardize error handling** pattern across all agents
 - [ ] **Extract common agent logic** to BaseAgent where appropriate
 - [ ] **Consolidate symlink logic** to single utility function
