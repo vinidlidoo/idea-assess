@@ -114,6 +114,8 @@ Format: `[1] Source Name. "Title." Date 2024/2025. Key finding. <URL>`
 
 Use inline citations [1], [2] throughout the analysis to support claims.
 
+**CRITICAL:** Include the reference URL following the format above.
+
 ## Quality Checks
 
 Before finalizing, ensure:
@@ -127,6 +129,7 @@ Before finalizing, ensure:
 - [ ] Path to $100M+ revenue visible
 - [ ] No MBA buzzwords or corporate speak
 - [ ] At least 5 credible references cited inline
+- [ ] Remove the word limit of each header
 
 ## Style Guide
 
