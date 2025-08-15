@@ -10,12 +10,9 @@ MAX_CONTENT_SIZE = 10_000_000  # Maximum content size in bytes (10MB)
 MAX_IDEA_LENGTH = 500  # Maximum length for idea input
 
 # Timing constants
-DEFAULT_TIMEOUT_SECONDS = 300  # Default timeout for agent operations (5 minutes)
-WEBSEARCH_TIMEOUT_SECONDS = 120  # Timeout for web search operations (2 minutes)
 PROGRESS_UPDATE_INTERVAL = 2  # Update progress every N messages
 
 # File operation constants
-FILE_LOCK_TIMEOUT = 30  # Seconds to wait for file lock
 MAX_FILE_READ_RETRIES = 3  # Maximum retries for file read operations
 FILE_RETRY_DELAY = 1.0  # Initial delay for file operation retries (seconds)
 

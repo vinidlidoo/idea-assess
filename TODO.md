@@ -2,17 +2,10 @@
 
 ## Features & Enhancements
 
-- [ ] Add the capability to feed a list of ideas in a text file into the system, starting with the Analyze.py file.
-- [x] ReFactor Analyze.py to reduce its length and offload utilities and other functions to different files. Prepare the repo for adding the next agent to the mix (COMPLETED 2025-08-14)
-- [x] Update the startsession hook to also clean up the logs folder
-- [x] Debug why reviewer agent receives UserMessages in response stream (RESOLVED: SDK designed for human interaction)
-- [x] Investigate if reviewer prompt complexity causes JSON generation issues (RESOLVED: File-based approach works)  
-- [x] Test reviewer with non-alcohol business ideas to rule out content policy issues (TESTED: Works with education platform)
-- [x] Clean up old reviewer implementations (COMPLETED 2025-08-14)
-- [x] Clean up old pipeline.py (COMPLETED 2025-08-14)
-- [x] Update imports in __init__.py files after cleanup (COMPLETED 2025-08-14)
-- [ ] Consider future migration to Anthropic API for cleaner agent communication
-- [x] Fix critical FeedbackProcessor import bug ✅ COMPLETED 2025-08-14
+- [ ] Add the capability to feed a list of ideas in a text file into the system
+- [ ] Fix the awkward prompt registry file mapping in src/core/prompt_registry.py
+- [ ] Implement batch processing mode for multiple ideas
+- [ ] Add progress indicators for long operations
 
 ## Remaining Items from Code Review Assessment
 
@@ -20,10 +13,9 @@
 
 ### P2 - Medium Priority (Not Yet Completed)
 
-- [ ] __Implement connection pooling__ - Reuse SDK client instances
 - [ ] __Break up god method__ - Refactor `run_analyst_reviewer_loop` (200+ lines)
 - [ ] __Add JSON schema validation__ - Validate reviewer feedback structure
-- [ ] __Use Path objects__ - Replace string paths with Path objects throughout
+- [ ] __Use Path objects__ - Replace string paths with Path objects throughout (discuss with user why it's needed first)
 
 ### P3 - Nice to Have (Future)
 
@@ -40,7 +32,12 @@
 
 ### Testing TODOs
 
-- [ ] __Fix failing tests__ - 7 tests need mock setup fixes
+- [x] __Create comprehensive test script__ - ✅ COMPLETED 2025-08-15
+  - Created test_locally.sh with 8 test scenarios
+  - Successfully tested Level 1 (basic functionality)
+- [ ] __Run Level 2 tests__ - Reviewer functionality with iterations
+- [ ] __Run Level 3 tests__ - Full features with WebSearch
+- [ ] __Fix failing unit tests__ - 7 tests need mock setup fixes
 - [ ] __Add missing unit tests__:
   - [ ] Slug generation
   - [ ] Constants usage
@@ -57,19 +54,24 @@
 
 ### Documentation TODOs
 
+- [x] __Create prompt documentation__ - ✅ COMPLETED 2025-08-15
+  - Created comprehensive README.md in config/prompts/
 - [ ] __Document AgentResult structure__ - Define all fields and their meanings
 - [ ] __Document pipeline return values__ - Specify what each method returns
-- [ ] __Create README__ - Basic usage instructions and examples
+- [ ] __Create main README__ - Basic usage instructions and examples
 - [ ] __Add inline code comments__ - Explain complex logic sections
 - [ ] __Document SDK workarounds__ - Explain why file-based approach is used
 - [ ] __Create architecture diagram__ - Visual representation of agent flow
 
 ### Refactoring TODOs
 
-- [ ] __Extract ALL inline prompts to separate files__ - Move inline prompts to config/prompts/ for better maintainability:
-  - Analyst revision prompt in pipeline.py:109-124
-  - Reviewer instructions in reviewer.py:121-134
-  - Analyst user prompt in analyst.py:171-176
-  - Resource constraints note in analyst.py:164-169
+- [x] __Extract ALL inline prompts to separate files__ - ✅ COMPLETED 2025-08-15
+  - Moved to config/prompts/agents/ with organized structure
+- [x] __Reorganize prompts directory__ - ✅ COMPLETED 2025-08-15
+  - Created agents/, versions/, archive/ structure
+- [x] __Repository cleanup__ - ✅ COMPLETED 2025-08-15
+  - Archived old analyses, research docs, removed unused code
+- [x] __Remove unused dependencies__ - ✅ COMPLETED 2025-08-15
+  - Removed async_file_operations, unused timeout constants
 - [ ] __Standardize error handling__ pattern across all agents
 - [ ] __Extract common agent logic__ to BaseAgent where appropriate

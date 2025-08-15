@@ -12,7 +12,7 @@ from claude_code_sdk import ClaudeSDKClient, ClaudeCodeOptions
 
 from ..core.agent_base import BaseAgent, AgentResult
 from ..core.config import AnalysisConfig
-from ..core.constants import ANALYST_MAX_TURNS, PREVIEW_CHAR_LIMIT, DEFAULT_TIMEOUT_SECONDS
+from ..core.constants import ANALYST_MAX_TURNS, PREVIEW_CHAR_LIMIT
 from ..core.message_processor import MessageProcessor
 from ..utils.text_processing import create_slug
 from ..utils.debug_logging import DebugLogger, setup_debug_logger
@@ -161,27 +161,27 @@ class AnalystAgent(BaseAgent):
                 "Note: WebSearch is disabled for this analysis. Use your existing knowledge."
             )
             
-            resource_note = f"""
-Resource constraints for this analysis:
-- Maximum turns: {self.config.max_turns}
-- Maximum web searches: {self.config.max_websearches if use_websearch else 0}
-- Complete the analysis in a single comprehensive response if possible
-"""
+            # Load and format resource constraints template
+            resource_template = load_prompt("analyst_resources.md", Path("config/prompts"))
+            resource_note = resource_template.format(
+                max_turns=self.config.max_turns,
+                max_websearches=self.config.max_websearches if use_websearch else 0
+            )
             
-            user_prompt = f"""Analyze this business idea: "{idea}"
-
-{resource_note}
-
-Please generate a comprehensive analysis following the structure and word limits 
-specified in your instructions. {websearch_instruction}"""
+            # Load and format user prompt template
+            user_template = load_prompt("analyst_user.md", Path("config/prompts"))
+            user_prompt = user_template.format(
+                idea=idea,
+                resource_note=resource_note,
+                websearch_instruction=websearch_instruction
+            )
 
             # Configure options
             allowed_tools = self.get_allowed_tools() if use_websearch else []
             options = ClaudeCodeOptions(
                 system_prompt=system_prompt,
                 max_turns=self.config.max_turns,
-                allowed_tools=allowed_tools,
-                timeout=DEFAULT_TIMEOUT_SECONDS,  # Enforce 5-minute timeout
+                allowed_tools=allowed_tools
             )
             
             print(f"🎯 Analyzing: {idea}")

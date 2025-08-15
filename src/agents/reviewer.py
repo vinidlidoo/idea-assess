@@ -9,7 +9,7 @@ from claude_code_sdk import ClaudeSDKClient, ClaudeCodeOptions
 
 from ..core.agent_base import BaseAgent, AgentResult
 from ..core.config import AnalysisConfig
-from ..core.constants import MAX_REVIEW_ITERATIONS, REVIEWER_MAX_TURNS, DEFAULT_TIMEOUT_SECONDS
+from ..core.constants import MAX_REVIEW_ITERATIONS, REVIEWER_MAX_TURNS
 from ..core.message_processor import MessageProcessor
 from ..utils.debug_logging import DebugLogger, setup_debug_logger
 from ..utils.file_operations import load_prompt
@@ -117,29 +117,21 @@ class ReviewerAgent(BaseAgent):
             prompt_content = load_prompt(self.get_prompt_file(), Path("config/prompts"))
             feedback_file = analysis_path.parent / f"reviewer_feedback_iteration_{iteration_count}.json"
             
-            # Create the review request - just pass the filename
-            review_prompt = f"""Please review the business analysis document and provide structured feedback.
-
-Current iteration: {iteration_count} of maximum {MAX_REVIEW_ITERATIONS}
-
-ANALYSIS FILE TO REVIEW: {analysis_path}
-
-INSTRUCTIONS:
-1. Use the Read tool to read the analysis document at the path above
-2. Review it according to your system instructions
-3. Generate structured JSON feedback as specified
-4. Use the Write tool to save your feedback to: {feedback_file}
-
-The feedback JSON should follow the format specified in your system prompt.
-After writing the feedback file, respond with "REVIEW_COMPLETE" to confirm."""
+            # Load review instructions template and format it
+            review_template = load_prompt("reviewer_instructions.md", Path("config/prompts"))
+            review_prompt = review_template.format(
+                iteration_count=iteration_count,
+                max_iterations=MAX_REVIEW_ITERATIONS,
+                analysis_path=analysis_path,
+                feedback_file=feedback_file
+            )
 
             # Setup Claude SDK options with tools enabled
             options = ClaudeCodeOptions(
                 system_prompt=prompt_content,
                 max_turns=REVIEWER_MAX_TURNS,  # Allow multiple turns for reading, analyzing, writing
                 allowed_tools=['Read', 'Write'],  # Enable file operations
-                permission_mode='default',  # Use default permission mode for automation
-                timeout=DEFAULT_TIMEOUT_SECONDS  # Enforce 5-minute timeout
+                permission_mode='default'  # Use default permission mode for automation
             )
             
             # Initialize message processor

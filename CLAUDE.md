@@ -10,9 +10,9 @@ Building an AI-powered business idea evaluation system using Claude SDK and MCP 
 
 ## Current Phase & Focus
 
-**Phase:** Phase 2 Complete - Ready for Phase 3  
-**Latest Session:** `session-logs/2025-08-14-p2-improvements-and-phase3-prep.md`  
-**Immediate Focus:** Test pipeline thoroughly with various business ideas before starting Phase 3
+**Phase:** Phase 2 - Finishing P2 TODOs and Documentation  
+**Latest Session:** `session-logs/2025-08-15-p2-documentation-refactoring-testing.md`  
+**Immediate Focus:** Q&A session, complete remaining P2 refactoring (god method, JSON validation)
 
 ## Key Documents
 
@@ -99,7 +99,7 @@ idea-assess/
   - Architecture refactored to modular design
   - BaseAgent interface implemented
   - Ready for multi-agent system
-- **Days 3-4**: Phase 2 - Add Reviewer feedback loop ⏳ NEXT
+- **Days 3-4**: Phase 2 - Add Reviewer feedback loop ⏳ CURRENT
 - **Days 5-6**: Phase 3 - Add Judge evaluation
 - **Days 7-8**: Phase 4 - Add Synthesizer, full pipeline
 - **Days 9-10**: Phase 5 - Polish, documentation, testing
@@ -136,4 +136,5 @@ idea-assess/
 ## Added via memorize command
 
 - always activate the virtual environment before running python files
-- use `fd` not `find`, `ripgrep` not `grep`
+- use `fd` not `find`, `ripgrep` not `grep`, `uv` not `pip`, `zoxide` not ``
+- all files in session-logs/ should begin with creation date in the YYYY-MM-DD format

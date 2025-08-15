@@ -13,6 +13,7 @@ from ..core.config import AnalysisConfig
 from ..utils.debug_logging import DebugLogger, setup_debug_logger
 from ..utils.file_operations import save_analysis, create_or_update_symlink
 from ..utils.text_processing import create_slug
+from ..utils.file_operations import load_prompt
 
 
 class AnalysisPipeline:
@@ -105,22 +106,13 @@ class AnalysisPipeline:
                     # Refined analysis based on feedback
                     latest_feedback_file = analysis_dir / f"reviewer_feedback_iteration_{iteration_count-1}.json"
                     
-                    # Create revision prompt that references the feedback file
-                    analyst_input = f"""Please revise your analysis based on the reviewer feedback.
-
-ORIGINAL IDEA: {idea}
-
-PREVIOUS ANALYSIS FILE: {current_analysis_file}
-REVIEWER FEEDBACK FILE: {latest_feedback_file}
-
-INSTRUCTIONS:
-1. Use the Read tool to read your previous analysis from the file above
-2. Use the Read tool to read the reviewer feedback JSON from the file above
-3. Revise your analysis to address all critical issues and important improvements
-4. Maintain all the strong points identified in the feedback
-5. Write your revised analysis using the Write tool
-
-Please provide an improved analysis that addresses the feedback."""
+                    # Load revision prompt template and format it
+                    revision_template = load_prompt("analyst_revision.md", Path("config/prompts"))
+                    analyst_input = revision_template.format(
+                        idea=idea,
+                        current_analysis_file=current_analysis_file,
+                        latest_feedback_file=latest_feedback_file
+                    )
                 
                 # Run analyst
                 analyst_result = await analyst.process(

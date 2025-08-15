@@ -29,7 +29,7 @@ Based on the above:
    - Make sure the correct Claude Code session ID is entered
    - Mark all commit fields as "end of session" since commit happens at close
 
-3. Update TODO.md with any nice-to-have or papercut tasks that came up during the session 
+3. Update TODO.md with any nice-to-have or papercut tasks that came up during the session
 
 4. Update the project's CLAUDE.md file:
    - Update "Current Phase & Focus" section with latest session reference

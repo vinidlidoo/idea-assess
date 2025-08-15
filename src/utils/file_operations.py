@@ -7,6 +7,14 @@ from functools import lru_cache
 from filelock import FileLock, Timeout
 import json
 
+# Import prompt registry if available
+try:
+    from ..core.prompt_registry import get_prompt_path
+except ImportError:
+    # Fallback if running in different context
+    def get_prompt_path(name: str) -> str:
+        return name
+
 
 class AnalysisResult(NamedTuple):
     """Container for analysis results and metadata."""
@@ -200,7 +208,7 @@ def load_prompt(prompt_file: str, prompts_dir: Path) -> str:
     Load a prompt template from the prompts directory with caching.
     
     Args:
-        prompt_file: Name of the prompt file to load
+        prompt_file: Name of the prompt file to load (e.g., 'analyst_v3.md')
         prompts_dir: Directory containing prompt files
         
     Returns:
@@ -209,9 +217,15 @@ def load_prompt(prompt_file: str, prompts_dir: Path) -> str:
     Raises:
         FileNotFoundError: If the prompt file doesn't exist
     """
-    prompt_path = prompts_dir / prompt_file
+    # Get the new path from the registry
+    new_path = get_prompt_path(prompt_file)
+    prompt_path = prompts_dir / new_path
+    
+    # Fallback to old path if new doesn't exist (for backwards compatibility)
     if not prompt_path.exists():
-        raise FileNotFoundError(f"Prompt file not found: {prompt_path}")
+        prompt_path = prompts_dir / prompt_file
+        if not prompt_path.exists():
+            raise FileNotFoundError(f"Prompt file not found: {prompt_path} (looked for {new_path} and {prompt_file})")
     
     with open(prompt_path, 'r') as f:
         return f.read()
