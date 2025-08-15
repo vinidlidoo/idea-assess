@@ -14,6 +14,7 @@ from ..utils.debug_logging import DebugLogger, setup_debug_logger
 from ..utils.file_operations import save_analysis, create_or_update_symlink
 from ..utils.text_processing import create_slug
 from ..utils.file_operations import load_prompt
+from ..utils.archive_manager import ArchiveManager
 
 
 class AnalysisPipeline:
@@ -29,6 +30,7 @@ class AnalysisPipeline:
         self.config = config
         self.agents = {}
         self.feedback_processor = FeedbackProcessor()
+        self.archive_manager = ArchiveManager(max_archives=5)
     
     def register_agent(self, name: str, agent):
         """
@@ -80,6 +82,14 @@ class AnalysisPipeline:
         analysis_dir = Path("analyses") / slug
         analysis_dir.mkdir(parents=True, exist_ok=True)
         
+        # Archive existing files before starting new run
+        run_type = "test" if debug else "production"
+        self.archive_manager.archive_current_analysis(analysis_dir, run_type=run_type)
+        
+        # Create iterations directory for this run
+        iterations_dir = analysis_dir / "iterations"
+        iterations_dir.mkdir(exist_ok=True)
+        
         # Track iterations
         iteration_count = 0
         current_analysis = None
@@ -104,10 +114,14 @@ class AnalysisPipeline:
                     analyst_input = idea
                 else:
                     # Refined analysis based on feedback
-                    latest_feedback_file = analysis_dir / f"reviewer_feedback_iteration_{iteration_count-1}.json"
+                    # Look for the previous iteration's feedback
+                    latest_feedback_file = iterations_dir / f"feedback_{iteration_count-1}.json"
+                    if not latest_feedback_file.exists():
+                        # Fallback to main feedback file
+                        latest_feedback_file = analysis_dir / "reviewer_feedback.json"
                     
                     # Load revision prompt template and format it
-                    revision_template = load_prompt("analyst_revision.md", Path("config/prompts"))
+                    revision_template = load_prompt("revision.md", Path("config/prompts/agents/analyst"))
                     analyst_input = revision_template.format(
                         idea=idea,
                         current_analysis_file=current_analysis_file,
@@ -135,31 +149,37 @@ class AnalysisPipeline:
                 current_analysis = analyst_result.content
                 
                 # Save analysis to file for reviewer
-                timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-                analysis_file = analysis_dir / f"analysis_iteration_{iteration_count}_{timestamp}.md"
-                with open(analysis_file, 'w') as f:
+                # Save iteration in iterations directory
+                iteration_file = iterations_dir / f"iteration_{iteration_count}.md"
+                with open(iteration_file, 'w') as f:
                     f.write(current_analysis)
-                current_analysis_file = str(analysis_file)
+                
+                # Also save/update main analysis.md (overwritten each iteration)
+                main_analysis = analysis_dir / "analysis.md"
+                with open(main_analysis, 'w') as f:
+                    f.write(current_analysis)
+                    
+                current_analysis_file = str(iteration_file)
                 
                 if debug_logger:
                     debug_logger.log_event("analysis_saved", {
                         "agent": "Pipeline",
                         "iteration": iteration_count,
-                        "file": str(analysis_file),
+                        "file": str(iteration_file),
                         "size": len(current_analysis)
                     })
                 
                 # Save iteration result
                 iteration_results.append({
                     "iteration": iteration_count,
-                    "analysis_file": str(analysis_file),
+                    "analysis_file": str(iteration_file),
                     "analysis_length": len(current_analysis),
                     "metadata": analyst_result.metadata
                 })
                 
                 # Step 2: Get reviewer feedback (pass filename, not content)
                 reviewer_result = await reviewer.process(
-                    str(analysis_file),  # Pass the filename instead of content
+                    str(iteration_file),  # Pass the filename instead of content
                     debug=debug,
                     iteration_count=iteration_count,
                     idea_slug=slug
@@ -179,6 +199,11 @@ class AnalysisPipeline:
                 feedback_file = reviewer_result.content  # This should be the path to feedback file
                 feedback = self.feedback_processor.load_feedback(feedback_file)
                 feedback_history.append(feedback)
+                
+                # Also save/update main reviewer_feedback.json for easy access
+                main_feedback = analysis_dir / "reviewer_feedback.json"
+                with open(main_feedback, 'w') as f:
+                    json.dump(feedback, f, indent=2)
                 
                 if debug_logger:
                     debug_logger.log_event("iteration_complete", {
@@ -230,20 +255,23 @@ class AnalysisPipeline:
                 "timestamp": datetime.now().isoformat()
             }
             
-            # Save the final analysis with standard naming
+            # Files are already saved in clean structure (analysis.md, reviewer_feedback.json)
             if current_analysis:
-                timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-                final_analysis_path = analysis_dir / f"analysis_{timestamp}.md"
-                with open(final_analysis_path, 'w') as f:
-                    f.write(current_analysis)
-                result["file_path"] = str(final_analysis_path)
+                result["file_path"] = str(analysis_dir / "analysis.md")
                 
-                # Create symlink to latest analysis
-                latest_link = analysis_dir / "analysis.md"
-                create_or_update_symlink(latest_link, final_analysis_path.name)
+                # Save consolidated metadata
+                metadata = self.archive_manager.create_metadata(
+                    result,
+                    feedback_history[-1] if feedback_history else None,
+                    iteration_results
+                )
+                metadata_path = analysis_dir / "metadata.json"
+                with open(metadata_path, 'w') as f:
+                    json.dump(metadata, f, indent=2)
+                result["metadata_path"] = str(metadata_path)
                 
-                # Save iteration history
-                history_path = analysis_dir / f"iteration_history_{timestamp}.json"
+                # Save iteration history (for compatibility)
+                history_path = analysis_dir / "iteration_history.json"
                 with open(history_path, 'w') as f:
                     json.dump({
                         "iterations": iteration_results,
@@ -252,21 +280,6 @@ class AnalysisPipeline:
                         "idea": idea
                     }, f, indent=2)
                 result["history_path"] = str(history_path)
-                
-                # Save latest reviewer feedback separately for easy access
-                if feedback_history:
-                    feedback_path = analysis_dir / f"reviewer_feedback_{timestamp}.json"
-                    with open(feedback_path, 'w') as f:
-                        json.dump(feedback_history[-1], f, indent=2)
-                    result["feedback_path"] = str(feedback_path)
-                    
-                    # Create symlink to latest feedback
-                    latest_feedback_link = analysis_dir / "reviewer_feedback.json"
-                    create_or_update_symlink(latest_feedback_link, feedback_path.name)
-                
-                # Create symlink to latest iteration history
-                latest_history_link = analysis_dir / "iteration_history.json"
-                create_or_update_symlink(latest_history_link, history_path.name)
             
             if debug_logger:
                 debug_logger.log_event("pipeline_complete", {
@@ -333,6 +346,9 @@ class SimplePipeline:
         Returns:
             Analysis result dictionary
         """
+        # Initialize archive manager
+        archive_manager = ArchiveManager(max_archives=5)
+        
         analyst = AnalystAgent(config)
         result = await analyst.process(
             idea,
@@ -343,18 +359,29 @@ class SimplePipeline:
         if result.success:
             slug = create_slug(idea)
             
-            # Save to file
+            # Setup file paths
             analysis_dir = Path("analyses") / slug
             analysis_dir.mkdir(parents=True, exist_ok=True)
             
-            timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-            analysis_path = analysis_dir / f"analysis_{timestamp}.md"
+            # Archive existing files before saving new one
+            run_type = "test" if debug else "production"
+            archive_manager.archive_current_analysis(analysis_dir, run_type=run_type)
+            
+            # Save to clean file structure (no timestamp)
+            analysis_path = analysis_dir / "analysis.md"
             with open(analysis_path, 'w') as f:
                 f.write(result.content)
             
-            # Create symlink to latest
-            latest_link = analysis_dir / "analysis.md"
-            create_or_update_symlink(latest_link, analysis_path.name)
+            # Create metadata
+            analysis_result = {
+                "final_status": "completed",
+                "word_count": len(result.content.split()),
+                "character_count": len(result.content)
+            }
+            metadata = archive_manager.create_metadata(analysis_result)
+            metadata_path = analysis_dir / "metadata.json"
+            with open(metadata_path, 'w') as f:
+                json.dump(metadata, f, indent=2)
             
             return {
                 "success": True,

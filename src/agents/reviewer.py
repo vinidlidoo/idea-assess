@@ -115,7 +115,13 @@ class ReviewerAgent(BaseAgent):
             
             # Load the reviewer prompt
             prompt_content = load_prompt(self.get_prompt_file(), Path("config/prompts"))
-            feedback_file = analysis_path.parent / f"reviewer_feedback_iteration_{iteration_count}.json"
+            # Save to both iterations directory and main directory
+            iterations_dir = analysis_path.parent / "iterations"
+            if iterations_dir.exists():
+                feedback_file = iterations_dir / f"feedback_{iteration_count}.json"
+            else:
+                # Fallback to old structure
+                feedback_file = analysis_path.parent / f"reviewer_feedback_iteration_{iteration_count}.json"
             
             # Load review instructions template and format it
             review_template = load_prompt("reviewer_instructions.md", Path("config/prompts"))

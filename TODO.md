@@ -2,10 +2,11 @@
 
 ## Features & Enhancements
 
-- [ ] Add the capability to feed a list of ideas in a text file into the system
+- [ ] Implement and integrate the improved logging system (StructuredLogger from src/utils/improved_logging.py)
 - [ ] Fix the awkward prompt registry file mapping in src/core/prompt_registry.py
 - [ ] Implement batch processing mode for multiple ideas
 - [ ] Add progress indicators for long operations
+- [ ] Add utility to feed a list of ideas from a text file into the system
 
 ## Remaining Items from Code Review Assessment
 

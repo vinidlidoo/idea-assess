@@ -1,0 +1,100 @@
+{
+  "iterations": [
+    {
+      "iteration": 1,
+      "analysis_file": "analyses/b2b-marketplace-for-recycled-materials/iterations/iteration_1.md",
+      "analysis_length": 7360,
+      "metadata": {
+        "idea": "B2B marketplace for recycled materials",
+        "slug": "b2b-marketplace-for-recycled-materials",
+        "timestamp": "2025-08-15T11:27:50.549223",
+        "search_count": 0,
+        "message_count": 3,
+        "duration": 57.74793291091919,
+        "interrupted": false
+      }
+    }
+  ],
+  "feedback": [
+    {
+      "overall_assessment": "Strong foundation with compelling market opportunity and clear value proposition. However, needs more aggressive growth targets, stronger evidence of product-market fit, and clearer path to defensibility against well-funded competitors.",
+      "strengths": [
+        "Excellent use of specific 'holy shit' statistics ($4.5B waste disposal costs, 40% price volatility)",
+        "Strong 10x improvement clearly articulated (67% cost reduction, 8x faster transactions)",
+        "Good bottom-up TAM calculation showing $8.96B addressable market",
+        "Compelling unit economics with 78% gross margin and 35:1 LTV/CAC ratio",
+        "Current 2024-2025 data with 6 credible references"
+      ],
+      "critical_issues": [
+        {
+          "section": "Milestones",
+          "issue": "Growth targets too conservative for VC-backable business",
+          "suggestion": "12-month target of $40M ARR is too low for Series A. Aim for $60-80M ARR run rate. Show path to 100 customers in 30 days, not 10. Target $10M monthly GMV by month 6, not $5M.",
+          "priority": "critical"
+        },
+        {
+          "section": "Competition & Moat",
+          "issue": "Defensibility against deep-pocketed entrants unclear",
+          "suggestion": "MaterialMatch algorithm and blockchain custody chain aren't strong enough moats. Need network effects quantified - at what point does the marketplace become winner-take-all? What prevents Flexport or project44 from adding this as a feature?",
+          "priority": "critical"
+        },
+        {
+          "section": "The Solution",
+          "issue": "Pilot results need more validation depth",
+          "suggestion": "12 manufacturers is too small for statistical significance. Need evidence of repeatability, customer retention after pilot, and willingness to pay. Add specific customer testimonials with company names if possible.",
+          "priority": "critical"
+        }
+      ],
+      "improvements": [
+        {
+          "section": "Business Model",
+          "issue": "Series A milestone unclear",
+          "suggestion": "Explicitly state Series A requirements: $5M ARR, 70%+ gross margins, <6 month payback, 120% net revenue retention. Show you understand venture math.",
+          "priority": "important"
+        },
+        {
+          "section": "Why Now?",
+          "issue": "AI capability claims need substantiation",
+          "suggestion": "Explain specifically how AI-powered spectroscopy works and why it's only possible now. Name the technology providers (e.g., Bruker, Thermo Fisher) and actual cost benchmarks.",
+          "priority": "important"
+        },
+        {
+          "section": "Key Risks & Mitigation",
+          "issue": "Customer concentration risk not addressed",
+          "suggestion": "What happens if your top 3 customers (likely 40%+ of revenue) churn? Add specific mitigation around customer diversification targets.",
+          "priority": "important"
+        },
+        {
+          "section": "Market Size",
+          "issue": "TAM to SAM to SOM progression unclear",
+          "suggestion": "Show clear funnel: TAM ($367B global) \u2192 SAM ($8.96B US addressable) \u2192 SOM ($450M at 5% share in 3 years). Make the path from current to target more explicit.",
+          "priority": "important"
+        }
+      ],
+      "minor_suggestions": [
+        {
+          "section": "What We Do",
+          "issue": "Could be even simpler",
+          "suggestion": "Try 'Uber for industrial waste' or 'We turn one factory's trash into another's treasure - instantly.'",
+          "priority": "minor"
+        },
+        {
+          "section": "The Problem",
+          "issue": "Metal stamping example could be stronger",
+          "suggestion": "Quantify the business impact - how much revenue was lost from the week delay? What was the total cost difference?",
+          "priority": "minor"
+        },
+        {
+          "section": "References",
+          "issue": "Missing competitor funding data",
+          "suggestion": "Add Crunchbase or PitchBook citations showing competitor funding rounds to strengthen competitive analysis.",
+          "priority": "minor"
+        }
+      ],
+      "iteration_recommendation": "reject",
+      "iteration_reason": "Three critical issues must be addressed: (1) Growth milestones are too conservative for venture scale - need 2x more aggressive targets, (2) Defensibility story is weak - algorithm and blockchain aren't sufficient moats against funded competitors, (3) Pilot validation is too thin with only 12 customers and no retention data. These changes are essential for a credible venture pitch."
+    }
+  ],
+  "final_status": "max_iterations_reached",
+  "idea": "B2B marketplace for recycled materials"
+}

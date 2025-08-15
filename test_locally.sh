@@ -2,6 +2,16 @@
 # Comprehensive test script for the Business Idea Analyzer
 # Compatible with older bash versions (3.x)
 
+# Set up trap to handle Ctrl+C properly
+cleanup() {
+    echo ""
+    echo "Test interrupted by user"
+    # Kill any running python processes
+    pkill -P $$ 2>/dev/null
+    exit 130
+}
+trap cleanup INT TERM
+
 echo "======================================"
 echo "BUSINESS IDEA ANALYZER - COMPREHENSIVE TEST"
 echo "Run this script locally to avoid timeouts:"
@@ -20,25 +30,28 @@ TEST_IDEAS=(
 )
 
 # Test scenarios - using parallel arrays instead of associative array
+# Reordered so each level starts with debug flag for better diagnostics
 SCENARIO_NAMES=(
-    "1_minimal"
-    "2_debug"
+    "1_debug"
+    "2_minimal"
     "3_alt_prompt"
-    "4_review_basic"
-    "5_review_multi"
-    "6_with_websearch"
-    "7_full_debug"
-    "8_full_features"
+    "4_review_debug"
+    "5_review_basic"
+    "6_review_multi"
+    "7_websearch_debug"
+    "8_with_websearch"
+    "9_full_features"
 )
 
 SCENARIO_FLAGS=(
-    "--no-websearch"
     "--no-websearch --debug"
+    "--no-websearch"
     "--no-websearch --prompt-version v2"
+    "--no-websearch --debug --with-review --max-iterations 1"
     "--no-websearch --with-review --max-iterations 1"
     "--no-websearch --with-review --max-iterations 2"
+    "--debug"  # Default includes websearch with debug
     ""  # Default includes websearch
-    "--debug --with-review --max-iterations 2"
     "--with-review --max-iterations 3"  # Full with websearch
 )
 
@@ -78,9 +91,10 @@ run_test() {
     echo ""
     
     # Use tee to show output and save to log file simultaneously
-    if timeout 180 python src/cli.py "$idea" $flags 2>&1 | tee "$log_file"; then
-        # Check if analysis was successful
-        if grep -q "Analysis saved to:" "$log_file"; then
+    # Use --foreground with timeout to allow signal propagation
+    if timeout --foreground 180 python src/cli.py "$idea" $flags 2>&1 | tee "$log_file"; then
+        # Check if analysis was successful (handles both regular and reviewer modes)
+        if grep -q -E "(Analysis saved to:|Saved to:)" "$log_file"; then
             echo ""
             echo -e "${GREEN}✅ TEST PASSED${NC}"
             test_results="${test_results}${test_id}:success;"
@@ -130,20 +144,21 @@ echo ""
 echo "NOTE: You can skip any test level when prompted"
 echo ""
 
-# Level 1: Basic functionality tests
+# Level 1: Basic functionality tests (debug first for diagnostics)
 if ask_continue "LEVEL 1: Basic Functionality"; then
-    run_test "${TEST_IDEAS[0]}" "${SCENARIO_NAMES[0]}" "${SCENARIO_FLAGS[0]}"
-    run_test "${TEST_IDEAS[0]}" "${SCENARIO_NAMES[1]}" "${SCENARIO_FLAGS[1]}"
-    run_test "${TEST_IDEAS[1]}" "${SCENARIO_NAMES[2]}" "${SCENARIO_FLAGS[2]}"
+    run_test "${TEST_IDEAS[0]}" "${SCENARIO_NAMES[0]}" "${SCENARIO_FLAGS[0]}"  # debug
+    run_test "${TEST_IDEAS[0]}" "${SCENARIO_NAMES[1]}" "${SCENARIO_FLAGS[1]}"  # minimal
+    run_test "${TEST_IDEAS[1]}" "${SCENARIO_NAMES[2]}" "${SCENARIO_FLAGS[2]}"  # alt_prompt
 fi
 
-# Level 2: Reviewer tests
+# Level 2: Reviewer tests (debug first for diagnostics)
 if ask_continue "LEVEL 2: Reviewer Functionality"; then
-    run_test "${TEST_IDEAS[1]}" "${SCENARIO_NAMES[3]}" "${SCENARIO_FLAGS[3]}"
-    run_test "${TEST_IDEAS[2]}" "${SCENARIO_NAMES[4]}" "${SCENARIO_FLAGS[4]}"
+    run_test "${TEST_IDEAS[1]}" "${SCENARIO_NAMES[3]}" "${SCENARIO_FLAGS[3]}"  # review_debug
+    run_test "${TEST_IDEAS[1]}" "${SCENARIO_NAMES[4]}" "${SCENARIO_FLAGS[4]}"  # review_basic
+    run_test "${TEST_IDEAS[2]}" "${SCENARIO_NAMES[5]}" "${SCENARIO_FLAGS[5]}"  # review_multi
 fi
 
-# Level 3: Full feature tests (optional - slower)
+# Level 3: Full feature tests (optional - slower, debug first)
 echo ""
 echo "======================================"
 echo "LEVEL 3: Full Features (with WebSearch - SLOWER)"
@@ -153,9 +168,9 @@ echo "Press ENTER to run these tests, or any other key + ENTER to skip:"
 read -r response
 if [ -z "$response" ]; then
     echo "Running full feature tests..."
-    run_test "${TEST_IDEAS[0]}" "${SCENARIO_NAMES[5]}" "${SCENARIO_FLAGS[5]}"
-    run_test "${TEST_IDEAS[1]}" "${SCENARIO_NAMES[6]}" "${SCENARIO_FLAGS[6]}"
-    run_test "${TEST_IDEAS[2]}" "${SCENARIO_NAMES[7]}" "${SCENARIO_FLAGS[7]}"
+    run_test "${TEST_IDEAS[0]}" "${SCENARIO_NAMES[6]}" "${SCENARIO_FLAGS[6]}"  # websearch_debug
+    run_test "${TEST_IDEAS[1]}" "${SCENARIO_NAMES[7]}" "${SCENARIO_FLAGS[7]}"  # with_websearch
+    run_test "${TEST_IDEAS[2]}" "${SCENARIO_NAMES[8]}" "${SCENARIO_FLAGS[8]}"  # full_features
 else
     echo "Skipping Level 3 tests..."
 fi
