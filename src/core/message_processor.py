@@ -1,9 +1,10 @@
 """Message processing utilities for Claude SDK interactions."""
 
 import re
-from typing import Optional, List, Dict, Any, Tuple
+from typing import Optional, Any
 from dataclasses import dataclass
 from ..utils.debug_logging import DebugLogger
+from ..core.constants import MAX_CONTENT_SIZE
 
 # Try to import SDK message types
 try:
@@ -22,9 +23,9 @@ except ImportError:
 class ProcessedMessage:
     """Container for processed message data."""
     message_type: str
-    content: List[str]
-    search_queries: List[str]
-    metadata: Dict[str, Any]
+    content: list[str]
+    search_queries: list[str]
+    metadata: dict[str, Any]
 
 
 class MessageProcessor:
@@ -40,7 +41,7 @@ class MessageProcessor:
         self.logger = logger or DebugLogger()
         self.message_count = 0
         self.search_count = 0
-        self.result_text: List[str] = []
+        self.result_text: list[str] = []
     
     def extract_session_id(self, message: Any) -> Optional[str]:
         """
@@ -110,7 +111,7 @@ class MessageProcessor:
             metadata=metadata
         )
     
-    def _extract_content(self, msg_content: Any) -> Tuple[List[str], List[str]]:
+    def _extract_content(self, msg_content: Any) -> tuple[list[str], list[str]]:
         """
         Extract text content and search queries from message content.
         
@@ -140,7 +141,17 @@ class MessageProcessor:
                 elif hasattr(block, 'text'):
                     text = block.text
                     text_content.append(text)
-                    self.result_text.append(text)
+                    
+                    # Check memory limit before appending
+                    current_size = sum(len(t) for t in self.result_text)
+                    if current_size + len(text) > MAX_CONTENT_SIZE:
+                        print(f"⚠️  Warning: Content size limit ({MAX_CONTENT_SIZE} bytes) reached")
+                        # Truncate text to fit within limit
+                        remaining = MAX_CONTENT_SIZE - current_size
+                        if remaining > 0:
+                            self.result_text.append(text[:remaining])
+                    else:
+                        self.result_text.append(text)
                 
                 # Handle tool result blocks
                 elif hasattr(block, 'content'):
@@ -153,8 +164,8 @@ class MessageProcessor:
         
         return text_content, search_queries
     
-    def _log_message(self, message_type: str, content: List[str], 
-                     search_queries: List[str], metadata: Dict[str, Any]) -> None:
+    def _log_message(self, message_type: str, content: list[str], 
+                     search_queries: list[str], metadata: dict[str, Any]) -> None:
         """Log message details for debugging."""
         msg_data = {
             "number": self.message_count,
@@ -218,7 +229,7 @@ class MessageProcessor:
             return isinstance(message, ResultMessage)
         return type(message).__name__ == "ResultMessage"
     
-    def get_statistics(self) -> Dict[str, int]:
+    def get_statistics(self) -> dict[str, int]:
         """
         Get processing statistics.
         

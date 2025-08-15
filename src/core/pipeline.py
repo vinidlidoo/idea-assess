@@ -2,7 +2,7 @@
 
 import asyncio
 import json
-from typing import Dict, Any, Optional, List
+from typing import Any, Optional
 from datetime import datetime
 from pathlib import Path
 
@@ -11,7 +11,7 @@ from ..agents.reviewer import ReviewerAgent, FeedbackProcessor
 from ..core.agent_base import AgentResult
 from ..core.config import AnalysisConfig
 from ..utils.debug_logging import DebugLogger, setup_debug_logger
-from ..utils.file_operations import save_analysis
+from ..utils.file_operations import save_analysis, create_or_update_symlink
 from ..utils.text_processing import create_slug
 
 
@@ -45,7 +45,7 @@ class AnalysisPipeline:
         max_iterations: int = 3,
         debug: bool = False,
         use_websearch: bool = True
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Run the analyst-reviewer feedback loop using file-based communication.
         
@@ -248,9 +248,7 @@ Please provide an improved analysis that addresses the feedback."""
                 
                 # Create symlink to latest analysis
                 latest_link = analysis_dir / "analysis.md"
-                if latest_link.exists():
-                    latest_link.unlink()
-                latest_link.symlink_to(final_analysis_path.name)
+                create_or_update_symlink(latest_link, final_analysis_path.name)
                 
                 # Save iteration history
                 history_path = analysis_dir / f"iteration_history_{timestamp}.json"
@@ -272,15 +270,11 @@ Please provide an improved analysis that addresses the feedback."""
                     
                     # Create symlink to latest feedback
                     latest_feedback_link = analysis_dir / "reviewer_feedback.json"
-                    if latest_feedback_link.exists():
-                        latest_feedback_link.unlink()
-                    latest_feedback_link.symlink_to(feedback_path.name)
+                    create_or_update_symlink(latest_feedback_link, feedback_path.name)
                 
                 # Create symlink to latest iteration history
                 latest_history_link = analysis_dir / "iteration_history.json"
-                if latest_history_link.exists():
-                    latest_history_link.unlink()
-                latest_history_link.symlink_to(history_path.name)
+                create_or_update_symlink(latest_history_link, history_path.name)
             
             if debug_logger:
                 debug_logger.log_event("pipeline_complete", {
@@ -293,17 +287,28 @@ Please provide an improved analysis that addresses the feedback."""
             return result
             
         except Exception as e:
+            import traceback
+            error_context = f"Pipeline failed at iteration {iteration_count}/{max_iterations}"
+            if current_analysis_file:
+                error_context += f" (last file: {current_analysis_file})"
+            
             if debug_logger:
                 debug_logger.log_event("pipeline_error", {
                     "agent": "Pipeline",
                     "error": str(e),
-                    "iteration": iteration_count
+                    "error_type": type(e).__name__,
+                    "iteration": iteration_count,
+                    "max_iterations": max_iterations,
+                    "last_analysis_file": current_analysis_file,
+                    "traceback": traceback.format_exc()
                 })
             
+            print(f"\n❌ {error_context}: {e}")
             return {
                 "success": False,
                 "idea": idea,
                 "error": str(e),
+                "error_context": error_context,
                 "iteration_count": iteration_count,
                 "iterations": iteration_results,
                 "feedback_history": feedback_history
@@ -323,7 +328,7 @@ class SimplePipeline:
         config: AnalysisConfig,
         debug: bool = False,
         use_websearch: bool = True
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Run analyst without reviewer feedback.
         
@@ -357,9 +362,7 @@ class SimplePipeline:
             
             # Create symlink to latest
             latest_link = analysis_dir / "analysis.md"
-            if latest_link.exists():
-                latest_link.unlink()
-            latest_link.symlink_to(analysis_path.name)
+            create_or_update_symlink(latest_link, analysis_path.name)
             
             return {
                 "success": True,

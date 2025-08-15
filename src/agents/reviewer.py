@@ -2,14 +2,14 @@
 
 import json
 import asyncio
-from typing import Dict, Any, Optional
+from typing import Any, Optional
 from pathlib import Path
 
 from claude_code_sdk import ClaudeSDKClient, ClaudeCodeOptions
 
 from ..core.agent_base import BaseAgent, AgentResult
 from ..core.config import AnalysisConfig
-from ..core.constants import MAX_REVIEW_ITERATIONS, REVIEWER_MAX_TURNS
+from ..core.constants import MAX_REVIEW_ITERATIONS, REVIEWER_MAX_TURNS, DEFAULT_TIMEOUT_SECONDS
 from ..core.message_processor import MessageProcessor
 from ..utils.debug_logging import DebugLogger, setup_debug_logger
 from ..utils.file_operations import load_prompt
@@ -64,10 +64,13 @@ class ReviewerAgent(BaseAgent):
         analyses_dir = (project_root / "analyses").resolve()
         
         # Check if path is within analyses directory
+        # Python 3.12+ compatibility: handle both ValueError and new exception types
         try:
             path.relative_to(analyses_dir)
-        except ValueError:
-            raise ValueError(f"Invalid path: must be within analyses directory")
+        except (ValueError, TypeError) as e:
+            # Also check if path is a parent of analyses_dir (path traversal attempt)
+            if not str(path).startswith(str(analyses_dir)):
+                raise ValueError(f"Invalid path: must be within analyses directory")
         
         # Check if file exists
         if not path.exists():
@@ -135,7 +138,8 @@ After writing the feedback file, respond with "REVIEW_COMPLETE" to confirm."""
                 system_prompt=prompt_content,
                 max_turns=REVIEWER_MAX_TURNS,  # Allow multiple turns for reading, analyzing, writing
                 allowed_tools=['Read', 'Write'],  # Enable file operations
-                permission_mode='default'  # Use default permission mode for automation
+                permission_mode='default',  # Use default permission mode for automation
+                timeout=DEFAULT_TIMEOUT_SECONDS  # Enforce 5-minute timeout
             )
             
             # Initialize message processor
@@ -240,7 +244,7 @@ class FeedbackProcessor:
     """Utility class to process reviewer feedback and apply it to analyses."""
     
     @staticmethod
-    def load_feedback(feedback_file: str) -> Dict[str, Any]:
+    def load_feedback(feedback_file: str) -> dict[str, Any]:
         """
         Load JSON feedback from file.
         
@@ -257,7 +261,7 @@ class FeedbackProcessor:
             return {"error": f"Failed to load feedback: {str(e)}"}
     
     @staticmethod
-    def should_continue_iteration(feedback: Dict[str, Any], iteration_count: int) -> bool:
+    def should_continue_iteration(feedback: dict[str, Any], iteration_count: int) -> bool:
         """
         Determine if another iteration is needed based on feedback.
         
@@ -277,7 +281,7 @@ class FeedbackProcessor:
         return recommendation == 'reject'
     
     @staticmethod
-    def format_feedback_for_analyst(feedback: Dict[str, Any]) -> str:
+    def format_feedback_for_analyst(feedback: dict[str, Any]) -> str:
         """
         Format reviewer feedback into instructions for the analyst.
         

@@ -5,14 +5,14 @@ import signal
 import threading
 import time
 from datetime import datetime
-from typing import Optional, Dict, Any
+from typing import Optional, Any
 from pathlib import Path
 
 from claude_code_sdk import ClaudeSDKClient, ClaudeCodeOptions
 
 from ..core.agent_base import BaseAgent, AgentResult
 from ..core.config import AnalysisConfig
-from ..core.constants import ANALYST_MAX_TURNS, PREVIEW_CHAR_LIMIT
+from ..core.constants import ANALYST_MAX_TURNS, PREVIEW_CHAR_LIMIT, DEFAULT_TIMEOUT_SECONDS
 from ..core.message_processor import MessageProcessor
 from ..utils.text_processing import create_slug
 from ..utils.debug_logging import DebugLogger, setup_debug_logger
@@ -181,6 +181,7 @@ specified in your instructions. {websearch_instruction}"""
                 system_prompt=system_prompt,
                 max_turns=self.config.max_turns,
                 allowed_tools=allowed_tools,
+                timeout=DEFAULT_TIMEOUT_SECONDS,  # Enforce 5-minute timeout
             )
             
             print(f"🎯 Analyzing: {idea}")
@@ -271,8 +272,14 @@ specified in your instructions. {websearch_instruction}"""
             return None
             
         except Exception as e:
-            print(f"\n❌ Error during analysis: {e}")
-            logger.log_event(f"Error: {e}")
+            duration = time.time() - start_time
+            error_msg = f"\n❌ Error during analysis after {duration:.1f}s: {e}"
+            print(error_msg)
+            
+            logger.log_event(f"Error: {e}", {
+                "duration": duration,
+                "error_type": type(e).__name__
+            })
             if debug:
                 import traceback
                 traceback.print_exc()

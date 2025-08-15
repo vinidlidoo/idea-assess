@@ -3,9 +3,9 @@
 from pathlib import Path
 from datetime import datetime
 from typing import NamedTuple, Optional, Any
+from functools import lru_cache
 from filelock import FileLock, Timeout
 import json
-import platform
 
 
 class AnalysisResult(NamedTuple):
@@ -18,6 +18,32 @@ class AnalysisResult(NamedTuple):
     message_count: int = 0
     duration: float = 0.0
     interrupted: bool = False
+
+
+def create_or_update_symlink(link_path: Path, target: Path | str) -> None:
+    """
+    Create or update a symbolic link.
+    
+    Args:
+        link_path: Path where the symlink should be created
+        target: Target path (can be relative or absolute)
+    """
+    link_path = Path(link_path)
+    
+    # Remove existing link if it exists
+    if link_path.exists():
+        link_path.unlink()
+    
+    # Create symlink
+    if isinstance(target, Path) and target.is_absolute():
+        # Convert absolute path to relative for cleaner symlinks
+        try:
+            target = target.relative_to(link_path.parent)
+        except (ValueError, TypeError):
+            # If can't make relative, use the name only
+            target = target.name
+    
+    link_path.symlink_to(target)
 
 
 def save_analysis(result: AnalysisResult, analyses_dir: Path) -> Path:
@@ -56,17 +82,9 @@ Messages: {result.message_count}{websearch_note}{interrupted_note}
     # Write with file locking for safety
     safe_write_file(output_file, header + result.content)
     
-    # Create/update symlink to latest analysis (platform-aware)
+    # Create/update symlink to latest analysis
     latest_link = idea_dir / "analysis.md"
-    if latest_link.exists():
-        latest_link.unlink()
-    
-    # Use symlink on Unix, copy on Windows
-    if platform.system() == "Windows":
-        import shutil
-        shutil.copy2(output_file, latest_link)
-    else:
-        latest_link.symlink_to(output_file.name)
+    create_or_update_symlink(latest_link, output_file.name)
     
     return output_file
 
@@ -176,16 +194,17 @@ def safe_read_json(path: Path, timeout: float = 10.0) -> Any:
         raise TimeoutError(f"Could not acquire lock for {path} within {timeout} seconds")
 
 
+@lru_cache(maxsize=10)
 def load_prompt(prompt_file: str, prompts_dir: Path) -> str:
     """
-    Load a prompt template from the prompts directory.
+    Load a prompt template from the prompts directory with caching.
     
     Args:
         prompt_file: Name of the prompt file to load
         prompts_dir: Directory containing prompt files
         
     Returns:
-        The prompt template content
+        The prompt template content (cached after first load)
         
     Raises:
         FileNotFoundError: If the prompt file doesn't exist

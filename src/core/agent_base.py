@@ -1,7 +1,7 @@
 """Base agent interface for the idea assessment system."""
 
 from abc import ABC, abstractmethod
-from typing import Dict, Any, Optional, List
+from typing import Any, Optional
 from dataclasses import dataclass
 
 
@@ -9,11 +9,11 @@ from dataclasses import dataclass
 class AgentResult:
     """Standard result container for all agents."""
     content: str
-    metadata: Dict[str, Any]
+    metadata: dict[str, Any]
     success: bool
     error: Optional[str] = None
     
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for serialization."""
         return {
             'content': self.content,
@@ -60,7 +60,7 @@ class BaseAgent(ABC):
         pass
     
     @abstractmethod
-    def get_allowed_tools(self) -> List[str]:
+    def get_allowed_tools(self) -> list[str]:
         """
         Return list of allowed tools for this agent.
         

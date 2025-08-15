@@ -4,7 +4,7 @@ import json
 import time
 from datetime import datetime
 from pathlib import Path
-from typing import Optional, Dict, Any
+from typing import Optional, Any
 from dataclasses import dataclass, field
 
 
@@ -14,7 +14,7 @@ class DebugLogger:
     enabled: bool = False
     file_path: Optional[Path] = None
     start_time: float = field(default_factory=time.time)
-    data: Dict[str, Any] = field(default_factory=lambda: {
+    data: dict[str, Any] = field(default_factory=lambda: {
         "idea": None,
         "timestamp": None,
         "session_id": None,
@@ -22,7 +22,7 @@ class DebugLogger:
         "timing": []
     })
     
-    def log_event(self, event: str, data: Optional[Dict[str, Any]] = None) -> None:
+    def log_event(self, event: str, data: Optional[dict[str, Any]] = None) -> None:
         """Log an event with optional data."""
         if not self.enabled:
             return
@@ -42,7 +42,7 @@ class DebugLogger:
         
         print(f"  [{elapsed:.1f}s] {event}")
     
-    def save(self, summary: Dict[str, Any]) -> None:
+    def save(self, summary: dict[str, Any]) -> None:
         """Save the debug log to file."""
         if not self.enabled or not self.file_path:
             return
