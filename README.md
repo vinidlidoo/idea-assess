@@ -21,24 +21,30 @@ AI-powered business idea evaluation system using Claude SDK and MCP tools.
 ### Basic Analysis
 
 ```bash
-python src/analyze.py "Your business idea here"
+python src/cli.py "Your business idea here"
 ```
 
 Example:
 
 ```bash
-python src/analyze.py "AI-powered fitness app for seniors with mobility limitations"
+python src/cli.py "AI-powered fitness app for seniors with mobility limitations"
+```
+
+### With Review Feedback
+
+```bash
+python src/cli.py "Your idea" --with-review --max-iterations 2
 ```
 
 ### Debug Mode
 
-To enable detailed message logging:
+To enable detailed logging:
 
 ```bash
-python src/analyze.py "Your idea" --debug
+python src/cli.py "Your idea" --debug
 ```
 
-Debug logs are saved to `logs/debug_YYYYMMDD_HHMMSS.json`
+Logs are saved to `logs/runs/` with structured format (summary.md, events.jsonl, metrics.json)
 
 ## Important Notes
 
@@ -48,6 +54,14 @@ Debug logs are saved to `logs/debug_YYYYMMDD_HHMMSS.json`
 - This is normal behavior - the script will wait patiently
 - Run directly in terminal (not through other tools) to avoid timeouts
 - Total analysis may take 3-5 minutes depending on searches performed
+- Disable with `--no-websearch` for faster testing
+
+### Logging
+
+- Production logs: `logs/runs/` - Organized by run with structured format
+- Test logs: `logs/tests/` - Test harness output with structured logs
+- Archive: `logs/archive/` - Old logs (auto-archived after 10 runs)
+- Each run creates: summary.md, events.jsonl, metrics.json, debug.log
 
 ### Output
 
@@ -58,7 +72,7 @@ Analyses are saved to:
 
 ## Project Structure
 
-```
+```text
 idea-assess/
 ├── src/
 │   └── analyze.py          # Main analyzer script

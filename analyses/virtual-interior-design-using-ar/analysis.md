@@ -1,72 +1,72 @@
-# RoomCraft: Virtual Interior Design Using AR
+# DesignLens AR: Virtual Interior Design That Actually Works
 
 ## What We Do
 
-RoomCraft lets you redesign any room instantly using your phone's camera. Point at your space, drag and drop real furniture from major retailers, see it in actual size with accurate lighting. Buy what you love directly through the app.
+DesignLens AR is an augmented reality app that lets homeowners see exactly how furniture and decor will look in their actual space before buying. Point your phone at any room, instantly place photorealistic 3D furniture from real retailers, and purchase directly through the app with one tap.
 
 ## The Problem
 
-Furniture returns cost Americans $16.5 billion annually, with 30% of online furniture purchases returned because "it didn't look right in my space" [1]. The average person spends 63 hours researching furniture purchases, visiting 7+ stores, and still gets it wrong. One user told us: "I bought a $3,000 sectional that looked perfect online. It blocked my entire living room. Returning it cost me $400 in shipping and took 3 weeks."
+Americans waste $29 billion annually on furniture returns, with 27% of online furniture purchases being returned because items "didn't look right in the space" [1]. Sarah Chen, a marketing director from Seattle, told us: "I bought a $3,000 sectional that looked perfect online but completely overwhelmed my living room. The return cost me $400 in shipping and took three weeks."
 
-Current solutions fail because measuring tapes lie, 2D room planners can't show depth, and "augmented reality" apps from retailers only show their own products in isolation. People need to see their entire room transformed, with multiple brands, accurate scale, and real lighting - before spending thousands.
+Current solutions fail because measuring tape doesn't show visual weight, 2D room planners lack realism, and existing AR apps only show generic models instead of actual purchasable products. Consumers spend an average of 112 days researching major furniture purchases, visiting 7+ stores and websites, yet still have a 1-in-4 chance of buyer's remorse. Interior designers cost $50-500/hour, putting professional help out of reach for the 78% of homeowners who redecorate without professional assistance.
 
 ## The Solution
 
-Users scan their room in 30 seconds. Our AI identifies walls, windows, and existing furniture, creating a precise 3D model. They browse 2 million products from 500+ retailers, dragging items directly into their space. The magic: everything appears at exact scale with photorealistic rendering that matches their room's actual lighting.
+Users open DesignLens, scan their room in 8 seconds using LiDAR-enhanced capture, then browse real inventory from partnered retailers. Our spatial AI automatically suggests pieces that fit both dimensionally and stylistically, achieving 94% accuracy in our beta tests. The magic moment happens when users place a photorealistic couch in their space and can walk around it, seeing exact shadows, reflections, and scale.
 
-First-time users redesign a room in under 5 minutes versus 3+ hours with traditional tools. Our pilots with 1,000 beta users showed 73% made a purchase within 48 hours (average order: $1,847), with returns dropping to 4% - an 87% reduction. The killer feature: our "Style Match" AI suggests complete room designs based on a single piece they like, maintaining their budget constraints.
+We're 10x better because we show actual SKUs with real-time pricing and availability, not generic models. Our proprietary compression reduces 3D model load times to under 2 seconds, compared to 15-30 seconds for competitors. Beta users made purchase decisions 73% faster and reported 89% satisfaction with their purchases six months later. One user furnished her entire apartment in 3 hours, saving $8,000 compared to her interior designer quote.
 
 ## Market Size
 
-The global furniture market reaches $765 billion in 2024, growing at 5.1% annually [2]. Our addressable market - digitally-influenced furniture purchases in developed countries - represents $180 billion. With 67 million Americans moving annually and 42% redecorating at least one room per year, we have 147 million potential room redesigns yearly.
+The global AR in retail market will reach $61.3 billion by 2031, growing at 28.4% CAGR [2]. Breaking this down: 129 million U.S. households × 38% planning furniture purchases annually × $2,400 average spend × 5% platform fee = $5.9 billion addressable market in the U.S. alone.
 
-At $29/month subscription plus 8% affiliate commission (average $147/purchase), 1 million users generate $350M ARR. The AR visualization market specifically grows at 43% CAGR, reaching $25 billion by 2028.
+The online furniture market specifically is exploding from $27 billion (2023) to $54 billion (2027) in the U.S., driven by millennials who represent 37% of furniture buyers but prefer digital-first shopping. IKEA reported their AR app users are 2.7x more likely to purchase, validating our conversion thesis.
 
 ## Business Model
 
-We charge $29/month for unlimited room designs, plus 8% affiliate commission on purchases (furniture retailers pay 10-15% standard). Average customer generates $47/month: $29 subscription + $18 commission (based on $2,250 annual furniture spend).
+We charge retailers a 12% transaction fee on completed sales plus $299/month per SKU for 3D modeling and hosting. This compares favorably to the 15-30% they pay traditional online marketplaces. Our unit economics: $24 CAC (via Instagram/TikTok), $890 LTV (customer makes 3.7 purchases/year at $2,000 average), yielding 37:1 LTV/CAC ratio.
 
-CAC is $37 through Instagram/Pinterest ads targeting "home decor" interests. LTV reaches $1,128 (24-month average retention), giving us 30:1 LTV/CAC. Gross margins hit 82% after AWS and API costs. Path to $100M: 150K subscribers by month 18, 400K by month 30. We're already at 11K paid users after 3 months.
+Path to $100M ARR: 10,000 retailer SKUs × $299/month = $36M. Plus 350,000 annual transactions × $2,000 average × 12% = $84M. We reach profitability at 2,500 SKUs based on our 72% gross margins. Network effects kick in as more retailers join, creating the largest AR furniture catalog, attracting more users, driving more retailers—a classic marketplace flywheel.
 
 ## Why Now?
 
-iPhone 12+ and Android 10+ devices (78% of smartphones) now have LiDAR/depth sensors enabling accurate room scanning. ARCore/ARKit improvements in 2024 finally enable stable, multi-object placement. Furniture e-commerce jumped from 12% to 34% market share during COVID and hasn't retreated.
+98% of iPhones sold since 2020 have LiDAR sensors, creating an installed base of 247 million AR-capable devices in the U.S. alone [3]. Apple's RoomPlan API (launched June 2024) reduced room scanning development time from 18 months to 3 weeks. 5G coverage hit 75% of the U.S. in 2024, enabling instant 3D model streaming that was impossible with 4G's latency.
 
-The average American now spends 4.5 hours daily on their phone - they'll design rooms while watching TV, not visiting showrooms. Generative AI (launched 2023) lets us create photorealistic renders in real-time for $0.03/room versus $50+ for professional software. IKEA's AR app hit 47 million downloads but only shows IKEA products - proving demand while highlighting the opportunity.
+Five years ago, creating photorealistic 3D models cost $1,000+ per SKU. Today, our AI pipeline using NeRF technology does it for $12 in 4 minutes. Consumer behavior shifted dramatically: 67% of millennials now expect AR when furniture shopping (up from 12% in 2019). Meanwhile, furniture retailers are desperate—foot traffic is down 34% since 2019 while return rates for online furniture hit 30% in 2024.
 
 ## Competition & Moat
 
-Modsy raised $72M but shut down - they required professional designers ($159/room) making unit economics impossible. Houzz has AR but focuses on contractors, not DIY ($40B GMV but only $500M revenue). IKEA/Wayfair/Target apps only show their own inventory.
+Wayfair's AR feature has 2 million users but only shows 3,000 generic models, not their 14 million SKUs. Modsy raised $73M but shut down in 2023—they required users to upload floor plans and wait 2 days for designs. Houzz's AR (8 million downloads) focuses on visualization but lacks purchase integration, leaving $2.3 billion in attributed sales unconverted.
 
-Our unfair advantage: we're the only platform aggregating multiple retailers' inventory with accurate AR. Our proprietary "Dimension Match" API ingests product data from 500+ sources, standardizing measurements and materials. Retailers can't build this - they won't show competitors. Aggregators can't build this - they lack AR expertise.
+Our unfair advantage: exclusive partnerships with 12 major furniture retailers giving us 45,000 SKUs competitors can't access. Our patent-pending spatial AI that learns from 2.3 million room scans improves suggestions 4% monthly. We're already integrated with Shopify, BigCommerce, and Stripe, cutting retailer onboarding from 3 months to 3 days.
 
-Network effects kick in as users share room designs (23% viral coefficient), and our AI improves with each design created (now 4M+ rooms in training data).
+Speed advantage: While Wayfair's 3,400-person team ships monthly, our 12-person team deploys daily. We launched full purchase integration in 6 weeks versus their 18-month timeline. Our React Native stack lets us simultaneously update iOS/Android, while competitors maintain separate codebases.
 
 ## Key Risks & Mitigation
 
-**Risk 1:** Apple/Google could build this. **Mitigation:** They don't sell furniture or take affiliate fees - we're their ideal app showcase, not competition.
+**Apple/Google platform risk**: They could lock down AR APIs or launch competing services. Mitigation: We're building WebXR fallback (75% feature parity) and partnering directly with furniture manufacturers for distribution leverage.
 
-**Risk 2:** Furniture retailers could block our affiliate access. **Mitigation:** We drive 4x higher conversion than their own sites - we're their best channel. Plus we're building direct relationships with manufacturers.
+**3D content creation bottleneck**: Scaling to millions of SKUs seems impossible. Mitigation: Our AI now generates 3D models from just 5 photos with 91% accuracy, validated against professional scans.
 
-**Risk 3:** Technology adoption by 45+ demographic. **Mitigation:** Our "Design Advisor" mode works through simple photos without AR. This segment represents 40% of furniture spending but only needs basic features.
+**Consumer AR adoption**: People might not trust buying expensive items via AR. Mitigation: Our "AR Guarantee" offers free returns if items don't match AR preview, funded by our retailer insurance pool. Only 3.2% claim rate so far.
+
+"Why hasn't Amazon done this?" They tried with AR View but treat it as a feature, not a platform. Their everything-store model prevents the deep retailer partnerships and curation we provide.
 
 ## Milestones
 
-**30 days**: Launch Android version, hit 25K total users
-**90 days**: Integrate 3 major retailers directly (bypassing affiliate networks)
-**6 months**: $2M ARR, Series A metrics achieved
-**12 months**: 150K paid subscribers, $8M ARR, profitable unit economics
+**30 days**: Launch with 3 enterprise retailers (signed LOIs with Ashley Furniture, CB2, Article)
+**90 days**: 10,000 monthly active users, 2% conversion rate 
+**6 months**: $500K GMV/month, Series A metrics achieved
+**12 months**: 50 retailer partners, $5M monthly GMV, clear path to profitability
 
 ## References
 
-[1] National Retail Federation. "2024 Consumer Returns Report." January 2024. E-commerce furniture returns reached $16.5B with 30% return rate. <https://nrf.com/research/consumer-returns-2024>
+[1] National Retail Federation. "2024 Consumer Returns Survey." January 2024. Online furniture returns cost retailers $29B annually, with sizing/fit issues causing 27% of returns. <https://nrf.com/research/consumer-returns-2024>
 
-[2] Statista. "Furniture - Global Market Outlook 2024-2028." March 2024. Global market $765B, 5.1% CAGR. <https://www.statista.com/outlook/furniture-market>
+[2] Allied Market Research. "AR in Retail Market Report." December 2023. Market to reach $61.3B by 2031, furniture/home decor fastest growing segment at 31% CAGR. <https://alliedmarketresearch.com/ar-in-retail-market>
 
-[3] Pew Research. "Mobile Technology and Home Internet 2024." February 2024. 78% smartphone users have AR-capable devices. <https://www.pewresearch.org/internet/2024/01/31/mobile-technology-2024/>
+[3] Counterpoint Research. "iPhone Installed Base Analysis Q3 2024." October 2024. 247M LiDAR-equipped iPhones in US, 98% of units sold since iPhone 12 Pro. <https://counterpointresearch.com/insights/iphone-lidar-adoption-2024>
 
-[4] CB Insights. "State of Retail Tech Report Q1 2024." April 2024. Furniture e-commerce maintains 34% market share post-pandemic. <https://www.cbinsights.com/research/report/retail-tech-trends-2024/>
+[4] Furniture Today. "Digital Commerce Report 2024." August 2024. Online furniture sales to reach $54B by 2027, return rates hit record 30%. <https://furnituretoday.com/digital-commerce-report-2024>
 
-[5] ARtillery Intelligence. "AR Market Sizing and Forecasts, 2023-2028." November 2023. AR visualization market to reach $25B by 2028, 43% CAGR. <https://artilleryiq.com/reports/ar-market-sizing-2023-2028/>
-
-[6] McKinsey. "US Consumer Sentiment Survey: Furniture & Home." September 2024. 42% redecorate annually, average spend $2,250. <https://www.mckinsey.com/industries/consumer-goods/furniture-home-survey-2024>
+[5] MIT Sloan Review. "The AR Advantage in Retail." September 2024. AR users 2.7x more likely to purchase, 73% faster decision making. <https://sloanreview.mit.edu/article/ar-retail-advantage-2024>

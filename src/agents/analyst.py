@@ -4,6 +4,7 @@ import asyncio
 import signal
 import threading
 import time
+import traceback
 from datetime import datetime
 from typing import Optional, Any
 from pathlib import Path
@@ -15,7 +16,7 @@ from ..core.config import AnalysisConfig
 from ..core.constants import ANALYST_MAX_TURNS, PREVIEW_CHAR_LIMIT
 from ..core.message_processor import MessageProcessor
 from ..utils.text_processing import create_slug
-from ..utils.debug_logging import DebugLogger, setup_debug_logger
+from ..utils.improved_logging import StructuredLogger
 from ..utils.file_operations import load_prompt, AnalysisResult
 
 
@@ -124,9 +125,21 @@ class AnalystAgent(BaseAgent):
             AnalysisResult containing the analysis and metadata, or None if error
         """
         # Setup
-        logger = setup_debug_logger(idea, self.config.logs_dir) if debug else DebugLogger()
         start_time = time.time()
         client: Optional[ClaudeSDKClient] = None
+        
+        # Setup logger if debug mode (pipeline already has the main logger)
+        import os
+        
+        # Don't create logs when running from test harness
+        if os.environ.get('TEST_HARNESS_RUN') == '1':
+            logger = None
+        elif debug and not hasattr(self, '_pipeline_logger'):
+            run_id = datetime.now().strftime('%Y%m%d_%H%M%S')
+            slug = create_slug(idea)
+            logger = StructuredLogger(run_id, slug, "test")
+        else:
+            logger = getattr(self, '_pipeline_logger', None)
         # Reset interrupt state
         self.interrupt_event.clear()
         self._interrupted = False
@@ -151,7 +164,10 @@ class AnalystAgent(BaseAgent):
         try:
             # Load the analyst prompt
             system_prompt = load_prompt(self.get_prompt_file(), self.config.prompts_dir)
-            logger.log_event(f"Loaded prompt template: {self.get_prompt_file()}")
+            if logger:
+                logger.log_event("prompt_loaded", "Analyst", {
+                    "prompt_file": self.get_prompt_file()
+                })
             
             # Craft the user prompt with resource constraints
             websearch_instruction = (
@@ -216,10 +232,16 @@ class AnalystAgent(BaseAgent):
                     if processed.message_type == "ResultMessage":
                         search_info = f" ({stats['search_count']} searches used)" if use_websearch else ""
                         print(f"✅ Analysis complete{search_info}")
-                        logger.log_event("Analysis complete")
                         
                         # Get content from ResultMessage or collected text
                         content = processed.content[0] if processed.content else processor.get_final_content()
+                        
+                        if logger and content:
+                            logger.log_event("analysis_complete", "Analyst", {
+                                "duration": time.time() - start_time,
+                                "size": len(content),
+                                "search_count": processor.search_count
+                            })
                         
                         if content:
                             return AnalysisResult(
@@ -276,12 +298,9 @@ class AnalystAgent(BaseAgent):
             error_msg = f"\n❌ Error during analysis after {duration:.1f}s: {e}"
             print(error_msg)
             
-            logger.log_event(f"Error: {e}", {
-                "duration": duration,
-                "error_type": type(e).__name__
-            })
+            if logger:
+                logger.log_error(str(e), "Analyst", traceback=traceback.format_exc() if debug else None)
             if debug:
-                import traceback
                 traceback.print_exc()
             return None
             
@@ -289,12 +308,15 @@ class AnalystAgent(BaseAgent):
             # Reset signal handler to original
             signal.signal(signal.SIGINT, original_handler)
             
-            # Save debug log
-            if logger.enabled:
+            # Finalize logging
+            if logger:
                 stats = processor.get_statistics()
-                logger.save({
-                    "total_messages": stats['message_count'],
-                    "total_searches": stats['search_count'],
-                    "total_time": time.time() - start_time,
-                    "interrupted": self._interrupted
-                })
+                logger.finalize(
+                    success=True,
+                    result={
+                        "total_messages": stats['message_count'],
+                        "total_searches": stats['search_count'],
+                        "total_time": time.time() - start_time,
+                        "interrupted": self._interrupted
+                    }
+                )

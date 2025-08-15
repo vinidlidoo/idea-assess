@@ -10,7 +10,7 @@ from ..agents import AnalystAgent
 from ..agents.reviewer import ReviewerAgent, FeedbackProcessor
 from ..core.agent_base import AgentResult
 from ..core.config import AnalysisConfig
-from ..utils.debug_logging import DebugLogger, setup_debug_logger
+from ..utils.improved_logging import StructuredLogger
 from ..utils.file_operations import save_analysis, create_or_update_symlink
 from ..utils.text_processing import create_slug
 from ..utils.file_operations import load_prompt
@@ -61,24 +61,32 @@ class AnalysisPipeline:
         Returns:
             Dictionary containing final analysis and metadata
         """
-        debug_logger = None
-        if debug:
-            # Create logs directory if it doesn't exist
-            logs_dir = Path("logs")
-            logs_dir.mkdir(exist_ok=True)
-            debug_logger = setup_debug_logger(idea, logs_dir)
-            debug_logger.log_event("pipeline_start", {
-                "agent": "Pipeline",
+        # Setup structured logging
+        import os
+        
+        run_id = datetime.now().strftime('%Y%m%d_%H%M%S')
+        slug = create_slug(idea)
+        run_type = "test" if debug else "production"
+        
+        # Don't create pipeline logs when running from test harness
+        if os.environ.get('TEST_HARNESS_RUN') == '1':
+            logger = None
+        else:
+            logger = StructuredLogger(run_id, slug, run_type) if debug else None
+        
+        if logger:
+            logger.log_milestone("Pipeline started", f"Max iterations: {max_iterations}")
+            logger.log_event("pipeline_start", "Pipeline", {
                 "idea": idea,
-                "max_iterations": max_iterations
+                "max_iterations": max_iterations,
+                "use_websearch": use_websearch
             })
         
         # Initialize agents
         analyst = AnalystAgent(self.config)
         reviewer = ReviewerAgent(self.config)
         
-        # Setup file paths
-        slug = create_slug(idea)
+        # Setup file paths (slug already created above)
         analysis_dir = Path("analyses") / slug
         analysis_dir.mkdir(parents=True, exist_ok=True)
         
@@ -101,9 +109,8 @@ class AnalysisPipeline:
             while iteration_count < max_iterations:
                 iteration_count += 1
                 
-                if debug_logger:
-                    debug_logger.log_event("iteration_start", {
-                        "agent": "Pipeline",
+                if logger:
+                    logger.log_event("iteration_start", "Pipeline", {
                         "iteration": iteration_count,
                         "has_feedback": len(feedback_history) > 0
                     })
@@ -138,12 +145,11 @@ class AnalysisPipeline:
                 )
                 
                 if not analyst_result.success:
-                    if debug_logger:
-                        debug_logger.log_event("analyst_failed", {
-                            "agent": "Analyst",
-                            "iteration": iteration_count,
-                            "error": analyst_result.error
-                        })
+                    if logger:
+                        logger.log_error(
+                            f"Analyst failed: {analyst_result.error}",
+                            "Analyst"
+                        )
                     break
                 
                 current_analysis = analyst_result.content
@@ -161,9 +167,8 @@ class AnalysisPipeline:
                     
                 current_analysis_file = str(iteration_file)
                 
-                if debug_logger:
-                    debug_logger.log_event("analysis_saved", {
-                        "agent": "Pipeline",
+                if logger:
+                    logger.log_event("analysis_saved", "Pipeline", {
                         "iteration": iteration_count,
                         "file": str(iteration_file),
                         "size": len(current_analysis)
@@ -186,12 +191,11 @@ class AnalysisPipeline:
                 )
                 
                 if not reviewer_result.success:
-                    if debug_logger:
-                        debug_logger.log_event("reviewer_failed", {
-                            "agent": "Reviewer",
-                            "iteration": iteration_count,
-                            "error": reviewer_result.error
-                        })
+                    if logger:
+                        logger.log_error(
+                            f"Reviewer failed: {reviewer_result.error}",
+                            "Reviewer"
+                        )
                     # If reviewer fails, accept the analysis by default
                     break
                 
@@ -205,30 +209,38 @@ class AnalysisPipeline:
                 with open(main_feedback, 'w') as f:
                     json.dump(feedback, f, indent=2)
                 
-                if debug_logger:
-                    debug_logger.log_event("iteration_complete", {
-                        "agent": "Pipeline",
+                if logger:
+                    logger.log_event("iteration_complete", "Pipeline", {
                         "iteration": iteration_count,
                         "feedback_file": feedback_file,
                         "recommendation": feedback.get('iteration_recommendation'),
                         "critical_issues": len(feedback.get('critical_issues', [])),
                         "reason": feedback.get('iteration_reason')
                     })
+                    # Also log as milestone for visibility
+                    recommendation = feedback.get('iteration_recommendation', 'unknown')
+                    issues = len(feedback.get('critical_issues', []))
+                    logger.log_milestone(
+                        f"Iteration {iteration_count} complete",
+                        f"Recommendation: {recommendation}, Critical issues: {issues}"
+                    )
                 
                 # Check if we should continue (reviewer rejected the analysis)
                 if not self.feedback_processor.should_continue_iteration(feedback, iteration_count):
-                    if debug_logger:
-                        debug_logger.log_event("analysis_accepted", {
-                            "agent": "Pipeline",
+                    if logger:
+                        logger.log_event("analysis_accepted", "Pipeline", {
                             "iteration": iteration_count,
                             "recommendation": feedback.get('iteration_recommendation'),
                             "reason": feedback.get('iteration_reason')
                         })
+                        logger.log_milestone(
+                            "Analysis accepted",
+                            f"After {iteration_count} iteration(s)"
+                        )
                     break
                 else:
-                    if debug_logger:
-                        debug_logger.log_event("analysis_rejected", {
-                            "agent": "Pipeline",
+                    if logger:
+                        logger.log_event("analysis_rejected", "Pipeline", {
                             "iteration": iteration_count,
                             "must_continue": iteration_count < max_iterations,
                             "reason": feedback.get('iteration_reason')
@@ -281,12 +293,16 @@ class AnalysisPipeline:
                     }, f, indent=2)
                 result["history_path"] = str(history_path)
             
-            if debug_logger:
-                debug_logger.log_event("pipeline_complete", {
-                    "agent": "Pipeline",
+            if logger:
+                logger.log_milestone(
+                    "Pipeline complete",
+                    f"Success after {iteration_count} iteration(s)"
+                )
+                logger.log_event("pipeline_complete", "Pipeline", {
                     "success": True,
                     "iterations_used": iteration_count,
-                    "final_recommendation": feedback_history[-1].get('iteration_recommendation') if feedback_history else None
+                    "final_recommendation": feedback_history[-1].get('iteration_recommendation') if feedback_history else None,
+                    "file_path": result.get("file_path")
                 })
             
             return result
@@ -297,16 +313,12 @@ class AnalysisPipeline:
             if current_analysis_file:
                 error_context += f" (last file: {current_analysis_file})"
             
-            if debug_logger:
-                debug_logger.log_event("pipeline_error", {
-                    "agent": "Pipeline",
-                    "error": str(e),
-                    "error_type": type(e).__name__,
-                    "iteration": iteration_count,
-                    "max_iterations": max_iterations,
-                    "last_analysis_file": current_analysis_file,
-                    "traceback": traceback.format_exc()
-                })
+            if logger:
+                logger.log_error(
+                    f"{type(e).__name__}: {str(e)}",
+                    "Pipeline",
+                    traceback=traceback.format_exc()
+                )
             
             print(f"\n❌ {error_context}: {e}")
             return {
@@ -320,8 +332,13 @@ class AnalysisPipeline:
             }
         
         finally:
-            if debug_logger:
-                debug_logger.save({})
+            if logger:
+                # Finalize the logger with success status and result
+                success = 'result' in locals() and result.get('success', False)
+                logger.finalize(
+                    success=success,
+                    result=result if 'result' in locals() else None
+                )
 
 
 class SimplePipeline:

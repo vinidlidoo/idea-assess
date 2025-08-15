@@ -17,7 +17,7 @@ description: Tasks to wrap up the current session using session logs
 
 Based on the above:
 
-1. Delete any test files that were created for troubleshooting and which can be discarded
+1. Delete any test files that were created for troubleshooting and which can be discarded. Log files can stay.
 
 2. Update or create session log in `session-logs/` directory:
    - If session log doesn't exist yet: copy from `SESSION_TEMPLATE.md`
@@ -26,7 +26,7 @@ Based on the above:
    - Fill in all sections based on work completed this session
    - Use actual timestamps from bash `date` command
    - Set end time and ensure all work is documented
-   - Make sure the correct Claude Code session ID is entered
+   - Make sure the correct Claude Code session ID is entered. Do not change if entered.
    - Mark all commit fields as "end of session" since commit happens at close
 
 3. Update TODO.md with any nice-to-have or papercut tasks that came up during the session

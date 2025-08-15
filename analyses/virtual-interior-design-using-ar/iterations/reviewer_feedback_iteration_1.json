@@ -1,67 +1,78 @@
 {
-  "overall_assessment": "Strong analysis with compelling metrics and clear value proposition. The document effectively demonstrates the 10x improvement and includes recent data, but needs stronger bottom-up TAM calculation and more specific competitive moat details.",
+  "overall_assessment": "Strong analysis with compelling market opportunity and clear value proposition. However, needs more specific financial details, stronger competitive differentiation, and clearer technical moat evidence.",
   "strengths": [
-    "Excellent opening with $16.5B furniture return statistic that immediately grabs attention",
-    "Clear 10x improvement articulated (5 minutes vs 3+ hours, 87% reduction in returns)",
-    "Strong unit economics with specific CAC ($37) and LTV ($1,128) metrics",
-    "Good use of 2024 data sources and recent market statistics",
-    "Compelling user pain example with the $3,000 sectional story",
-    "Clear path to $100M ARR with specific user milestones"
+    "Excellent 'holy shit' statistic ($29B in furniture returns) in opening",
+    "Clear 10x improvement articulated (2 seconds vs 15-30 seconds load time)",
+    "Strong unit economics with 37:1 LTV/CAC ratio",
+    "Recent 2024 data and credible sources throughout",
+    "Specific user pain example (Sarah Chen's $3,000 sectional)"
   ],
   "critical_issues": [
     {
-      "section": "Market Size",
-      "issue": "Missing detailed bottom-up TAM calculation",
-      "suggestion": "Add specific calculation: 147M room redesigns × 10% addressable × $47/month × 12 months = $8.3B TAM. Show conversion assumptions and penetration rates for each segment.",
+      "section": "Business Model",
+      "issue": "Path to $100M ARR math doesn't add up correctly",
+      "suggestion": "Fix calculation: 10,000 SKUs × $299/month × 12 months = $35.88M (not $36M). Transaction revenue seems optimistic - show how you'll reach 350,000 transactions/year (means ~1,000/day). Break down customer acquisition timeline.",
       "priority": "critical"
     },
     {
       "section": "Competition & Moat",
-      "issue": "Unfair advantage not sufficiently defensible",
-      "suggestion": "Specify what prevents Amazon, Google, or Wayfair from building this in 6 months. Is it the 4M+ room training data? Patent-pending technology? Exclusive retailer agreements? Be more specific about what makes this truly defensible.",
+      "issue": "Patent-pending spatial AI not sufficiently explained as defensible",
+      "suggestion": "Specify what makes the spatial AI unique beyond 'learning from scans'. What technical breakthrough? Why can't Wayfair replicate this in 6 months with their resources? Add specific technical differentiator.",
+      "priority": "critical"
+    },
+    {
+      "section": "Key Risks & Mitigation",
+      "issue": "Apple/Google platform risk mitigation is weak",
+      "suggestion": "WebXR with '75% feature parity' means losing 25% of functionality - specify what's lost. How does this affect conversion? Add concrete partnership agreements or alternative distribution strategies beyond 'partnering with manufacturers'.",
       "priority": "critical"
     }
   ],
   "improvements": [
     {
-      "section": "Business Model",
-      "issue": "Affiliate commission dependency risk not addressed",
-      "suggestion": "Address what happens if retailers cut affiliate rates or Amazon enters. Consider adding enterprise/white-label tier at higher margins to diversify revenue streams.",
+      "section": "Market Size",
+      "issue": "Bottom-up calculation assumes 5% platform fee but business model states 12%",
+      "suggestion": "Reconcile the discrepancy: use consistent 12% transaction fee in TAM calculation, or explain why TAM uses 5% while you charge 12%.",
+      "priority": "important"
+    },
+    {
+      "section": "The Solution",
+      "issue": "94% accuracy metric lacks context",
+      "suggestion": "Define what 'accuracy' means - accurate in what? Style matching? Dimension fitting? Color representation? Compare to competitor accuracy rates if available.",
+      "priority": "important"
+    },
+    {
+      "section": "Milestones",
+      "issue": "Series A metrics not defined",
+      "suggestion": "Specify exact Series A benchmarks: typically $1-2M ARR, 15-20% MoM growth, 50+ enterprise customers. Current milestone just says 'Series A metrics achieved' without specifics.",
       "priority": "important"
     },
     {
       "section": "Why Now?",
-      "issue": "Missing specific 2025 inflection point",
-      "suggestion": "Add more recent data point about why 2025 specifically is the moment - e.g., 'Apple Vision Pro launch in 2024 normalized AR for consumers' or 'OpenAI's GPT-4V API (Oct 2024) finally enables real-time room understanding at scale'",
-      "priority": "important"
-    },
-    {
-      "section": "Key Risks & Mitigation",
-      "issue": "Apple/Google risk mitigation is weak",
-      "suggestion": "Strengthen mitigation: mention specific partnerships, API dependencies they'd need to replicate, or switching costs once users have designed multiple rooms.",
+      "issue": "NeRF technology cost reduction claim needs validation",
+      "suggestion": "Add source for $1,000 to $12 cost reduction claim. Name specific NeRF variant/tool you're using (instant-ngp, Luma AI, etc.) to add credibility.",
       "priority": "important"
     }
   ],
   "minor_suggestions": [
     {
-      "section": "The Solution",
-      "issue": "Could quantify AI accuracy improvements",
-      "suggestion": "Add specific metric like 'Style Match AI now 91% accurate at predicting user preferences based on 4M+ room dataset'",
+      "section": "What We Do",
+      "issue": "Could add 'X for Y' format for instant clarity",
+      "suggestion": "Consider adding tagline: 'The Shopify for AR furniture shopping' or 'Zillow for furniture' to instantly convey the concept.",
       "priority": "minor"
     },
     {
-      "section": "Milestones",
-      "issue": "Missing specific Series A funding target",
-      "suggestion": "Add funding target: '12 months: Raise $15M Series A at $75M valuation'",
+      "section": "Competition & Moat",
+      "issue": "Team size comparison feels defensive",
+      "suggestion": "Instead of '12-person team vs 3,400', focus on speed metrics only. Small team size could be seen as a weakness rather than strength by investors.",
       "priority": "minor"
     },
     {
       "section": "References",
-      "issue": "Could add competitor performance data",
-      "suggestion": "Include specific competitor metrics like 'Modsy reached $2M ARR before shutdown' or 'Houzz AR feature used by only 3% of users'",
+      "issue": "MIT Sloan Review link appears to be hypothetical",
+      "suggestion": "Verify this September 2024 article exists - MIT Sloan Review doesn't typically publish with that URL format. Replace with actual study if this is projected/estimated.",
       "priority": "minor"
     }
   ],
   "iteration_recommendation": "reject",
-  "iteration_reason": "The analysis needs stronger bottom-up TAM calculation and more defensible competitive moat explanation. While metrics are strong, these critical gaps should be addressed to make the investment case more compelling."
+  "iteration_reason": "Three critical issues need addressing: (1) Revenue math to $100M ARR has errors and unrealistic assumptions, (2) Technical moat around spatial AI is too vague to be defensible, (3) Platform risk mitigation for Apple/Google is insufficient. Additionally, several important inconsistencies in metrics and calculations undermine credibility."
 }

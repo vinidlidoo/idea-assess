@@ -2,6 +2,7 @@
 
 import json
 import asyncio
+import traceback
 from typing import Any, Optional
 from pathlib import Path
 
@@ -11,7 +12,7 @@ from ..core.agent_base import BaseAgent, AgentResult
 from ..core.config import AnalysisConfig
 from ..core.constants import MAX_REVIEW_ITERATIONS, REVIEWER_MAX_TURNS
 from ..core.message_processor import MessageProcessor
-from ..utils.debug_logging import DebugLogger, setup_debug_logger
+from ..utils.improved_logging import StructuredLogger
 from ..utils.file_operations import load_prompt
 
 
@@ -97,13 +98,17 @@ class ReviewerAgent(BaseAgent):
         idea_slug = kwargs.get('idea_slug', 'unknown')
         
         # Setup debug logging if requested
-        debug_logger = None
-        if debug:
-            logs_dir = Path("logs")
-            logs_dir.mkdir(exist_ok=True)
-            debug_logger = setup_debug_logger(f"review_iteration_{iteration_count}", logs_dir)
-            debug_logger.log_event("review_start", {
-                "agent": "Reviewer",
+        import os
+        logger = None
+        
+        # Don't create logs when running from test harness
+        if os.environ.get('TEST_HARNESS_RUN') == '1':
+            logger = None
+        elif debug:
+            from datetime import datetime
+            run_id = datetime.now().strftime('%Y%m%d_%H%M%S')
+            logger = StructuredLogger(run_id, idea_slug, "test")
+            logger.log_event("review_start", "Reviewer", {
                 "iteration": iteration_count,
                 "analysis_file": input_data,
                 "idea_slug": idea_slug
@@ -141,7 +146,7 @@ class ReviewerAgent(BaseAgent):
             )
             
             # Initialize message processor
-            processor = MessageProcessor(debug_logger)
+            processor = MessageProcessor(logger)
             
             # Query Claude for review
             review_complete = False
@@ -151,18 +156,16 @@ class ReviewerAgent(BaseAgent):
                 
                 async for message in client.receive_response():
                     # Debug log the raw message
-                    if debug_logger:
-                        debug_logger.log_event(f"raw_message_{type(message).__name__}", {
-                            "agent": "Reviewer",
+                    if logger:
+                        logger.log_event(f"raw_message_{type(message).__name__}", "Reviewer", {
                             "message_type": type(message).__name__,
                             "has_content_attr": hasattr(message, 'content')
                         })
                     
                     result = processor.process_message(message)
                     
-                    if debug_logger:
-                        debug_logger.log_event(f"reviewer_message_{result.message_type}", {
-                            "agent": "Reviewer",
+                    if logger:
+                        logger.log_event(f"reviewer_message_{result.message_type}", "Reviewer", {
                             "has_content": bool(result.content),
                             "content_preview": result.content[0][:100] if result.content else None
                         })
@@ -174,9 +177,8 @@ class ReviewerAgent(BaseAgent):
                     
                     # Process when we hit ResultMessage (end of stream)
                     if result.message_type == "ResultMessage":
-                        if debug_logger:
-                            debug_logger.log_event("review_stream_end", {
-                                "agent": "Reviewer",
+                        if logger:
+                            logger.log_event("review_stream_end", "Reviewer", {
                                 "review_complete": review_complete,
                                 "feedback_file_expected": str(feedback_file)
                             })
@@ -188,9 +190,8 @@ class ReviewerAgent(BaseAgent):
                 with open(feedback_file, 'r') as f:
                     feedback_json = json.load(f)
                 
-                if debug_logger:
-                    debug_logger.log_event("review_complete", {
-                        "agent": "Reviewer",
+                if logger:
+                    logger.log_event("review_complete", "Reviewer", {
                         "iteration": iteration_count,
                         "feedback_file": str(feedback_file),
                         "recommendation": feedback_json.get('iteration_recommendation'),
@@ -220,9 +221,8 @@ class ReviewerAgent(BaseAgent):
                 )
                 
         except Exception as e:
-            if debug_logger:
-                debug_logger.log_event("review_error", {
-                    "agent": "Reviewer",
+            if logger:
+                logger.log_event("review_error", "Reviewer", {
                     "error": str(e),
                     "iteration": iteration_count
                 })
@@ -234,8 +234,7 @@ class ReviewerAgent(BaseAgent):
                 error=str(e)
             )
         finally:
-            if debug_logger:
-                debug_logger.save({})
+            pass  # Logger finalization handled in pipeline
 
 
 class FeedbackProcessor:

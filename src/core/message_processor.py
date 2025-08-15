@@ -3,7 +3,7 @@
 import re
 from typing import Optional, Any
 from dataclasses import dataclass
-from ..utils.debug_logging import DebugLogger
+from ..utils.improved_logging import StructuredLogger
 from ..core.constants import MAX_CONTENT_SIZE
 
 # Try to import SDK message types
@@ -31,14 +31,14 @@ class ProcessedMessage:
 class MessageProcessor:
     """Handles processing of Claude SDK messages."""
     
-    def __init__(self, logger: Optional[DebugLogger] = None):
+    def __init__(self, logger: Optional[StructuredLogger] = None):
         """
         Initialize the message processor.
         
         Args:
-            logger: Optional debug logger
+            logger: Optional structured logger
         """
-        self.logger = logger or DebugLogger()
+        self.logger = logger
         self.message_count = 0
         self.search_count = 0
         self.result_text: list[str] = []
@@ -86,8 +86,7 @@ class MessageProcessor:
         session_id = self.extract_session_id(message)
         if session_id:
             metadata['session_id'] = session_id
-            if self.logger.enabled:
-                self.logger.data["session_id"] = session_id
+            # Session ID is now tracked in event metadata
         
         # Process different message types
         if hasattr(message, 'content'):
@@ -100,8 +99,8 @@ class MessageProcessor:
             if hasattr(message, 'total_cost_usd') and message.total_cost_usd:
                 metadata['cost_usd'] = message.total_cost_usd
         
-        # Log if debug enabled
-        if self.logger.enabled:
+        # Log if logger is available
+        if self.logger:
             self._log_message(message_type, content, search_queries, metadata)
         
         return ProcessedMessage(
@@ -134,8 +133,11 @@ class MessageProcessor:
                     query = getattr(block, 'input', {}).get('query', 'unknown')
                     search_queries.append(query)
                     print(f"  🔍 Search #{self.search_count}: {query} (may take 30-120s)...")
-                    if self.logger.enabled:
-                        self.logger.log_event(f"WebSearch #{self.search_count}: {query}")
+                    if self.logger:
+                        self.logger.log_event("websearch_query", "MessageProcessor", {
+                            "search_number": self.search_count,
+                            "query": query
+                        })
                 
                 # Extract text content
                 elif hasattr(block, 'text'):
@@ -166,7 +168,7 @@ class MessageProcessor:
     
     def _log_message(self, message_type: str, content: list[str], 
                      search_queries: list[str], metadata: dict[str, Any]) -> None:
-        """Log message details for debugging."""
+        """Log message details using StructuredLogger."""
         msg_data = {
             "number": self.message_count,
             "type": message_type,
@@ -181,7 +183,11 @@ class MessageProcessor:
         if search_queries:
             msg_data["search_queries"] = search_queries
         
-        self.logger.log_event(f"Message {self.message_count}: {message_type}", msg_data)
+        self.logger.log_event(
+            f"sdk_message_{message_type.lower()}",
+            "MessageProcessor",
+            msg_data
+        )
     
     def get_final_content(self) -> str:
         """
