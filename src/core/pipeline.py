@@ -3,7 +3,7 @@
 import json
 from datetime import datetime
 from pathlib import Path
-from typing import Any, cast
+from typing import cast
 
 
 # PipelineResult imported from types.py
@@ -13,6 +13,7 @@ from ..agents import AnalystAgent
 from ..agents.reviewer import ReviewerAgent, FeedbackProcessor
 from ..core.config import AnalysisConfig
 from ..core.types import PipelineResult
+from ..core.agent_protocol import AgentProtocol
 from ..utils.improved_logging import StructuredLogger
 from ..utils.text_processing import create_slug
 from ..utils.archive_manager import ArchiveManager
@@ -22,7 +23,7 @@ class AnalysisPipeline:
     """Orchestrates the flow of data between agents using file-based communication."""
 
     config: AnalysisConfig
-    agents: dict[str, Any]
+    agents: dict[str, AgentProtocol]
     feedback_processor: FeedbackProcessor
     archive_manager: ArchiveManager
 
@@ -38,13 +39,13 @@ class AnalysisPipeline:
         self.feedback_processor = FeedbackProcessor()
         self.archive_manager = ArchiveManager(max_archives=5)
 
-    def register_agent(self, name: str, agent: Any) -> None:
+    def register_agent(self, name: str, agent: AgentProtocol) -> None:
         """
         Register an agent in the pipeline.
 
         Args:
             name: Name to register the agent under
-            agent: Agent instance
+            agent: Agent instance that implements AgentProtocol
         """
         self.agents[name] = agent
 
@@ -253,8 +254,8 @@ class AnalysisPipeline:
         iteration_count = 0
         current_analysis = None
         current_analysis_file = None
-        feedback_history: list[dict[str, Any]] = []
-        iteration_results: list[dict[str, Any]] = []
+        feedback_history: list[dict[str, object]] = []
+        iteration_results: list[dict[str, object]] = []
 
         try:
             while iteration_count < max_iterations:
@@ -370,7 +371,7 @@ class AnalysisPipeline:
                     reviewer_result.content
                 )  # This should be the path to feedback file
                 feedback = self.feedback_processor.load_feedback(feedback_file)
-                feedback_history.append(cast(dict[str, Any], feedback))
+                feedback_history.append(cast(dict[str, object], feedback))
 
                 # Also save/update main reviewer_feedback.json for easy access
                 main_feedback = analysis_dir / "reviewer_feedback.json"
@@ -481,10 +482,8 @@ class AnalysisPipeline:
                 # Save consolidated metadata
                 metadata = self.archive_manager.create_metadata(
                     cast(dict[str, object], result),
-                    cast(dict[str, object], feedback_history[-1])
-                    if feedback_history
-                    else None,
-                    cast(list[dict[str, object]], iteration_results),
+                    feedback_history[-1] if feedback_history else None,
+                    iteration_results,
                 )
                 metadata_path = analysis_dir / "metadata.json"
                 with open(metadata_path, "w") as f:

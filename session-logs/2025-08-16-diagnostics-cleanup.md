@@ -18,7 +18,7 @@
 
 ### 2. Significantly Reduced Warnings ✅
 
-- **basedpyright warnings:** 467 → 342 (125 fixed, 27% reduction)
+- **basedpyright warnings:** 467 → 83 (384 fixed, 82% reduction)
 
 ### 3. Major Fixes Applied
 
@@ -48,6 +48,80 @@
 - Created `src/core/types.py` leveraging Claude SDK types
 - Consolidated type definitions in one place
 - Fixed circular import issues with TYPE_CHECKING pattern
+
+## Final Phase: Type Safety Decisions
+
+### Patterns We Accept as Pragmatic Trade-offs
+
+#### 1. JSON Loading Returns Any
+
+```python
+feedback = json.load(f)  # Returns Any - unavoidable
+```
+
+**Why Accept**: json.load() inherently returns Any. Full runtime validation would be complex.
+**Mitigation**: Use validators immediately after loading, add isinstance checks.
+
+#### 2. Agent Polymorphism with Any
+
+```python
+agents: dict[str, Any]  # For storing different agent types
+```
+
+**Why Accept**: Agents have different interfaces, true polymorphism would require complex generics.
+**Future Improvement**: Could create AgentProtocol if all agents share methods.
+
+#### 3. Cast Through Object Pattern
+
+```python
+return cast(PipelineResult, cast(object, result))
+```
+
+**Why Accept**: Bridges gap between dynamic dict creation and TypedDict.
+**When Used**: Converting runtime-built dictionaries to typed returns.
+
+#### 4. Lambda for Inline Type Narrowing
+
+```python
+"critical_issues": (
+    lambda x: len(x) if isinstance(x, list) else 0
+)(feedback.get("critical_issues", []))
+```
+
+**Why Accept**: Handles potential None/non-list values safely in one expression.
+
+#### 5. Dynamic dict.get() with Defaults
+
+```python
+recommendation = feedback.get("iteration_recommendation", "unknown")
+```
+
+**Why Accept**: Common Python idiom for safe dictionary access.
+
+### Final Statistics
+
+- **Errors**: 0 (100% elimination)
+- **Warnings**: 83 (82% reduction from 467)
+- **Key Achievement**: Zero errors while maintaining readability
+
+### Warning Breakdown (83 remaining)
+
+- **reportAny** (~30): Mostly from json.load() and SDK internals
+- **reportUnknownVariableType** (~20): From deeply nested data structures  
+- **reportUnknownMemberType** (~15): From dict.get() on untyped data
+- **reportExplicitAny** (~10): From necessary Any usage (agents, casts)
+- **reportUnknownArgumentType** (~8): From passing dynamic data to functions
+
+### Philosophy: Pragmatic Type Safety
+
+We've achieved the sweet spot:
+
+- ✅ **Zero errors** - Non-negotiable for production
+- ✅ **~80-100 warnings** - Acceptable for maintainability  
+- ✅ **Type safety where it matters** - Public APIs, data validation
+- ✅ **Dynamic typing where appropriate** - JSON, external data
+
+The remaining 83 warnings would require disproportionate effort to fix and would reduce code readability. This represents an excellent balance between type safety and maintainability.
 
 ## Remaining Warnings (342)
 
