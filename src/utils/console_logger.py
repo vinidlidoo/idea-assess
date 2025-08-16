@@ -1,7 +1,7 @@
 """Console logger for test harness and debugging."""
 
 import sys
-from typing import TypedDict, Any
+from typing import TypedDict
 
 
 class EventData(TypedDict, total=False):
@@ -33,9 +33,19 @@ class EventData(TypedDict, total=False):
     error: str | None
     attempting_fix: bool
     feedback_file: str
-    recommendation: Any
+    recommendation: str | None
     critical_issues: int
     improvements: int
+    max_iterations: int
+    has_feedback: bool
+    expected_file: str
+    falling_back_to: str
+    reason: str | None
+    must_continue: bool
+    iterations_used: int
+    final_recommendation: str | None
+    file_path: str | None
+    success: bool
 
 
 class ConsoleLogger:
@@ -125,7 +135,8 @@ class ConsoleLogger:
         elif event_type == "review_complete":
             print(f"[{self.agent_name}] Review complete", file=sys.stderr, flush=True)
             if "recommendation" in data:
-                rec = data["recommendation"].upper()
+                rec_val = data["recommendation"]
+                rec = str(rec_val).upper() if rec_val else "UNKNOWN"
                 critical = data.get("critical_issues", 0)
                 print(
                     f"[{self.agent_name}] Feedback saved: {rec} (critical issues: {critical})",

@@ -88,14 +88,11 @@ class AnalysisPipeline:
             logger.log_event(
                 "pipeline_start",
                 "Pipeline",
-                cast(
-                    Any,
-                    {
-                        "idea": idea,
-                        "max_iterations": max_iterations,
-                        "use_websearch": use_websearch,
-                    },
-                ),
+                {
+                    "idea": idea,
+                    "max_iterations": max_iterations,
+                    "use_websearch": use_websearch,
+                },
             )
 
         return logger, run_id, slug
@@ -158,16 +155,11 @@ class AnalysisPipeline:
                 logger.log_event(
                     "feedback_file_missing",
                     "Pipeline",
-                    cast(
-                        Any,
-                        {
-                            "expected_file": str(latest_feedback_file),
-                            "iteration": iteration_count,
-                            "falling_back_to": str(
-                                analysis_dir / "reviewer_feedback.json"
-                            ),
-                        },
-                    ),
+                    {
+                        "expected_file": str(latest_feedback_file),
+                        "iteration": iteration_count,
+                        "falling_back_to": str(analysis_dir / "reviewer_feedback.json"),
+                    },
                 )
             # Fallback to main feedback file
             latest_feedback_file = analysis_dir / "reviewer_feedback.json"
@@ -272,13 +264,10 @@ class AnalysisPipeline:
                     logger.log_event(
                         "iteration_start",
                         "Pipeline",
-                        cast(
-                            Any,
-                            {
-                                "iteration": iteration_count,
-                                "has_feedback": len(feedback_history) > 0,
-                            },
-                        ),
+                        {
+                            "iteration": iteration_count,
+                            "has_feedback": len(feedback_history) > 0,
+                        },
                     )
 
                 # Step 1: Generate or refine analysis
@@ -392,20 +381,13 @@ class AnalysisPipeline:
                     logger.log_event(
                         "iteration_complete",
                         "Pipeline",
-                        cast(
-                            Any,
-                            {
-                                "iteration": iteration_count,
-                                "feedback_file": feedback_file,
-                                "recommendation": feedback.get(
-                                    "iteration_recommendation"
-                                ),
-                                "critical_issues": len(
-                                    feedback.get("critical_issues", [])
-                                ),
-                                "reason": feedback.get("iteration_reason"),
-                            },
-                        ),
+                        {
+                            "iteration": iteration_count,
+                            "feedback_file": feedback_file,
+                            "recommendation": feedback.get("iteration_recommendation"),
+                            "critical_issues": len(feedback.get("critical_issues", [])),
+                            "reason": feedback.get("iteration_reason"),
+                        },
                     )
                     # Also log as milestone for visibility
                     recommendation = feedback.get("iteration_recommendation", "unknown")
@@ -423,16 +405,13 @@ class AnalysisPipeline:
                         logger.log_event(
                             "analysis_accepted",
                             "Pipeline",
-                            cast(
-                                Any,
-                                {
-                                    "iteration": iteration_count,
-                                    "recommendation": feedback.get(
-                                        "iteration_recommendation"
-                                    ),
-                                    "reason": feedback.get("iteration_reason"),
-                                },
-                            ),
+                            {
+                                "iteration": iteration_count,
+                                "recommendation": feedback.get(
+                                    "iteration_recommendation"
+                                ),
+                                "reason": feedback.get("iteration_reason"),
+                            },
                         )
                         logger.log_milestone(
                             "Analysis accepted", f"After {iteration_count} iteration(s)"
@@ -443,14 +422,11 @@ class AnalysisPipeline:
                         logger.log_event(
                             "analysis_rejected",
                             "Pipeline",
-                            cast(
-                                Any,
-                                {
-                                    "iteration": iteration_count,
-                                    "must_continue": iteration_count < max_iterations,
-                                    "reason": feedback.get("iteration_reason"),
-                                },
-                            ),
+                            {
+                                "iteration": iteration_count,
+                                "must_continue": iteration_count < max_iterations,
+                                "reason": feedback.get("iteration_reason"),
+                            },
                         )
 
             # Prepare final result
@@ -518,19 +494,18 @@ class AnalysisPipeline:
                 logger.log_event(
                     "pipeline_complete",
                     "Pipeline",
-                    cast(
-                        Any,
-                        {
-                            "success": True,
-                            "iterations_used": iteration_count,
-                            "final_recommendation": feedback_history[-1].get(
-                                "iteration_recommendation"
-                            )
-                            if feedback_history
-                            else None,
-                            "file_path": result.get("file_path"),
-                        },
-                    ),
+                    {
+                        "success": True,
+                        "iterations_used": iteration_count,
+                        "final_recommendation": str(
+                            feedback_history[-1].get("iteration_recommendation")
+                        )
+                        if feedback_history
+                        else None,
+                        "file_path": str(result.get("file_path"))
+                        if result.get("file_path")
+                        else None,
+                    },
                 )
 
             return cast(PipelineResult, cast(object, result))

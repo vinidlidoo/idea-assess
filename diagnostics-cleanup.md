@@ -83,9 +83,9 @@
 | Start | 143 | 143 | ✅ |
 | Phase 1 | 143 | 128 | ✅ |
 | Phase 2 | 128 | 100 | ✅ |
-| Phase 3 | 100 | 87 | ⏳ |
-| Phase 4 | - | - | - |
-| Phase 5 | - | - | - |
+| Phase 3 | 100 | 87 | ✅ |
+| Phase 4 | 87 | 69 | ✅ |
+| Phase 5 | 69 | - | ⏳ |
 | Phase 6 | - | - | - |
 
 ## Files to Focus On (by warning count)

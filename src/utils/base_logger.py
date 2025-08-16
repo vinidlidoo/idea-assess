@@ -6,7 +6,7 @@ import json
 import shutil
 from datetime import datetime
 from pathlib import Path
-from typing import TypedDict, TextIO, Any, cast
+from typing import TypedDict, TextIO, cast
 import logging
 import sys
 
@@ -40,9 +40,19 @@ class EventData(TypedDict, total=False):
     error: str | None
     attempting_fix: bool
     feedback_file: str
-    recommendation: Any
+    recommendation: str | None
     critical_issues: int
     improvements: int
+    max_iterations: int
+    has_feedback: bool
+    expected_file: str
+    falling_back_to: str
+    reason: str | None
+    must_continue: bool
+    iterations_used: int
+    final_recommendation: str | None
+    file_path: str | None
+    success: bool
 
 
 class LogMetrics(TypedDict, total=False):
@@ -285,7 +295,8 @@ class BaseStructuredLogger:
             recommendation = data.get("recommendation", "unknown")
             issues = data.get("critical_issues", 0)
             emoji = "✅" if recommendation == "accept" else "⚠️"
-            return f"- **[{time_str}]** {emoji} Review: {recommendation.upper()} ({issues} critical issues)\n"
+            rec_display = str(recommendation).upper() if recommendation else "UNKNOWN"
+            return f"- **[{time_str}]** {emoji} Review: {rec_display} ({issues} critical issues)\n"
         elif event_type == "iteration_complete":
             iteration = data.get("iteration", 0)
             return f"- **[{time_str}]** 🔄 Iteration {iteration} complete\n"
