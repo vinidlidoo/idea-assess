@@ -89,6 +89,13 @@ Examples:
     
     args = parser.parse_args()
     
+    # Extract typed values from args
+    idea: str = args.idea
+    debug: bool = args.debug
+    no_websearch: bool = args.no_websearch
+    with_review: bool = args.with_review
+    max_iterations: int = args.max_iterations
+    
     # Run the analysis
     print("\n" + "=" * 60)
     print("BUSINESS IDEA ANALYZER")
@@ -97,17 +104,17 @@ Examples:
     # Get configuration
     config = get_default_config()
     
-    if args.with_review:
+    if with_review:
         # Use the pipeline with reviewer feedback
-        print(f"\n🔄 Running analysis with reviewer feedback (max {args.max_iterations} iterations)...")
+        print(f"\n🔄 Running analysis with reviewer feedback (max {max_iterations} iterations)...")
         
         pipeline = AnalysisPipeline(config)
         
         result = await pipeline.run_analyst_reviewer_loop(
-            idea=args.idea,
-            max_iterations=args.max_iterations,
-            debug=args.debug,
-            use_websearch=not args.no_websearch
+            idea=idea,
+            max_iterations=max_iterations,
+            debug=debug,
+            use_websearch=not no_websearch
         )
         
         if result['success']:
@@ -145,10 +152,10 @@ Examples:
     else:
         # Use simple pipeline (analyst only)
         result = await SimplePipeline.run_analyst_only(
-            idea=args.idea,
+            idea=idea,
             config=config,
-            debug=args.debug,
-            use_websearch=not args.no_websearch
+            debug=debug,
+            use_websearch=not no_websearch
         )
         
         if result['success']:
