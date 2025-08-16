@@ -11,7 +11,7 @@
 
 ## High Priority (P1) - Core Functionality
 
-- [ ] **Refactor god method** - Break up `run_analyst_reviewer_loop` (200+ lines)
+- [x] **Refactor god method** - ✅ COMPLETED 2025-08-15 - Extracted 4 helper methods with 11 unit tests
 - [ ] **Implement proper error boundaries** - Add custom exception hierarchy with context
 - [x] **Add JSON schema validation** - ✅ COMPLETED 2025-08-15 - Validates and auto-fixes feedback
 - [ ] **Fix incorrect permission mode** - Change 'default' to 'allow' in SDK calls
@@ -25,6 +25,12 @@
 - [ ] Add progress indicators for long operations
 - [ ] Add utility to feed a list of ideas from a text file into the system
 - [ ] Consider adding timeout handling for virtual interior design tests (consistently timeout)
+
+## Papercuts & Minor Issues
+
+- [ ] Consider making iteration limit configurable (currently hardcoded to 3)
+- [ ] Add async parallel processing for multiple analyses
+- [ ] Improve error messages when feedback files are missing
 
 ## Remaining Items from Code Review Assessment
 
