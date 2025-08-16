@@ -384,14 +384,27 @@ class AnalysisPipeline:
                         {
                             "iteration": iteration_count,
                             "feedback_file": feedback_file,
-                            "recommendation": feedback.get("iteration_recommendation"),
-                            "critical_issues": len(feedback.get("critical_issues", [])),
-                            "reason": feedback.get("iteration_reason"),
+                            "recommendation": str(
+                                feedback.get("iteration_recommendation")
+                            )
+                            if feedback.get("iteration_recommendation")
+                            else None,
+                            "critical_issues": (
+                                lambda x: len(x) if isinstance(x, list) else 0
+                            )(feedback.get("critical_issues", [])),
+                            "reason": str(feedback.get("iteration_reason"))
+                            if feedback.get("iteration_reason")
+                            else None,
                         },
                     )
                     # Also log as milestone for visibility
                     recommendation = feedback.get("iteration_recommendation", "unknown")
-                    issues = len(feedback.get("critical_issues", []))
+                    critical_issues_raw = feedback.get("critical_issues", [])
+                    issues = (
+                        len(critical_issues_raw)
+                        if isinstance(critical_issues_raw, list)
+                        else 0
+                    )
                     logger.log_milestone(
                         f"Iteration {iteration_count} complete",
                         f"Recommendation: {recommendation}, Critical issues: {issues}",
@@ -407,10 +420,14 @@ class AnalysisPipeline:
                             "Pipeline",
                             {
                                 "iteration": iteration_count,
-                                "recommendation": feedback.get(
-                                    "iteration_recommendation"
-                                ),
-                                "reason": feedback.get("iteration_reason"),
+                                "recommendation": str(
+                                    feedback.get("iteration_recommendation")
+                                )
+                                if feedback.get("iteration_recommendation")
+                                else None,
+                                "reason": str(feedback.get("iteration_reason"))
+                                if feedback.get("iteration_reason")
+                                else None,
                             },
                         )
                         logger.log_milestone(
@@ -425,7 +442,9 @@ class AnalysisPipeline:
                             {
                                 "iteration": iteration_count,
                                 "must_continue": iteration_count < max_iterations,
-                                "reason": feedback.get("iteration_reason"),
+                                "reason": str(feedback.get("iteration_reason"))
+                                if feedback.get("iteration_reason")
+                                else None,
                             },
                         )
 

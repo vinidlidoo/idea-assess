@@ -1,7 +1,7 @@
 """Reviewer agent implementation that reads analysis from file."""
 
 import json
-from typing import override, Any
+from typing import override
 from pathlib import Path
 
 from claude_code_sdk import ClaudeSDKClient, ClaudeCodeOptions
@@ -259,7 +259,7 @@ class ReviewerAgent(BaseAgent):
             if feedback_file.exists():
                 # Read the feedback to verify and get metadata
                 with open(feedback_file, "r") as f:
-                    feedback_json: dict[str, Any] = json.load(f)
+                    feedback_json = json.load(f)
 
                 # Validate the feedback structure
                 validator = FeedbackValidator()
@@ -307,7 +307,10 @@ class ReviewerAgent(BaseAgent):
                 recommendation = feedback_json.get(
                     "iteration_recommendation", "unknown"
                 )
-                critical_count = len(feedback_json.get("critical_issues", []))
+                critical_issues = feedback_json.get("critical_issues", [])
+                critical_count = (
+                    len(critical_issues) if isinstance(critical_issues, list) else 0
+                )
 
                 if logger:
                     logger.log_event(
@@ -318,7 +321,9 @@ class ReviewerAgent(BaseAgent):
                             "feedback_file": str(feedback_file),
                             "recommendation": recommendation,
                             "critical_issues": critical_count,
-                            "improvements": len(feedback_json.get("improvements", [])),
+                            "improvements": len(feedback_json.get("improvements", []))
+                            if isinstance(feedback_json.get("improvements", []), list)
+                            else 0,
                         },
                     )
 
@@ -332,13 +337,17 @@ class ReviewerAgent(BaseAgent):
                         ),
                         "critical_issues_count": len(
                             feedback_json.get("critical_issues", [])
-                        ),
-                        "improvements_count": len(
-                            feedback_json.get("improvements", [])
-                        ),
+                        )
+                        if isinstance(feedback_json.get("critical_issues", []), list)
+                        else 0,
+                        "improvements_count": len(feedback_json.get("improvements", []))
+                        if isinstance(feedback_json.get("improvements", []), list)
+                        else 0,
                         "minor_suggestions_count": len(
                             feedback_json.get("minor_suggestions", [])
-                        ),
+                        )
+                        if isinstance(feedback_json.get("minor_suggestions", []), list)
+                        else 0,
                     },
                     success=True,
                 )
@@ -373,7 +382,7 @@ class FeedbackProcessor:
     """Utility class to process reviewer feedback and apply it to analyses."""
 
     @staticmethod
-    def load_feedback(feedback_file: str) -> FeedbackDict | dict[str, str]:
+    def load_feedback(feedback_file: str) -> FeedbackDict | dict[str, object]:
         """
         Load and validate JSON feedback from file.
 
@@ -385,7 +394,7 @@ class FeedbackProcessor:
         """
         try:
             with open(feedback_file, "r") as f:
-                feedback: dict[str, Any] = json.load(f)
+                feedback = json.load(f)
 
             # Validate the loaded feedback
             validator = FeedbackValidator()
@@ -407,7 +416,7 @@ class FeedbackProcessor:
 
     @staticmethod
     def should_continue_iteration(
-        feedback: FeedbackDict | dict[str, Any], iteration_count: int
+        feedback: FeedbackDict | dict[str, object], iteration_count: int
     ) -> bool:
         """
         Determine if another iteration is needed based on feedback.
@@ -428,7 +437,7 @@ class FeedbackProcessor:
         return recommendation == "reject"
 
     @staticmethod
-    def format_feedback_for_analyst(feedback: FeedbackDict | dict[str, Any]) -> str:
+    def format_feedback_for_analyst(feedback: FeedbackDict | dict[str, object]) -> str:
         """
         Format reviewer feedback into instructions for the analyst.
 
@@ -446,30 +455,42 @@ class FeedbackProcessor:
             instructions.append("")
 
         # Add critical issues that must be addressed
-        if feedback.get("critical_issues"):
+        critical_issues = feedback.get("critical_issues")
+        if isinstance(critical_issues, list):
             instructions.append("CRITICAL ISSUES TO ADDRESS:")
-            for issue in feedback["critical_issues"]:
-                instructions.append(f"- {issue['section']}: {issue['issue']}")
-                instructions.append(f"  Suggestion: {issue['suggestion']}")
+            for issue in critical_issues:
+                if isinstance(issue, dict):
+                    instructions.append(
+                        f"- {issue.get('section', 'N/A')}: {issue.get('issue', 'N/A')}"
+                    )
+                    instructions.append(
+                        f"  Suggestion: {issue.get('suggestion', 'N/A')}"
+                    )
             instructions.append("")
 
         # Add important improvements
-        if feedback.get("improvements"):
+        improvements = feedback.get("improvements")
+        if isinstance(improvements, list):
             instructions.append("IMPORTANT IMPROVEMENTS:")
-            for improvement in feedback["improvements"]:
-                instructions.append(
-                    f"- {improvement['section']}: {improvement['issue']}"
-                )
-                instructions.append(f"  Suggestion: {improvement['suggestion']}")
+            for improvement in improvements:
+                if isinstance(improvement, dict):
+                    instructions.append(
+                        f"- {improvement.get('section', 'N/A')}: {improvement.get('issue', 'N/A')}"
+                    )
+                    instructions.append(
+                        f"  Suggestion: {improvement.get('suggestion', 'N/A')}"
+                    )
             instructions.append("")
 
         # Add minor suggestions if no critical issues
-        if not feedback.get("critical_issues") and feedback.get("minor_suggestions"):
+        minor_suggestions = feedback.get("minor_suggestions")
+        if not feedback.get("critical_issues") and isinstance(minor_suggestions, list):
             instructions.append("MINOR ENHANCEMENTS:")
-            for suggestion in feedback["minor_suggestions"][:3]:  # Limit to top 3
-                instructions.append(
-                    f"- {suggestion['section']}: {suggestion['suggestion']}"
-                )
+            for suggestion in minor_suggestions[:3]:  # Limit to top 3
+                if isinstance(suggestion, dict):
+                    instructions.append(
+                        f"- {suggestion.get('section', 'N/A')}: {suggestion.get('suggestion', 'N/A')}"
+                    )
             instructions.append("")
 
         return "\n".join(instructions)
