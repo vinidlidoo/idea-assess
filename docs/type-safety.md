@@ -11,10 +11,10 @@ This codebase follows a **pragmatic type safety** approach that balances strict 
 3. **Type safety where it matters** - Public APIs, data validation, core logic
 4. **Dynamic typing where appropriate** - JSON, external data, SDK interfaces
 
-## Current State (2025-08-16)
+## Target State
 
-- **Errors**: 0 ✅
-- **Warnings**: 77 (84% reduction from 467)
+- **Errors**: 0 (zero tolerance)
+- **Warnings**: <100 (pragmatic acceptance)
 - **Type Checker**: basedpyright (strict mode)
 - **Linter**: ruff (for style and basic type issues)
 
@@ -22,7 +22,7 @@ This codebase follows a **pragmatic type safety** approach that balances strict 
 
 These patterns generate warnings that we consciously accept as pragmatic trade-offs:
 
-### 1. JSON Loading (20 warnings)
+### 1. JSON Loading
 
 ```python
 # json.load() returns Any - this is Python's design
@@ -32,7 +32,7 @@ feedback = json.load(f)
 **Why**: Full runtime validation would be complex and verbose.  
 **Mitigation**: Use validators immediately after loading, add isinstance checks.
 
-### 2. Dictionary Access on Dynamic Data (25 warnings)
+### 2. Dictionary Access on Dynamic Data
 
 ```python
 # Safe dictionary access with defaults
@@ -43,7 +43,7 @@ critical_issues = feedback.get("critical_issues", [])
 **Why**: Idiomatic Python for handling optional keys.  
 **Where**: Processing JSON responses, configuration, external data.
 
-### 3. Nested Data Iteration (15 warnings)
+### 3. Nested Data Iteration
 
 ```python
 # Iterating over dynamic JSON structures
@@ -54,7 +54,7 @@ for issue in feedback["critical_issues"]:
 **Why**: JSON data is inherently dynamic.  
 **Mitigation**: Type guards where critical, defaults for safety.
 
-### 4. Cast Through Object (8 warnings)
+### 4. Cast Through Object
 
 ```python
 # Bridge dynamic dict creation to TypedDict
@@ -64,7 +64,7 @@ return cast(PipelineResult, cast(object, result))
 **Why**: Converts runtime-built dictionaries to typed returns.  
 **When**: API boundaries, result aggregation.
 
-### 5. Lambda Type Narrowing (2 warnings)
+### 5. Lambda Type Narrowing
 
 ```python
 # Inline type checking for safety
@@ -76,7 +76,7 @@ return cast(PipelineResult, cast(object, result))
 **Why**: Elegant one-liner that handles all cases.  
 **Alternative**: Would require 3-4 lines with temporary variable.
 
-### 6. SDK/Runtime Introspection (7 warnings)
+### 6. SDK/Runtime Introspection
 
 ```python
 # Dynamic class loading
