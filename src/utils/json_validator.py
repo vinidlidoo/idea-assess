@@ -1,8 +1,8 @@
 """JSON schema validation for reviewer feedback."""
 
 import json
-from typing import Any
 from pathlib import Path
+from typing import Any
 from jsonschema import validate, ValidationError
 
 
@@ -92,7 +92,7 @@ class FeedbackValidator:
 
     def __init__(self):
         """Initialize the validator with the feedback schema."""
-        self.schema = REVIEWER_FEEDBACK_SCHEMA
+        self.schema: dict[str, Any] = REVIEWER_FEEDBACK_SCHEMA
 
     def validate(self, feedback: dict[str, Any]) -> tuple[bool, str | None]:
         """
@@ -158,11 +158,13 @@ class FeedbackValidator:
 
         # Fix iteration_recommendation values
         if "iteration_recommendation" in feedback:
-            rec = feedback["iteration_recommendation"].lower()
-            if rec in ["accept", "approve", "pass"]:
-                feedback["iteration_recommendation"] = "accept"
-            elif rec in ["reject", "fail", "revise"]:
-                feedback["iteration_recommendation"] = "reject"
+            rec_raw = feedback.get("iteration_recommendation", "")
+            if isinstance(rec_raw, str):
+                rec = rec_raw.lower()
+                if rec in ["accept", "approve", "pass"]:
+                    feedback["iteration_recommendation"] = "accept"
+                elif rec in ["reject", "fail", "revise"]:
+                    feedback["iteration_recommendation"] = "reject"
 
         # Ensure iteration_reason exists
         if "iteration_reason" not in feedback or not feedback["iteration_reason"]:

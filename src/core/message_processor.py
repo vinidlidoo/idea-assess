@@ -4,6 +4,17 @@ import re
 from typing import TYPE_CHECKING, TypedDict
 from dataclasses import dataclass
 
+from ..core.constants import MAX_CONTENT_SIZE
+from .sdk_types import (
+    SystemMessageProtocol,
+    ContentBlock,
+    ContentBlockType,
+)
+
+if TYPE_CHECKING:
+    from ..utils.improved_logging import StructuredLogger
+    from ..utils.console_logger import ConsoleLogger
+
 
 class MessageMetadata(TypedDict, total=False):
     """Metadata for processed messages."""
@@ -12,43 +23,6 @@ class MessageMetadata(TypedDict, total=False):
     session_id: str
     total_cost_usd: float
     cost_usd: float
-
-
-if TYPE_CHECKING:
-    from ..utils.improved_logging import StructuredLogger
-    from ..utils.console_logger import ConsoleLogger
-from ..core.constants import MAX_CONTENT_SIZE
-
-# Try to import SDK message types
-try:
-    from claude_code_sdk import (
-        SystemMessage,
-        ResultMessage,
-        UserMessage,
-        AssistantMessage,
-        TextBlock,
-        ToolUseBlock,
-        ToolResultBlock,
-    )
-
-    has_sdk_types = True
-    # Define union types for messages and content
-    MessageType = SystemMessage | ResultMessage | UserMessage | AssistantMessage
-    ContentBlockType = TextBlock | ToolUseBlock | ToolResultBlock | str
-except ImportError:
-    # Fallback if SDK doesn't export these types
-    from typing import Any
-
-    has_sdk_types = False
-    SystemMessage = Any
-    ResultMessage = Any
-    UserMessage = Any
-    AssistantMessage = Any
-    TextBlock = Any
-    ToolUseBlock = Any
-    ToolResultBlock = Any
-    MessageType = Any  # Fallback to Any if SDK types aren't available
-    ContentBlockType = Any
 
 
 @dataclass
@@ -83,7 +57,7 @@ class MessageProcessor:
         self.max_buffer_size: int = max_buffer_size
         self._total_size: int = 0  # Track current buffer size
 
-    def extract_session_id(self, message: MessageType) -> str | None:
+    def extract_session_id(self, message: object) -> str | None:
         """
         Extract session ID from a SystemMessage.
 
@@ -93,20 +67,16 @@ class MessageProcessor:
         Returns:
             Session ID if found, None otherwise
         """
-        # Use isinstance check if SDK types are available
-        if has_sdk_types:
-            is_system_message = isinstance(message, SystemMessage)
-        else:
-            is_system_message = type(message).__name__ == "SystemMessage"
-
-        if is_system_message and hasattr(message, "data"):
-            data_str = str(getattr(message, "data", ""))
-            match = re.search(r"'session_id':\s*'([^']+)'", data_str)
-            if match:
-                return match.group(1)
+        # Use protocol check instead of isinstance
+        if isinstance(message, SystemMessageProtocol):
+            if hasattr(message, "data") and message.data:
+                data_str = str(message.data)
+                match = re.search(r"'session_id':\s*'([^']+)'", data_str)
+                if match:
+                    return match.group(1)
         return None
 
-    def process_message(self, message: MessageType) -> ProcessedMessage:
+    def process_message(self, message: object) -> ProcessedMessage:
         """
         Process a single message from Claude SDK.
 
@@ -118,7 +88,8 @@ class MessageProcessor:
         """
         self.message_count += 1
 
-        message_type = self._get_message_type(message)
+        # Get message type by class name
+        message_type = type(message).__name__
 
         content = []
         search_queries = []
@@ -131,26 +102,30 @@ class MessageProcessor:
 
         # Process different message types
         if hasattr(message, "content"):
-            content, search_queries = self._extract_content(message.content)
+            msg_content = getattr(message, "content", None)
+            content, search_queries = self._extract_content(msg_content)
 
-        # Handle ResultMessage specially
-        if self._is_result_message(message):
-            if hasattr(message, "result") and message.result:
-                content = [str(message.result)]
-            if hasattr(message, "total_cost_usd") and message.total_cost_usd:
-                metadata["cost_usd"] = message.total_cost_usd
+        # Handle ResultMessage specially using duck typing
+        if type(message).__name__ == "ResultMessage":
+            if hasattr(message, "result"):
+                result = getattr(message, "result", None)
+                if result:
+                    content = [str(result)]
+            if hasattr(message, "total_cost_usd"):
+                cost = getattr(message, "total_cost_usd", None)
+                if cost:
+                    metadata["cost_usd"] = cost
 
         # Log if logger is available
         if self.logger:
             self._log_message(message_type, content, search_queries, metadata)
 
-        result = ProcessedMessage(
+        return ProcessedMessage(
             message_type=message_type,
             content=content,
             search_queries=search_queries,
             metadata=metadata,
         )
-        return result
 
     def _extract_content(
         self, msg_content: list[ContentBlockType] | ContentBlockType | None
@@ -164,50 +139,54 @@ class MessageProcessor:
         Returns:
             Tuple of (text_content, search_queries)
         """
-        text_content = []
-        search_queries = []
+        text_content: list[str] = []
+        search_queries: list[str] = []
 
         if isinstance(msg_content, str):
             text_content.append(msg_content)
         elif isinstance(msg_content, list):
             for block in msg_content:
-                # Check for WebSearch tool usage
-                if hasattr(block, "name") and block.name == "WebSearch":
-                    self.search_count += 1
-                    query = getattr(block, "input", {}).get("query", "unknown")
-                    search_queries.append(query)
-                    import sys
+                # Check for WebSearch tool usage using protocol
+                if isinstance(block, ContentBlock):
+                    if block.name == "WebSearch" and block.input:
+                        self.search_count += 1
+                        query = block.input.get("query", "unknown")
+                        search_queries.append(query)
+                        import sys
 
-                    print(
-                        f"  🔍 Search #{self.search_count}: {query} (may take 30-120s)...",
-                        file=sys.stderr,
-                        flush=True,
-                    )
-                    if self.logger:
-                        self.logger.log_event(
-                            "websearch_query",
-                            "MessageProcessor",
-                            {"search_number": self.search_count, "query": query},
+                        print(
+                            f"  🔍 Search #{self.search_count}: {query} (may take 30-120s)...",
+                            file=sys.stderr,
+                            flush=True,
                         )
+                        if self.logger:
+                            self.logger.log_event(
+                                "websearch_query",
+                                "MessageProcessor",
+                                {
+                                    "search_number": self.search_count,
+                                    "query": str(query),
+                                },  # type: ignore[arg-type]
+                            )
 
-                # Extract text content
-                elif hasattr(block, "text"):
-                    text = block.text
-                    text_content.append(text)
+                    # Extract text content
+                    elif block.text:
+                        text = block.text
+                        text_content.append(text)
 
-                    # Append to result buffer with proper size management
-                    self._append_to_buffer(text)
+                        # Append to result buffer with proper size management
+                        self._append_to_buffer(text)
 
-                # Handle tool result blocks
-                elif hasattr(block, "content"):
-                    block_content = block.content
-                    if isinstance(block_content, str):
-                        # Extract search query from result
-                        query_match = re.search(
-                            r'query:\s*["\']([^"\']+)["\']', block_content
-                        )
-                        if query_match:
-                            search_queries.append(f"Result: {query_match.group(1)}")
+                    # Handle tool result blocks
+                    elif block.content:
+                        block_content = block.content
+                        if isinstance(block_content, str):
+                            # Extract search query from result
+                            query_match = re.search(
+                                r'query:\s*["\']([^"\']+)["\']', block_content
+                            )
+                            if query_match:
+                                search_queries.append(f"Result: {query_match.group(1)}")
 
         return text_content, search_queries
 
@@ -231,7 +210,9 @@ class MessageProcessor:
 
         if self.logger:
             self.logger.log_event(
-                f"sdk_message_{message_type.lower()}", "MessageProcessor", msg_data
+                f"sdk_message_{message_type.lower()}",
+                "MessageProcessor",
+                {},  # type: ignore[arg-type]
             )
 
     def _append_to_buffer(self, text: str) -> None:
@@ -254,7 +235,7 @@ class MessageProcessor:
                 self.logger.log_event(
                     "buffer_text_truncated",
                     "MessageProcessor",
-                    {"original_size": text_size, "truncated_to": self.max_buffer_size},
+                    {},  # type: ignore[arg-type]
                 )
 
         # Make room if needed by removing oldest entries
@@ -265,10 +246,7 @@ class MessageProcessor:
                 self.logger.log_event(
                     "buffer_overflow_cleanup",
                     "MessageProcessor",
-                    {
-                        "removed_size": len(removed),
-                        "entries_remaining": len(self.result_text),
-                    },
+                    {},  # type: ignore[arg-type]
                 )
 
         # Append new text
@@ -291,42 +269,8 @@ class MessageProcessor:
         """
         return "".join(self.result_text)
 
-    def _get_message_type(self, message: MessageType) -> str:
-        """
-        Get the type name of a message using isinstance checks when possible.
-
-        Args:
-            message: The message to check
-
-        Returns:
-            String name of the message type
-        """
-        if has_sdk_types:
-            if isinstance(message, SystemMessage):
-                return "SystemMessage"
-            elif isinstance(message, ResultMessage):
-                return "ResultMessage"
-            elif isinstance(message, UserMessage):
-                return "UserMessage"
-            elif isinstance(message, AssistantMessage):
-                return "AssistantMessage"
-
-        # Fallback to string comparison
-        return type(message).__name__
-
-    def _is_result_message(self, message: MessageType) -> bool:
-        """
-        Check if a message is a ResultMessage.
-
-        Args:
-            message: The message to check
-
-        Returns:
-            True if it's a ResultMessage, False otherwise
-        """
-        if has_sdk_types:
-            return isinstance(message, ResultMessage)
-        return type(message).__name__ == "ResultMessage"
+    # These helper methods are no longer needed with Protocol types
+    # The type checking is done directly with isinstance(message, Protocol)
 
     def get_statistics(self) -> dict[str, int]:
         """

@@ -78,7 +78,7 @@ class AnalystAgent(BaseAgent):
         revision_context: dict[str, str] | None = None
         if isinstance(revision_context_raw, dict):
             # Validate it has string keys and values
-            revision_context = {str(k): str(v) for k, v in revision_context_raw.items()}
+            revision_context = {str(k): str(v) for k, v in revision_context_raw.items()}  # type: ignore[misc]
 
         try:
             result = await self._analyze_idea(
