@@ -35,30 +35,31 @@ class TestPipelineHelpers:
     
     def test_initialize_logging_debug_mode(self, pipeline):
         """Test _initialize_logging in debug mode."""
-        with patch('src.core.pipeline.StructuredLogger') as mock_logger_class:
-            mock_logger = MagicMock()
-            mock_logger_class.return_value = mock_logger
-            
-            logger, run_id, slug = pipeline._initialize_logging(
-                "Test Business Idea", debug=True, max_iterations=3, use_websearch=True
-            )
-            
-            # Verify logger was created
-            assert logger == mock_logger
-            mock_logger_class.assert_called_once()
-            
-            # Verify slug creation
-            assert slug == "test-business-idea"
-            
-            # Verify run_id format (YYYYMMDD_HHMMSS)
-            assert len(run_id) == 15
-            assert run_id[8] == '_'
-            
-            # Verify logging calls
-            mock_logger.log_milestone.assert_called_once_with(
-                "Pipeline started", "Max iterations: 3"
-            )
-            mock_logger.log_event.assert_called_once()
+        with patch.dict('os.environ', {'TEST_HARNESS_RUN': ''}, clear=False):
+            with patch('src.core.pipeline.StructuredLogger') as mock_logger_class:
+                mock_logger = MagicMock()
+                mock_logger_class.return_value = mock_logger
+                
+                logger, run_id, slug = pipeline._initialize_logging(
+                    "Test Business Idea", debug=True, max_iterations=3, use_websearch=True
+                )
+                
+                # Verify logger was created
+                assert logger == mock_logger
+                mock_logger_class.assert_called_once()
+                
+                # Verify slug creation
+                assert slug == "test-business-idea"
+                
+                # Verify run_id format (YYYYMMDD_HHMMSS)
+                assert len(run_id) == 15
+                assert run_id[8] == '_'
+                
+                # Verify logging calls
+                mock_logger.log_milestone.assert_called_once_with(
+                    "Pipeline started", "Max iterations: 3"
+                )
+                mock_logger.log_event.assert_called_once()
     
     def test_initialize_logging_production_mode(self, pipeline):
         """Test _initialize_logging in production mode (no debug)."""

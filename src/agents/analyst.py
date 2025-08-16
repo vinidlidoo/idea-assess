@@ -186,7 +186,7 @@ class AnalystAgent(BaseAgent):
             )
             
             # Load and format resource constraints template
-            resource_template = load_prompt("analyst_resources.md", Path("config/prompts"))
+            resource_template = load_prompt("analyst_resources.md", self.config.prompts_dir)
             resource_note = resource_template.format(
                 max_turns=self.config.max_turns,
                 max_websearches=self.config.max_websearches if use_websearch else 0
@@ -195,7 +195,7 @@ class AnalystAgent(BaseAgent):
             # Build user prompt based on whether this is a revision
             if revision_context:
                 # Load revision-specific user prompt
-                revision_template = load_prompt("analyst_user_revision.md", Path("config/prompts"))
+                revision_template = load_prompt("analyst_user_revision.md", self.config.prompts_dir)
                 user_prompt = revision_template.format(
                     idea=idea,
                     previous_analysis_file=revision_context['previous_analysis_file'],
@@ -205,7 +205,7 @@ class AnalystAgent(BaseAgent):
                 )
             else:
                 # Load and format standard user prompt template
-                user_template = load_prompt("analyst_user.md", Path("config/prompts"))
+                user_template = load_prompt("analyst_user.md", self.config.prompts_dir)
                 user_prompt = user_template.format(
                     idea=idea,
                     resource_note=resource_note,

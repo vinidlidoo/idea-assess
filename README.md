@@ -2,6 +2,15 @@
 
 AI-powered business idea evaluation system using Claude SDK and MCP tools.
 
+## Overview
+
+This system transforms one-liner business ideas into comprehensive market analyses through a multi-agent pipeline:
+
+1. **Analyst Agent** - Expands ideas into full business analyses with market research
+2. **Reviewer Agent** - Provides feedback and quality improvements
+3. **Judge Agent** (Coming Soon) - Grades analyses on 7 evaluation criteria
+4. **Synthesizer Agent** (Coming Soon) - Creates comparative reports across multiple ideas
+
 ## Setup
 
 1. **Install dependencies:**
@@ -9,92 +18,150 @@ AI-powered business idea evaluation system using Claude SDK and MCP tools.
    ```bash
    python -m venv .venv
    source .venv/bin/activate
-   pip install -r requirements.txt
+   uv pip install -r requirements.txt
    ```
 
-2. **Configure Claude Code CLI:**
-   - Ensure you're logged into Claude Code: `claude login`
-   - The SDK uses your Claude Code authentication
+2. **Configure API Key:**
+   - Get API key from [console.anthropic.com](https://console.anthropic.com)
+   - Set environment variable: `export ANTHROPIC_API_KEY=your-key-here`
 
 ## Usage
 
 ### Basic Analysis
 
 ```bash
-python src/cli.py "Your business idea here"
+python src/cli.py analyze "Your business idea here"
 ```
 
 Example:
 
 ```bash
-python src/cli.py "AI-powered fitness app for seniors with mobility limitations"
+python src/cli.py analyze "AI-powered fitness app for seniors"
 ```
 
-### With Review Feedback
+### With Reviewer Feedback Loop
 
 ```bash
-python src/cli.py "Your idea" --with-review --max-iterations 2
+python src/cli.py analyze "Your idea" --with-review --max-iterations 3
 ```
 
 ### Debug Mode
 
-To enable detailed logging:
+Enable detailed logging:
 
 ```bash
-python src/cli.py "Your idea" --debug
+python src/cli.py analyze "Your idea" --debug
 ```
 
-Logs are saved to `logs/runs/` with structured format (summary.md, events.jsonl, metrics.json)
+### Disable WebSearch (Faster Testing)
 
-## Important Notes
+```bash
+python src/cli.py analyze "Your idea" --no-websearch
+```
 
-### WebSearch Performance
-
-- WebSearch operations via SDK take 30-120 seconds each
-- This is normal behavior - the script will wait patiently
-- Run directly in terminal (not through other tools) to avoid timeouts
-- Total analysis may take 3-5 minutes depending on searches performed
-- Disable with `--no-websearch` for faster testing
-
-### Logging
-
-- Production logs: `logs/runs/` - Organized by run with structured format
-- Test logs: `logs/tests/` - Test harness output with structured logs
-- Archive: `logs/archive/` - Old logs (auto-archived after 10 runs)
-- Each run creates: summary.md, events.jsonl, metrics.json, debug.log
-
-### Output
-
-Analyses are saved to:
-
-- `analyses/{idea-slug}/analysis_{timestamp}.md`
-- Latest analysis is symlinked to `analysis.md`
-
-## Project Structure
+## Output Structure
 
 ```text
-idea-assess/
-├── src/
-│   └── analyze.py          # Main analyzer script
-├── config/
-│   └── prompts/           # Agent prompt templates
-├── analyses/              # Generated analyses
-├── logs/                  # Debug logs (with --debug flag)
-└── test_ideas.txt         # Sample ideas for testing
+analyses/
+└── {idea-slug}/
+    ├── analysis.md              # Final analysis
+    ├── reviewer_feedback.json   # Latest feedback
+    ├── metadata.json           # Run metadata
+    └── iterations/             # Iteration history
+        ├── iteration_1.md
+        ├── iteration_2.md
+        └── reviewer_feedback_iteration_1.json
 ```
 
-## Development
+## Architecture
 
-See `docs/` for detailed documentation about the architecture and implementation.
+### Core Components
 
-### Key Files
+- **Pipeline** (`src/core/pipeline.py`) - Orchestrates agent workflow
+- **BaseAgent** (`src/core/agent_base.py`) - Abstract base for all agents
+- **Message Processor** - Handles streaming responses with memory management
+- **Archive Manager** - Maintains analysis history with automatic rotation
 
-- `requirements.md` - Full project requirements
-- `implementation-plan.md` - Phased development plan
-- `docs/websearch-timeout-investigation.md` - WebSearch performance analysis
+### Agents
 
-## Phase 1 Status: ✅ Complete
+- **AnalystAgent** (`src/agents/analyst.py`) - Market research and analysis
+- **ReviewerAgent** (`src/agents/reviewer.py`) - Quality assessment and feedback
+- **Judge** (Phase 3) - Grading and evaluation
+- **Synthesizer** (Phase 4) - Comparative reporting
 
-- Working Analyst agent with WebSearch
-- Debug logging capability
-- Proper handling of slow WebSearch operations
+### Key Features
+
+- **File-based communication** between agents for reliability
+- **Iterative refinement** with configurable max iterations
+- **Structured logging** with JSON events and metrics
+- **Automatic archiving** of previous analyses
+- **WebSearch integration** for real-time market data
+
+## Development Status
+
+### ✅ Phase 1: Analyst Agent (Complete)
+
+- Single-agent analysis with WebSearch
+- Basic file output structure
+
+### ✅ Phase 2: Reviewer Feedback Loop (Complete)
+
+- Multi-iteration refinement
+- File-based agent communication
+- Comprehensive test coverage
+- All critical bugs fixed
+
+### 🚧 Phase 3: Judge Evaluation (Next)
+
+- Letter grade assessment (A-D)
+- 7 evaluation criteria
+- Structured scoring
+
+### 📅 Phase 4: Synthesizer Reports (Planned)
+
+- Comparative analysis across ideas
+- Batch processing support
+
+## Testing
+
+```bash
+# Run all tests
+pytest
+
+# Run unit tests only
+pytest tests/unit/
+
+# Run integration tests
+pytest tests/integration/
+
+# Run with coverage
+pytest --cov=src --cov-report=html
+```
+
+## Performance Notes
+
+- **WebSearch**: 30-120 seconds per search (normal SDK behavior)
+- **Full Analysis**: 2-5 minutes depending on iterations
+- **Memory**: Efficient streaming with rolling buffer implementation
+- **Concurrency**: Single-threaded for reliability
+
+## Documentation
+
+- `requirements.md` - Complete project requirements
+- `implementation-plan.md` - Phased development roadmap
+- `CLAUDE.md` - Project context and conventions
+- `session-logs/` - Detailed development history
+- `TODO.md` - Current task tracking
+
+## Contributing
+
+See session logs for development patterns and conventions. Key principles:
+
+1. File-based communication between agents
+2. Comprehensive error handling
+3. Structured logging for debugging
+4. Test coverage for new features
+
+## License
+
+[License information if applicable]
