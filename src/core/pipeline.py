@@ -42,28 +42,23 @@ class AnalysisPipeline:
         """
         self.agents[name] = agent
     
-    async def run_analyst_reviewer_loop(
-        self,
-        idea: str,
-        max_iterations: int = 3,
-        debug: bool = False,
-        use_websearch: bool = True
-    ) -> dict[str, Any]:
+    # Helper methods for pipeline refactoring
+    def _initialize_logging(self, idea: str, debug: bool, max_iterations: int = 3, 
+                           use_websearch: bool = True) -> tuple[Optional[StructuredLogger], str, str]:
         """
-        Run the analyst-reviewer feedback loop using file-based communication.
+        Initialize logging for the pipeline run.
         
         Args:
-            idea: Business idea to analyze
+            idea: Business idea being analyzed
+            debug: Whether debug logging is enabled
             max_iterations: Maximum number of iterations
-            debug: Enable debug logging
-            use_websearch: Enable WebSearch for analyst
+            use_websearch: Whether WebSearch is enabled
             
         Returns:
-            Dictionary containing final analysis and metadata
+            Tuple of (logger, run_id, slug)
         """
-        # Setup structured logging
         import os
-        import sys
+        from datetime import datetime
         
         run_id = datetime.now().strftime('%Y%m%d_%H%M%S')
         slug = create_slug(idea)
@@ -83,11 +78,20 @@ class AnalysisPipeline:
                 "use_websearch": use_websearch
             })
         
-        # Initialize agents
-        analyst = AnalystAgent(self.config)
-        reviewer = ReviewerAgent(self.config)
+        return logger, run_id, slug
+    
+    def _setup_directories(self, slug: str, debug: bool) -> tuple[Path, Path]:
+        """
+        Setup directories for the analysis.
         
-        # Setup file paths (slug already created above)
+        Args:
+            slug: Slugified idea name
+            debug: Whether in debug mode
+            
+        Returns:
+            Tuple of (analysis_dir, iterations_dir)
+        """
+        # Setup file paths
         analysis_dir = Path("analyses") / slug
         analysis_dir.mkdir(parents=True, exist_ok=True)
         
@@ -98,6 +102,108 @@ class AnalysisPipeline:
         # Create iterations directory for this run
         iterations_dir = analysis_dir / "iterations"
         iterations_dir.mkdir(exist_ok=True)
+        
+        return analysis_dir, iterations_dir
+    
+    def _find_feedback_file(self, iterations_dir: Path, iteration_count: int, 
+                           analysis_dir: Path, logger: Optional[StructuredLogger]) -> Optional[Path]:
+        """
+        Find the appropriate feedback file for the current iteration.
+        
+        Args:
+            iterations_dir: Directory containing iteration files
+            iteration_count: Current iteration number
+            analysis_dir: Main analysis directory
+            logger: Optional logger for warnings
+            
+        Returns:
+            Path to feedback file if found, None otherwise
+        """
+        # Look for the previous iteration's feedback
+        # The reviewer creates files named reviewer_feedback_iteration_{n}.json
+        latest_feedback_file = iterations_dir / f"reviewer_feedback_iteration_{iteration_count-1}.json"
+        
+        if not latest_feedback_file.exists():
+            # Log warning about missing file before fallback
+            if logger:
+                logger.log_event("feedback_file_missing", "Pipeline", {
+                    "expected_file": str(latest_feedback_file),
+                    "iteration": iteration_count,
+                    "falling_back_to": str(analysis_dir / "reviewer_feedback.json")
+                })
+            # Fallback to main feedback file
+            latest_feedback_file = analysis_dir / "reviewer_feedback.json"
+            if not latest_feedback_file.exists():
+                # Critical error - no feedback available for revision
+                if logger:
+                    logger.log_error(f"No feedback file found for iteration {iteration_count}", "Pipeline")
+                return None
+        
+        return latest_feedback_file
+    
+    def _save_analysis_files(self, analysis: str, iteration_count: int,
+                           analysis_dir: Path, iterations_dir: Path,
+                           logger: Optional[StructuredLogger]) -> Path:
+        """
+        Save analysis to both iteration file and main file.
+        
+        Args:
+            analysis: Analysis content to save
+            iteration_count: Current iteration number
+            analysis_dir: Main analysis directory
+            iterations_dir: Iterations directory
+            logger: Optional logger
+            
+        Returns:
+            Path to the saved iteration file
+        """
+        # Save iteration in iterations directory
+        iteration_file = iterations_dir / f"iteration_{iteration_count}.md"
+        with open(iteration_file, 'w') as f:
+            f.write(analysis)
+        
+        # Also save/update main analysis.md (overwritten each iteration)
+        main_analysis = analysis_dir / "analysis.md"
+        with open(main_analysis, 'w') as f:
+            f.write(analysis)
+        
+        if logger:
+            logger.log_event("analysis_saved", "Pipeline", {
+                "iteration": iteration_count,
+                "file": str(iteration_file),
+                "size": len(analysis)
+            })
+        
+        return iteration_file
+    
+    async def run_analyst_reviewer_loop(
+        self,
+        idea: str,
+        max_iterations: int = 3,
+        debug: bool = False,
+        use_websearch: bool = True
+    ) -> dict[str, Any]:
+        """
+        Run the analyst-reviewer feedback loop using file-based communication.
+        
+        Args:
+            idea: Business idea to analyze
+            max_iterations: Maximum number of iterations
+            debug: Enable debug logging
+            use_websearch: Enable WebSearch for analyst
+            
+        Returns:
+            Dictionary containing final analysis and metadata
+        """
+        # Initialize logging
+        logger, run_id, slug = self._initialize_logging(idea, debug, max_iterations, use_websearch)
+        
+        # Initialize agents
+        analyst = AnalystAgent(self.config)
+        reviewer = ReviewerAgent(self.config)
+        
+        # Setup directories
+        analysis_dir, iterations_dir = self._setup_directories(slug, debug)
         
         # Track iterations
         iteration_count = 0
@@ -126,32 +232,20 @@ class AnalysisPipeline:
                     # Pass the ORIGINAL idea, not revision instructions
                     analyst_input = idea
                     
-                    # Look for the previous iteration's feedback
-                    # The reviewer creates files named reviewer_feedback_iteration_{n}.json
-                    latest_feedback_file = iterations_dir / f"reviewer_feedback_iteration_{iteration_count-1}.json"
-                    if not latest_feedback_file.exists():
-                        # Log warning about missing file before fallback
-                        if logger:
-                            logger.log_event("feedback_file_missing", "Pipeline", {
-                                "expected_file": str(latest_feedback_file),
-                                "iteration": iteration_count,
-                                "falling_back_to": str(analysis_dir / "reviewer_feedback.json")
-                            })
-                        # Fallback to main feedback file
-                        latest_feedback_file = analysis_dir / "reviewer_feedback.json"
-                        if not latest_feedback_file.exists():
-                            # Critical error - no feedback available for revision
-                            error_msg = f"No feedback file found for iteration {iteration_count}"
-                            if logger:
-                                logger.log_error(error_msg, "Pipeline")
-                            return {
-                                "success": False,
-                                "error": error_msg,
-                                "idea": idea,
-                                "slug": slug,
-                                "iteration_count": iteration_count,
-                                "timestamp": datetime.now().isoformat()
-                            }
+                    # Find the appropriate feedback file
+                    latest_feedback_file = self._find_feedback_file(
+                        iterations_dir, iteration_count, analysis_dir, logger
+                    )
+                    if not latest_feedback_file:
+                        # No feedback file found - return error
+                        return {
+                            "success": False,
+                            "error": f"No feedback file found for iteration {iteration_count}",
+                            "idea": idea,
+                            "slug": slug,
+                            "iteration_count": iteration_count,
+                            "timestamp": datetime.now().isoformat()
+                        }
                     
                     # Pass revision context via kwargs
                     revision_context = {
@@ -187,25 +281,11 @@ class AnalysisPipeline:
                 
                 current_analysis = analyst_result.content
                 
-                # Save analysis to file for reviewer
-                # Save iteration in iterations directory
-                iteration_file = iterations_dir / f"iteration_{iteration_count}.md"
-                with open(iteration_file, 'w') as f:
-                    f.write(current_analysis)
-                
-                # Also save/update main analysis.md (overwritten each iteration)
-                main_analysis = analysis_dir / "analysis.md"
-                with open(main_analysis, 'w') as f:
-                    f.write(current_analysis)
-                    
+                # Save analysis to files
+                iteration_file = self._save_analysis_files(
+                    current_analysis, iteration_count, analysis_dir, iterations_dir, logger
+                )
                 current_analysis_file = str(iteration_file)
-                
-                if logger:
-                    logger.log_event("analysis_saved", "Pipeline", {
-                        "iteration": iteration_count,
-                        "file": str(iteration_file),
-                        "size": len(current_analysis)
-                    })
                 
                 # Save iteration result
                 iteration_results.append({

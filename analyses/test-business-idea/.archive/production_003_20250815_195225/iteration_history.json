@@ -1,0 +1,19 @@
+{
+  "iterations": [
+    {
+      "iteration": 1,
+      "analysis_file": "analyses/test-business-idea/iterations/iteration_1.md",
+      "analysis_length": 41,
+      "metadata": {
+        "duration": 1.0
+      }
+    }
+  ],
+  "feedback": [
+    {
+      "error": "Failed to load feedback: [Errno 2] No such file or directory: '{\"decision\": \"reject\", \"feedback\": {\"positive\": [\"Good start\"], \"critical\": [\"Too short\", \"Missing market analysis\"], \"suggestions\": [\"Add more detail\", \"Include competition\"]}}'"
+    }
+  ],
+  "final_status": "accepted",
+  "idea": "Test business idea"
+}

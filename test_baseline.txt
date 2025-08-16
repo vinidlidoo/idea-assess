@@ -1,0 +1,43 @@
+============================= test session starts ==============================
+platform darwin -- Python 3.12.1, pytest-8.4.1, pluggy-1.6.0 -- /Users/vincent/Projects/recursive-experiments/idea-assess/.venv/bin/python
+cachedir: .pytest_cache
+rootdir: /Users/vincent/Projects/recursive-experiments/idea-assess
+configfile: pytest.ini
+plugins: asyncio-1.1.0, anyio-4.10.0, mock-3.14.1
+asyncio: mode=Mode.STRICT, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collecting ... collected 5 items
+
+tests/integration/test_pipeline.py::TestPipelineIntegration::test_basic_pipeline_flow PASSED [ 20%]
+tests/integration/test_pipeline.py::TestPipelineIntegration::test_pipeline_with_reviewer_rejection FAILED [ 40%]
+tests/integration/test_pipeline.py::TestPipelineIntegration::test_pipeline_max_iterations FAILED [ 60%]
+tests/integration/test_pipeline.py::TestPipelineIntegration::test_pipeline_error_handling PASSED [ 80%]
+tests/integration/test_pipeline.py::TestPipelineIntegration::test_pipeline_file_creation FAILED [100%]
+
+=================================== FAILURES ===================================
+________ TestPipelineIntegration.test_pipeline_with_reviewer_rejection _________
+tests/integration/test_pipeline.py:154: in test_pipeline_with_reviewer_rejection
+    assert result["iteration_count"] == 2
+E   assert 1 == 2
+_____________ TestPipelineIntegration.test_pipeline_max_iterations _____________
+tests/integration/test_pipeline.py:205: in test_pipeline_max_iterations
+    assert result["iteration_count"] == 2
+E   assert 1 == 2
+_____________ TestPipelineIntegration.test_pipeline_file_creation ______________
+src/agents/reviewer.py:72: in _validate_analysis_path
+    path.relative_to(analyses_dir)
+/Library/Frameworks/Python.framework/Versions/3.12/lib/python3.12/pathlib.py:682: in relative_to
+    raise ValueError(f"{str(self)!r} is not in the subpath of {str(other)!r}")
+E   ValueError: '/private/var/folders/wk/vt59_rdj0ds9_xfnrt4889f00000gn/T/pytest-of-vincent/pytest-6/test_pipeline_file_creation0/analyses/test-business-idea' is not in the subpath of '/Users/vincent/Projects/recursive-experiments/idea-assess/analyses'
+
+The above exception was the direct cause of the following exception:
+tests/integration/test_pipeline.py:273: in test_pipeline_file_creation
+    validated_path = reviewer._validate_analysis_path(str(idea_dir))
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/agents/reviewer.py:75: in _validate_analysis_path
+    raise ValueError(f"Invalid path: must be within analyses directory") from e
+E   ValueError: Invalid path: must be within analyses directory
+=========================== short test summary info ============================
+FAILED tests/integration/test_pipeline.py::TestPipelineIntegration::test_pipeline_with_reviewer_rejection - assert 1 == 2
+FAILED tests/integration/test_pipeline.py::TestPipelineIntegration::test_pipeline_max_iterations - assert 1 == 2
+FAILED tests/integration/test_pipeline.py::TestPipelineIntegration::test_pipeline_file_creation - ValueError: Invalid path: must be within analyses directory
+========================= 3 failed, 2 passed in 0.31s ==========================
