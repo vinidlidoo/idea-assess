@@ -3,7 +3,7 @@
 import shutil
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import List, Optional
+from typing import Any
 import re
 
 
@@ -11,7 +11,7 @@ class CleanupManager:
     """Manages cleanup of test logs and redundant files."""
     
     @staticmethod
-    def clean_analysis_directory(analysis_dir: Path) -> dict:
+    def clean_analysis_directory(analysis_dir: Path) -> dict[str, Any]:
         """
         Clean up an analysis directory to match the expected structure.
         
@@ -73,7 +73,7 @@ class CleanupManager:
                         # Move to iterations directory
                         target = iterations_dir / file.name
                         if not target.exists():
-                            shutil.move(str(file), str(target))
+                            _ = shutil.move(str(file), str(target))
                             stats["files_moved"] += 1
                         else:
                             # Duplicate - delete the root one
@@ -86,7 +86,7 @@ class CleanupManager:
                     # This looks like an old timestamped file
                     archive_dir = analysis_dir / ".archive" / "migrated_old_files"
                     archive_dir.mkdir(parents=True, exist_ok=True)
-                    shutil.move(str(file), str(archive_dir / file.name))
+                    _ = shutil.move(str(file), str(archive_dir / file.name))
                     stats["files_moved"] += 1
         
         # Clean up duplicate feedback files
@@ -95,13 +95,13 @@ class CleanupManager:
         iter_feedback = iterations_dir / "reviewer_feedback_iteration_1.json"
         if feedback_file.exists() and iter_feedback.exists():
             # Keep the one in iterations/, update the root
-            shutil.copy2(str(iter_feedback), str(feedback_file))
+            _ = shutil.copy2(str(iter_feedback), str(feedback_file))
             stats["duplicates_removed"] += 1
         
         return stats
     
     @staticmethod
-    def organize_test_logs(logs_dir: Path, max_logs_per_test: int = 3) -> dict:
+    def organize_test_logs(logs_dir: Path, max_logs_per_test: int = 3) -> dict[str, Any]:
         """
         Organize and archive test logs, keeping only recent ones.
         
@@ -145,8 +145,8 @@ class CleanupManager:
             if len(log_files) > max_logs_per_test:
                 stats["tests_organized"] += 1
                 
-                # Keep the newest N logs
-                to_keep = log_files[:max_logs_per_test]
+                # Keep the newest N logs  
+                # to_keep = log_files[:max_logs_per_test]  # Currently unused but may be needed for future logging
                 to_archive = log_files[max_logs_per_test:]
                 
                 # Archive old logs
@@ -155,7 +155,7 @@ class CleanupManager:
                 
                 for old_log in to_archive:
                     target = test_archive / old_log.name
-                    shutil.move(str(old_log), str(target))
+                    _ = shutil.move(str(old_log), str(target))
                     stats["files_archived"] += 1
         
         # Clean up archives older than 7 days
@@ -170,7 +170,7 @@ class CleanupManager:
         return stats
     
     @staticmethod
-    def clean_all_analyses(base_dir: Path) -> dict:
+    def clean_all_analyses(base_dir: Path) -> dict[str, Any]:
         """
         Clean all analysis directories.
         

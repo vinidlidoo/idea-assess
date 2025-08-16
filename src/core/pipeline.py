@@ -1,19 +1,15 @@
 """Pipeline orchestrator that uses file-based communication between agents."""
 
-import asyncio
 import json
-from typing import Any, Optional
+from typing import Any
 from datetime import datetime
 from pathlib import Path
 
 from ..agents import AnalystAgent
 from ..agents.reviewer import ReviewerAgent, FeedbackProcessor
-from ..core.agent_base import AgentResult
 from ..core.config import AnalysisConfig
 from ..utils.improved_logging import StructuredLogger
-from ..utils.file_operations import save_analysis, create_or_update_symlink
 from ..utils.text_processing import create_slug
-from ..utils.file_operations import load_prompt
 from ..utils.archive_manager import ArchiveManager
 
 
@@ -44,7 +40,7 @@ class AnalysisPipeline:
     
     # Helper methods for pipeline refactoring
     def _initialize_logging(self, idea: str, debug: bool, max_iterations: int = 3, 
-                           use_websearch: bool = True) -> tuple[Optional[StructuredLogger], str, str]:
+                           use_websearch: bool = True) -> tuple[StructuredLogger | None, str, str]:
         """
         Initialize logging for the pipeline run.
         
@@ -97,7 +93,7 @@ class AnalysisPipeline:
         
         # Archive existing files before starting new run
         run_type = "test" if debug else "production"
-        self.archive_manager.archive_current_analysis(analysis_dir, run_type=run_type)
+        _ = self.archive_manager.archive_current_analysis(analysis_dir, run_type=run_type)
         
         # Create iterations directory for this run
         iterations_dir = analysis_dir / "iterations"
@@ -106,7 +102,7 @@ class AnalysisPipeline:
         return analysis_dir, iterations_dir
     
     def _find_feedback_file(self, iterations_dir: Path, iteration_count: int, 
-                           analysis_dir: Path, logger: Optional[StructuredLogger]) -> Optional[Path]:
+                           analysis_dir: Path, logger: StructuredLogger | None) -> Path | None:
         """
         Find the appropriate feedback file for the current iteration.
         
@@ -143,7 +139,7 @@ class AnalysisPipeline:
     
     def _save_analysis_files(self, analysis: str, iteration_count: int,
                            analysis_dir: Path, iterations_dir: Path,
-                           logger: Optional[StructuredLogger]) -> Path:
+                           logger: StructuredLogger | None) -> Path:
         """
         Save analysis to both iteration file and main file.
         
@@ -160,12 +156,12 @@ class AnalysisPipeline:
         # Save iteration in iterations directory
         iteration_file = iterations_dir / f"iteration_{iteration_count}.md"
         with open(iteration_file, 'w') as f:
-            f.write(analysis)
+            _ = f.write(analysis)
         
         # Also save/update main analysis.md (overwritten each iteration)
         main_analysis = analysis_dir / "analysis.md"
         with open(main_analysis, 'w') as f:
-            f.write(analysis)
+            _ = f.write(analysis)
         
         if logger:
             logger.log_event("analysis_saved", "Pipeline", {
@@ -447,11 +443,18 @@ class AnalysisPipeline:
         finally:
             if logger:
                 # Finalize the logger with success status and result
-                success = 'result' in locals() and result.get('success', False)
-                logger.finalize(
-                    success=success,
-                    result=result if 'result' in locals() else None
-                )
+                final_result = locals().get('result', None)
+                if final_result is not None:
+                    success = bool(final_result.get('success', False))
+                    logger.finalize(
+                        success=success,
+                        result=final_result
+                    )
+                else:
+                    logger.finalize(
+                        success=False,
+                        result=None
+                    )
 
 
 class SimplePipeline:
@@ -495,12 +498,12 @@ class SimplePipeline:
             
             # Archive existing files before saving new one
             run_type = "test" if debug else "production"
-            archive_manager.archive_current_analysis(analysis_dir, run_type=run_type)
+            _ = archive_manager.archive_current_analysis(analysis_dir, run_type=run_type)
             
             # Save to clean file structure (no timestamp)
             analysis_path = analysis_dir / "analysis.md"
             with open(analysis_path, 'w') as f:
-                f.write(result.content)
+                _ = f.write(result.content)
             
             # Create metadata
             analysis_result = {

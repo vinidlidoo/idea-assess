@@ -1,18 +1,21 @@
 """Message processing utilities for Claude SDK interactions."""
 
 import re
-from typing import Optional, Any
+from typing import Any, TYPE_CHECKING
 from dataclasses import dataclass
-from ..utils.improved_logging import StructuredLogger
+
+if TYPE_CHECKING:
+    from ..utils.improved_logging import StructuredLogger
+    from ..utils.console_logger import ConsoleLogger
 from ..core.constants import MAX_CONTENT_SIZE
 
 # Try to import SDK message types
 try:
     from claude_code_sdk import SystemMessage, ResultMessage, UserMessage, AssistantMessage
-    HAS_SDK_TYPES = True
+    has_sdk_types = True
 except ImportError:
     # Fallback if SDK doesn't export these types
-    HAS_SDK_TYPES = False
+    has_sdk_types = False
     SystemMessage = type('SystemMessage', (), {})
     ResultMessage = type('ResultMessage', (), {})
     UserMessage = type('UserMessage', (), {})
@@ -31,7 +34,7 @@ class ProcessedMessage:
 class MessageProcessor:
     """Handles processing of Claude SDK messages."""
     
-    def __init__(self, logger: Optional[StructuredLogger] = None, max_buffer_size: int = MAX_CONTENT_SIZE):
+    def __init__(self, logger: 'StructuredLogger | ConsoleLogger | None' = None, max_buffer_size: int = MAX_CONTENT_SIZE):
         """
         Initialize the message processor.
         
@@ -46,7 +49,7 @@ class MessageProcessor:
         self.max_buffer_size = max_buffer_size
         self._total_size = 0  # Track current buffer size
     
-    def extract_session_id(self, message: Any) -> Optional[str]:
+    def extract_session_id(self, message: Any) -> str | None:
         """
         Extract session ID from a SystemMessage.
         
@@ -57,7 +60,7 @@ class MessageProcessor:
             Session ID if found, None otherwise
         """
         # Use isinstance check if SDK types are available
-        if HAS_SDK_TYPES:
+        if has_sdk_types:
             is_system_message = isinstance(message, SystemMessage)
         else:
             is_system_message = type(message).__name__ == "SystemMessage"
@@ -85,7 +88,7 @@ class MessageProcessor:
         
         content = []
         search_queries = []
-        metadata = {'message_number': self.message_count}
+        metadata: dict[str, Any] = {'message_number': self.message_count}
         
         # Extract session ID if available
         session_id = self.extract_session_id(message)
@@ -250,7 +253,7 @@ class MessageProcessor:
         Returns:
             String name of the message type
         """
-        if HAS_SDK_TYPES:
+        if has_sdk_types:
             if isinstance(message, SystemMessage):
                 return "SystemMessage"
             elif isinstance(message, ResultMessage):
@@ -273,7 +276,7 @@ class MessageProcessor:
         Returns:
             True if it's a ResultMessage, False otherwise
         """
-        if HAS_SDK_TYPES:
+        if has_sdk_types:
             return isinstance(message, ResultMessage)
         return type(message).__name__ == "ResultMessage"
     

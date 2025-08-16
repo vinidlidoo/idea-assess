@@ -4,7 +4,7 @@ import json
 import shutil
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, List, Optional, Any
+from typing import Any
 import re
 
 
@@ -26,8 +26,8 @@ class ArchiveManager:
         self, 
         analysis_dir: Path,
         run_type: str = "production",
-        metadata: Optional[Dict[str, Any]] = None
-    ) -> Optional[Path]:
+        metadata: dict[str, Any] | None = None
+    ) -> Path | None:
         """
         Archive the current analysis files before creating new ones.
         
@@ -73,12 +73,12 @@ class ArchiveManager:
         for filename in files_to_archive:
             source = analysis_dir / filename
             if source.exists() and not source.is_symlink():
-                shutil.move(str(source), str(archive_dir / filename))
+                _ = shutil.move(str(source), str(archive_dir / filename))
         
         # Archive iteration files
         iterations_dir = analysis_dir / "iterations"
         if iterations_dir.exists():
-            shutil.move(str(iterations_dir), str(archive_dir / "iterations"))
+            _ = shutil.move(str(iterations_dir), str(archive_dir / "iterations"))
         
         # Save archive metadata
         archive_metadata = {
@@ -103,7 +103,6 @@ class ArchiveManager:
         Args:
             analysis_dir: Directory to migrate
         """
-        import sys
         
         # Create archive directory
         archive_base = analysis_dir / ".archive"
@@ -117,7 +116,7 @@ class ArchiveManager:
         # Move all timestamped files to archive
         for file in analysis_dir.iterdir():
             if file.is_file() and timestamp_pattern.match(file.name):
-                shutil.move(str(file), str(old_files_dir / file.name))
+                _ = shutil.move(str(file), str(old_files_dir / file.name))
         
         # Handle symlinks - convert to real files
         for symlink in ["analysis.md", "reviewer_feedback.json", "iteration_history.json"]:
@@ -126,19 +125,21 @@ class ArchiveManager:
                 # Read the target content
                 target = link_path.resolve()
                 if target.exists():
-                    content = target.read_text() if target.suffix == ".md" else target.read_bytes()
                     # Remove symlink
                     link_path.unlink()
-                    # Write as real file
+                    # Write as real file based on file type
                     if target.suffix == ".md":
-                        link_path.write_text(content)
+                        text_content = target.read_text()
+                        _ = link_path.write_text(text_content)
                     else:
-                        link_path.write_bytes(content)
+                        bytes_content = target.read_bytes()
+                        _ = link_path.write_bytes(bytes_content)
                 else:
                     # Broken symlink, just remove it
                     link_path.unlink()
         
-        file_count = len(list(old_files_dir.iterdir())) if old_files_dir.exists() else 0
+        # Check if old_files_dir has any files (for logging/debugging purposes)
+        _ = len(list(old_files_dir.iterdir())) if old_files_dir.exists() else 0
     
     def _get_next_run_number(self, archive_base: Path, run_type: str) -> int:
         """
@@ -208,10 +209,10 @@ class ArchiveManager:
     
     def create_metadata(
         self,
-        analysis_result: Dict[str, Any],
-        reviewer_feedback: Optional[Dict[str, Any]] = None,
-        iteration_history: Optional[List[Dict[str, Any]]] = None
-    ) -> Dict[str, Any]:
+        analysis_result: dict[str, Any],
+        reviewer_feedback: dict[str, Any] | None = None,
+        iteration_history: list[dict[str, Any]] | None = None
+    ) -> dict[str, Any]:
         """
         Create consolidated metadata for the current run.
         
@@ -250,7 +251,7 @@ class ArchiveManager:
         
         return metadata
     
-    def get_archive_summary(self, analysis_dir: Path) -> Dict[str, Any]:
+    def get_archive_summary(self, analysis_dir: Path) -> dict[str, Any]:
         """
         Get a summary of archived runs.
         

@@ -9,7 +9,6 @@ agent system with the Claude SDK.
 import sys
 import os
 import traceback
-from datetime import datetime
 
 try:
     import argparse
@@ -27,12 +26,10 @@ try:
     
     from src.core import get_default_config
     from src.core.pipeline import AnalysisPipeline, SimplePipeline
-    from src.agents import AnalystAgent
-    from src.utils.file_operations import save_analysis, AnalysisResult
     from src.utils.text_processing import show_preview
     
     # Load environment variables
-    load_dotenv()
+    _ = load_dotenv()
 except Exception as e:
     print(f"Module import failure: {e}", file=sys.stderr)
     raise
@@ -52,37 +49,37 @@ Examples:
         """
     )
     
-    parser.add_argument(
+    _ = parser.add_argument(
         "idea",
         help="One-liner business idea to analyze"
     )
     
-    parser.add_argument(
+    _ = parser.add_argument(
         "--debug",
         action="store_true",
         help="Enable debug logging to logs/ directory"
     )
     
-    parser.add_argument(
+    _ = parser.add_argument(
         "--no-websearch", "-n",
         action="store_true",
         help="Disable WebSearch tool for faster analysis (uses existing knowledge only)"
     )
     
-    parser.add_argument(
+    _ = parser.add_argument(
         "--prompt-version", "-p",
         choices=["v1", "v2", "v3"],
         default="v3",
         help="Analyst prompt version to use (default: v3)"
     )
     
-    parser.add_argument(
+    _ = parser.add_argument(
         "--with-review", "-r",
         action="store_true",
         help="Enable reviewer feedback loop for quality improvement"
     )
     
-    parser.add_argument(
+    _ = parser.add_argument(
         "--max-iterations", "-m",
         type=int,
         default=3,
@@ -126,7 +123,7 @@ Examples:
             # Show feedback summary
             if result.get('feedback_history'):
                 last_feedback = result['feedback_history'][-1]
-                print(f"\n📋 Final Review:")
+                print("\n📋 Final Review:")
                 print(f"   • Assessment: {last_feedback.get('overall_assessment', 'N/A')}")
                 print(f"   • Critical issues: {len(last_feedback.get('critical_issues', []))}")
                 print(f"   • Improvements: {len(last_feedback.get('improvements', []))}")
@@ -137,7 +134,7 @@ Examples:
             # Show preview of final analysis
             if result.get('final_analysis'):
                 word_count = len(result['final_analysis'].split())
-                print(f"\n📊 Final Statistics:")
+                print("\n📊 Final Statistics:")
                 print(f"   • Size: {len(result['final_analysis']):,} characters ({word_count:,} words)")
                 show_preview(result['final_analysis'])
             
@@ -160,7 +157,7 @@ Examples:
             # Show statistics
             if result.get('metadata'):
                 meta = result['metadata']
-                print(f"\n📊 Statistics:")
+                print("\n📊 Statistics:")
                 print(f"  • Duration: {meta.get('duration', 0):.1f}s")
                 print(f"  • Messages: {meta.get('message_count', 0)}")
                 if not args.no_websearch:

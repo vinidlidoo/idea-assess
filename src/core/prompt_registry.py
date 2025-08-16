@@ -1,10 +1,8 @@
 """Centralized prompt registry for managing prompt file locations."""
 
-from pathlib import Path
-from typing import Dict
 
 # Prompt file mappings after reorganization
-PROMPT_REGISTRY: Dict[str, str] = {
+PROMPT_REGISTRY: dict[str, str] = {
     # Active agent prompts
     "analyst_v3.md": "agents/analyst/main.md",
     "analyst_revision.md": "agents/analyst/revision.md",

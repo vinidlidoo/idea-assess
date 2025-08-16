@@ -1,14 +1,13 @@
 """Reviewer agent implementation that reads analysis from file."""
 
 import json
-import asyncio
-import traceback
-from typing import Any, Optional
+from typing import Any, override
 from pathlib import Path
 
 from claude_code_sdk import ClaudeSDKClient, ClaudeCodeOptions
 
 from ..core.agent_base import BaseAgent, AgentResult
+from ..core.types import FeedbackDict
 from ..core.config import AnalysisConfig
 from ..core.constants import MAX_REVIEW_ITERATIONS, REVIEWER_MAX_TURNS
 from ..core.message_processor import MessageProcessor
@@ -29,17 +28,20 @@ class ReviewerAgent(BaseAgent):
             prompt_version: Version of the reviewer prompt to use
         """
         super().__init__(config)
-        self.prompt_version = prompt_version
+        self.prompt_version: str = prompt_version
     
     @property
+    @override
     def agent_name(self) -> str:
         """Return the name of this agent."""
         return "Reviewer"
     
+    @override
     def get_prompt_file(self) -> str:
         """Return the prompt file name for this agent."""
         return f"reviewer_{self.prompt_version}.md"
     
+    @override
     def get_allowed_tools(self) -> list[str]:
         """Return list of allowed tools for this agent."""
         # Reviewer needs Read and Write tools to read analysis and write feedback
@@ -69,10 +71,10 @@ class ReviewerAgent(BaseAgent):
         # Both paths are already resolved, so we can safely compare
         try:
             # This will raise ValueError if path is not relative to analyses_dir
-            path.relative_to(analyses_dir)
+            _ = path.relative_to(analyses_dir)
         except (ValueError, TypeError) as e:
             # Path is outside analyses directory - this is the security check
-            raise ValueError(f"Invalid path: must be within analyses directory") from e
+            raise ValueError("Invalid path: must be within analyses directory") from e
         
         # Check if file exists
         if not path.exists():
@@ -80,7 +82,8 @@ class ReviewerAgent(BaseAgent):
             
         return path
     
-    async def process(self, input_data: str, **kwargs) -> AgentResult:
+    @override
+    async def process(self, input_data: str, **kwargs: Any) -> AgentResult:
         """
         Review a business analysis by reading from file and write feedback to JSON.
         
@@ -150,6 +153,7 @@ class ReviewerAgent(BaseAgent):
             )
             
             # Initialize message processor
+            # MessageProcessor accepts both StructuredLogger and ConsoleLogger
             processor = MessageProcessor(logger)
             
             # Query Claude for review
@@ -210,7 +214,7 @@ class ReviewerAgent(BaseAgent):
             if feedback_file.exists():
                 # Read the feedback to verify and get metadata
                 with open(feedback_file, 'r') as f:
-                    feedback_json = json.load(f)
+                    feedback_json: dict[str, Any] = json.load(f)
                 
                 # Validate the feedback structure
                 validator = FeedbackValidator()
@@ -301,7 +305,7 @@ class FeedbackProcessor:
     """Utility class to process reviewer feedback and apply it to analyses."""
     
     @staticmethod
-    def load_feedback(feedback_file: str) -> dict[str, Any]:
+    def load_feedback(feedback_file: str) -> FeedbackDict | dict[str, str]:
         """
         Load and validate JSON feedback from file.
         
@@ -313,7 +317,7 @@ class FeedbackProcessor:
         """
         try:
             with open(feedback_file, 'r') as f:
-                feedback = json.load(f)
+                feedback: dict[str, Any] = json.load(f)
             
             # Validate the loaded feedback
             validator = FeedbackValidator()
@@ -334,7 +338,7 @@ class FeedbackProcessor:
             return {"error": f"Failed to load feedback: {str(e)}"}
     
     @staticmethod
-    def should_continue_iteration(feedback: dict[str, Any], iteration_count: int) -> bool:
+    def should_continue_iteration(feedback: FeedbackDict | dict[str, Any], iteration_count: int) -> bool:
         """
         Determine if another iteration is needed based on feedback.
         
@@ -354,7 +358,7 @@ class FeedbackProcessor:
         return recommendation == 'reject'
     
     @staticmethod
-    def format_feedback_for_analyst(feedback: dict[str, Any]) -> str:
+    def format_feedback_for_analyst(feedback: FeedbackDict | dict[str, Any]) -> str:
         """
         Format reviewer feedback into instructions for the analyst.
         
@@ -364,7 +368,7 @@ class FeedbackProcessor:
         Returns:
             Formatted instructions for analyst to incorporate
         """
-        instructions = []
+        instructions: list[str] = []
         
         # Add overall assessment
         if 'overall_assessment' in feedback:

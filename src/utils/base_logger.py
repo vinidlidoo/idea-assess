@@ -6,7 +6,7 @@ import json
 import shutil
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, Any, Optional, List
+from typing import Any
 import logging
 import sys
 
@@ -26,23 +26,23 @@ class BaseStructuredLogger:
             run_type: Type of run (test, production, debug)
             log_base_dir: Base directory for logs (e.g., "logs/runs" or "logs/tests")
         """
-        self.run_id = run_id
-        self.name = name[:30]  # Truncate for directory naming
-        self.run_type = run_type
-        self.start_time = datetime.now()
+        self.run_id: str = run_id
+        self.name: str = name[:30]  # Truncate for directory naming
+        self.run_type: str = run_type
+        self.start_time: datetime = datetime.now()
         
         # Create organized log directory structure
-        self.log_dir = Path(log_base_dir) / f"{run_id}_{self.name}"
+        self.log_dir: Path = Path(log_base_dir) / f"{run_id}_{self.name}"
         self.log_dir.mkdir(parents=True, exist_ok=True)
         
         # Setup log files
-        self.summary_file = self.log_dir / "summary.md"
-        self.events_file = self.log_dir / "events.jsonl"
-        self.metrics_file = self.log_dir / "metrics.json"
-        self.debug_file = self.log_dir / "debug.log"
+        self.summary_file: Path = self.log_dir / "summary.md"
+        self.events_file: Path = self.log_dir / "events.jsonl"
+        self.metrics_file: Path = self.log_dir / "metrics.json"
+        self.debug_file: Path = self.log_dir / "debug.log"
         
         # Track metrics
-        self.metrics = {
+        self.metrics: dict[str, Any] = {
             "start_time": self.start_time.isoformat(),
             "run_id": run_id,
             "name": name,
@@ -53,7 +53,7 @@ class BaseStructuredLogger:
         }
         
         # Setup debug logger
-        self.debug_logger = self._setup_debug_logger()
+        self.debug_logger: logging.Logger = self._setup_debug_logger()
         
         # Write initial summary header
         self._write_summary_header()
@@ -93,17 +93,17 @@ class BaseStructuredLogger:
         """Write the header for the summary file."""
         with open(self.summary_file, 'w') as f:
             title = self._get_summary_title()
-            f.write(f"# {title}\n\n")
-            f.write(f"**Run ID:** `{self.run_id}`  \n")
-            f.write(f"**Type:** {self.run_type}  \n")
-            f.write(f"**Started:** {self.start_time.strftime('%Y-%m-%d %H:%M:%S')}  \n\n")
-            f.write("## Timeline\n\n")
+            _ = f.write(f"# {title}\n\n")
+            _ = f.write(f"**Run ID:** `{self.run_id}`  \n")
+            _ = f.write(f"**Type:** {self.run_type}  \n")
+            _ = f.write(f"**Started:** {self.start_time.strftime('%Y-%m-%d %H:%M:%S')}  \n\n")
+            _ = f.write("## Timeline\n\n")
     
     def _get_summary_title(self) -> str:
         """Get title for summary file. Override in subclasses."""
         return f"Run Summary: {self.name}"
     
-    def log_event(self, event_type: str, agent: str, data: Dict[str, Any]):
+    def log_event(self, event_type: str, agent: str, data: dict[str, Any]) -> None:
         """
         Log a structured event.
         
@@ -124,7 +124,7 @@ class BaseStructuredLogger:
         
         # Write to JSON lines file
         with open(self.events_file, 'a') as f:
-            f.write(json.dumps(event) + '\n')
+            _ = f.write(json.dumps(event) + '\n')
         
         # Add to metrics
         self.metrics["events"].append(event)
@@ -165,12 +165,12 @@ class BaseStructuredLogger:
         
         # Update summary
         with open(self.summary_file, 'a') as f:
-            f.write(f"- **[{self._format_time(elapsed)}]** 🎯 {milestone}")
+            _ = f.write(f"- **[{self._format_time(elapsed)}]** 🎯 {milestone}")
             if details:
-                f.write(f" - {details}")
-            f.write("\n")
+                _ = f.write(f" - {details}")
+            _ = f.write("\n")
     
-    def log_error(self, error: str, agent: str, traceback: Optional[str] = None):
+    def log_error(self, error: str, agent: str, traceback: str | None = None) -> None:
         """
         Log an error.
         
@@ -198,17 +198,17 @@ class BaseStructuredLogger:
         
         # Update summary
         with open(self.summary_file, 'a') as f:
-            f.write(f"- **[{self._format_time(elapsed)}]** ❌ ERROR in {agent}: {error}\n")
+            _ = f.write(f"- **[{self._format_time(elapsed)}]** ❌ ERROR in {agent}: {error}\n")
     
-    def _update_summary(self, elapsed: float, agent: str, event_type: str, data: Dict[str, Any]):
+    def _update_summary(self, elapsed: float, agent: str, event_type: str, data: dict[str, Any]) -> None:
         """Update the summary file with important events."""
         with open(self.summary_file, 'a') as f:
             time_str = self._format_time(elapsed)
             summary_line = self._format_summary_line(time_str, agent, event_type, data)
             if summary_line:
-                f.write(summary_line)
+                _ = f.write(summary_line)
     
-    def _format_summary_line(self, time_str: str, agent: str, event_type: str, data: Dict[str, Any]) -> str:
+    def _format_summary_line(self, time_str: str, agent: str, event_type: str, data: dict[str, Any]) -> str:
         """Format a summary line for an event. Override in subclasses for custom formatting."""
         if event_type == "analysis_complete":
             size = data.get("size", 0)
@@ -236,7 +236,7 @@ class BaseStructuredLogger:
         else:
             return f"{seconds/3600:.1f}h"
     
-    def finalize(self, success: bool, result: Optional[Dict[str, Any]] = None):
+    def finalize(self, success: bool, result: dict[str, Any] | None = None) -> None:
         """
         Finalize the logging session.
         
@@ -265,22 +265,22 @@ class BaseStructuredLogger:
         # Archive old logs if needed
         self._archive_old_logs()
     
-    def _write_final_summary(self, elapsed: float, success: bool, result: Optional[Dict[str, Any]]):
+    def _write_final_summary(self, elapsed: float, success: bool, result: dict[str, Any] | None) -> None:
         """Write final summary section."""
         with open(self.summary_file, 'a') as f:
-            f.write("\n## Final Result\n\n")
-            f.write(f"**Status:** {'✅ Success' if success else '❌ Failed'}  \n")
-            f.write(f"**Total Time:** {self._format_time(elapsed)}  \n")
+            _ = f.write("\n## Final Result\n\n")
+            _ = f.write(f"**Status:** {'✅ Success' if success else '❌ Failed'}  \n")
+            _ = f.write(f"**Total Time:** {self._format_time(elapsed)}  \n")
             
             if result:
                 self._write_result_details(f, result)
             
             if self.metrics["errors"]:
-                f.write(f"\n### Errors Encountered\n\n")
+                _ = f.write("\n### Errors Encountered\n\n")
                 for error in self.metrics["errors"]:
-                    f.write(f"- {error['agent']}: {error['error']}\n")
+                    _ = f.write(f"- {error['agent']}: {error['error']}\n")
     
-    def _write_result_details(self, f, result: Dict[str, Any]):
+    def _write_result_details(self, f, result: dict[str, Any]) -> None:
         """Write result details to summary. Override in subclasses."""
         if "file_path" in result:
             f.write(f"**Output:** `{result['file_path']}`  \n")
@@ -312,12 +312,12 @@ class BaseStructuredLogger:
             
             for old_dir in all_dirs[MAX_LOGS:]:
                 # Move to archive
-                shutil.move(str(old_dir), str(archive_dir / old_dir.name))
+                _ = shutil.move(str(old_dir), str(archive_dir / old_dir.name))
                 self.debug_logger.info(f"Archived old log: {old_dir.name}")
     
-    def write_events(self, events: List[Dict[str, Any]]):
+    def write_events(self, events: list[dict[str, Any]]) -> None:
         """Write multiple events at once (useful for test logs parsing)."""
         with open(self.events_file, 'w') as f:
             for event in events:
-                f.write(json.dumps(event) + '\n')
+                _ = f.write(json.dumps(event) + '\n')
         self.metrics["events"] = events

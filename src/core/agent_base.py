@@ -1,8 +1,13 @@
 """Base agent interface for the idea assessment system."""
 
+from __future__ import annotations
+
 from abc import ABC, abstractmethod
-from typing import Any, Optional
+from typing import TYPE_CHECKING, Any
 from dataclasses import dataclass
+
+if TYPE_CHECKING:
+    from .config import AnalysisConfig
 
 
 @dataclass
@@ -11,7 +16,7 @@ class AgentResult:
     content: str
     metadata: dict[str, Any]
     success: bool
-    error: Optional[str] = None
+    error: str | None = None
     
     def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for serialization."""
@@ -26,17 +31,17 @@ class AgentResult:
 class BaseAgent(ABC):
     """Base class for all agents in the system."""
     
-    def __init__(self, config: 'AnalysisConfig'):
+    def __init__(self, config: AnalysisConfig):
         """
         Initialize the agent with configuration.
         
         Args:
             config: System configuration
         """
-        self.config = config
+        self.config: AnalysisConfig = config
     
     @abstractmethod
-    async def process(self, input_data: str, **kwargs) -> AgentResult:
+    async def process(self, input_data: str, **kwargs: Any) -> AgentResult:
         """
         Process input and return standardized result.
         

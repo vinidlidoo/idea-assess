@@ -5,7 +5,7 @@ Test logging utilities using the base structured logger.
 import re
 from datetime import datetime
 from pathlib import Path
-from typing import List, Dict, Any
+from typing import Any
 from .base_logger import BaseStructuredLogger
 
 
@@ -37,7 +37,7 @@ class TestLogger(BaseStructuredLogger):
         """Get title for summary file."""
         return f"Test Run: {self.test_scenario}"
     
-    def _write_result_details(self, f, result: Dict[str, Any]):
+    def _write_result_details(self, f, result: dict[str, Any]) -> None:
         """Write test-specific result details."""
         if "test_result" in result:
             f.write(f"**Test Result:** {result['test_result']}  \n")
@@ -47,7 +47,7 @@ class TestLogger(BaseStructuredLogger):
                 f.write(f"- {file}\n")
 
 
-def extract_events_from_output(content: str, idea: str) -> List[Dict[str, Any]]:
+def extract_events_from_output(content: str, idea: str) -> list[dict[str, Any]]:
     """
     Extract events from test output.
     
@@ -164,9 +164,10 @@ def create_structured_logs(test_dir: str, output_file: str, test_scenario: str, 
         success = False
     
     # Extract timestamp from directory name
+    from datetime import datetime as dt
     dir_name = test_path.name
     timestamp_match = re.match(r'^(\d{8}_\d{6})_', dir_name)
-    timestamp = timestamp_match.group(1) if timestamp_match else datetime.now().strftime('%Y%m%d_%H%M%S')
+    timestamp = timestamp_match.group(1) if timestamp_match else dt.now().strftime('%Y%m%d_%H%M%S')
     
     # Create log files directly in the test directory (don't create a new one)
     # Clean idea for naming
@@ -181,17 +182,17 @@ def create_structured_logs(test_dir: str, output_file: str, test_scenario: str, 
     # Write summary.md
     summary_file = test_path / "summary.md"
     with open(summary_file, 'w') as f:
-        f.write(f"# Test Run: {test_scenario}\n\n")
-        f.write(f"**Run ID:** `{timestamp}`  \n")
-        f.write(f"**Type:** test  \n")
-        f.write(f"**Idea:** {idea}  \n")
-        f.write(f"**Started:** {start_time.strftime('%Y-%m-%d %H:%M:%S')}  \n\n")
-        f.write("## Timeline\n\n")
-        f.write(f"- **[0.0s]** Test started\n")
-        f.write(f"- **[0.1s]** {result}\n\n")
-        f.write("## Final Result\n\n")
-        f.write(f"**Status:** {'✅ Success' if success else '❌ Failed'}  \n")
-        f.write(f"**Test Result:** {result}  \n")
+        _ = f.write(f"# Test Run: {test_scenario}\n\n")
+        _ = f.write(f"**Run ID:** `{timestamp}`  \n")
+        _ = f.write("**Type:** test  \n")
+        _ = f.write(f"**Idea:** {idea}  \n")
+        _ = f.write(f"**Started:** {start_time.strftime('%Y-%m-%d %H:%M:%S')}  \n\n")
+        _ = f.write("## Timeline\n\n")
+        _ = f.write("- **[0.0s]** Test started\n")
+        _ = f.write(f"- **[0.1s]** {result}\n\n")
+        _ = f.write("## Final Result\n\n")
+        _ = f.write(f"**Status:** {'✅ Success' if success else '❌ Failed'}  \n")
+        _ = f.write(f"**Test Result:** {result}  \n")
     
     # Extract and write events
     events = extract_events_from_output(content, idea)
@@ -200,7 +201,7 @@ def create_structured_logs(test_dir: str, output_file: str, test_scenario: str, 
     events_file = test_path / "events.jsonl"
     with open(events_file, 'w') as f:
         for event in events:
-            f.write(json.dumps(event) + '\n')
+            _ = f.write(json.dumps(event) + '\n')
     
     # Write metrics.json
     metrics_file = test_path / "metrics.json"

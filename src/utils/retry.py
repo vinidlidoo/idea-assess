@@ -2,30 +2,25 @@
 
 import asyncio
 import time
-from typing import TypeVar, Callable, Optional, Any, Union
+from typing import TypeVar, Callable, Awaitable
 from functools import wraps
 
-# Try to import SDK-specific errors
-try:
-    from claude_code_sdk import RateLimitError, TimeoutError as SDKTimeoutError, APIError
-    HAS_SDK_ERRORS = True
-except ImportError:
-    # Fallback if SDK doesn't export these
-    HAS_SDK_ERRORS = False
-    
-    class RateLimitError(Exception):
-        """Placeholder for SDK RateLimitError."""
-        def __init__(self, message="", retry_after=None):
-            super().__init__(message)
-            self.retry_after = retry_after
-    
-    class SDKTimeoutError(Exception):
-        """Placeholder for SDK TimeoutError."""
-        pass
-    
-    class APIError(Exception):
-        """Placeholder for SDK APIError."""
-        pass
+# SDK doesn't export these error types, so define them
+has_sdk_errors = False
+
+class RateLimitError(Exception):
+    """Placeholder for SDK RateLimitError."""
+    def __init__(self, message="", retry_after=None):
+        super().__init__(message)
+        self.retry_after = retry_after
+
+class SDKTimeoutError(Exception):
+    """Placeholder for SDK TimeoutError."""
+    pass
+
+class APIError(Exception):
+    """Placeholder for SDK APIError."""
+    pass
 
 
 T = TypeVar('T')
@@ -82,9 +77,9 @@ class RetryConfig:
 
 
 async def retry_with_backoff(
-    func: Callable[..., T],
+    func: Callable[..., Awaitable[T]],
     *args,
-    config: Optional[RetryConfig] = None,
+    config: RetryConfig | None = None,
     **kwargs
 ) -> T:
     """
@@ -149,7 +144,7 @@ async def retry_with_backoff(
                 # Non-transient error, don't retry
                 raise
                 
-        except Exception as e:
+        except Exception:
             # For other exceptions, don't retry unless explicitly transient
             raise
     
@@ -196,7 +191,7 @@ def retry_on_transient_errors(
 def retry_sync_with_backoff(
     func: Callable[..., T],
     *args,
-    config: Optional[RetryConfig] = None,
+    config: RetryConfig | None = None,
     **kwargs
 ) -> T:
     """

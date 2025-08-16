@@ -2,7 +2,6 @@
 
 from pathlib import Path
 from dataclasses import dataclass
-from typing import Optional
 
 
 @dataclass
@@ -21,7 +20,7 @@ class AnalysisConfig:
     default_prompt_file: str = "analyst_v1.md"
     
     @classmethod
-    def from_project_root(cls, root: Optional[Path] = None) -> 'AnalysisConfig':
+    def from_project_root(cls, root: Path | None = None) -> 'AnalysisConfig':
         """Create config from project root directory."""
         if root is None:
             # Default to parent of src directory

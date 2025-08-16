@@ -3,7 +3,6 @@ Production logging system using the base structured logger.
 """
 
 from datetime import datetime
-from typing import Dict, Any, Optional
 from .base_logger import BaseStructuredLogger
 
 

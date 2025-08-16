@@ -1,9 +1,8 @@
 """JSON schema validation for reviewer feedback."""
 
 import json
-from typing import Any, Optional
+from typing import Any
 from pathlib import Path
-import jsonschema
 from jsonschema import validate, ValidationError
 
 
@@ -101,7 +100,7 @@ class FeedbackValidator:
         """Initialize the validator with the feedback schema."""
         self.schema = REVIEWER_FEEDBACK_SCHEMA
     
-    def validate(self, feedback: dict[str, Any]) -> tuple[bool, Optional[str]]:
+    def validate(self, feedback: dict[str, Any]) -> tuple[bool, str | None]:
         """
         Validate feedback against schema.
         
@@ -124,7 +123,7 @@ class FeedbackValidator:
         except Exception as e:
             return False, f"Unexpected validation error: {str(e)}"
     
-    def validate_file(self, feedback_file: Path) -> tuple[bool, Optional[str]]:
+    def validate_file(self, feedback_file: Path) -> tuple[bool, str | None]:
         """
         Validate feedback from a JSON file.
         

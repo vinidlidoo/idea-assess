@@ -1,20 +1,18 @@
 """Analyst agent implementation for business idea analysis."""
 
-import asyncio
 import signal
 import sys
 import threading
 import time
 import traceback
 from datetime import datetime
-from typing import Optional, Any
-from pathlib import Path
+from typing import Any, override
+import types
 
 from claude_code_sdk import ClaudeSDKClient, ClaudeCodeOptions
 
 from ..core.agent_base import BaseAgent, AgentResult
 from ..core.config import AnalysisConfig
-from ..core.constants import ANALYST_MAX_TURNS, PREVIEW_CHAR_LIMIT
 from ..core.message_processor import MessageProcessor
 from ..utils.text_processing import create_slug
 from ..utils.improved_logging import StructuredLogger
@@ -38,23 +36,27 @@ class AnalystAgent(BaseAgent):
             prompt_version: Version of the analyst prompt to use
         """
         super().__init__(config)
-        self.prompt_version = prompt_version
-        self.interrupt_event = threading.Event()
+        self.prompt_version: str = prompt_version
+        self.interrupt_event: threading.Event = threading.Event()
     
     @property
+    @override
     def agent_name(self) -> str:
         """Return the name of this agent."""
         return "Analyst"
     
+    @override
     def get_prompt_file(self) -> str:
         """Return the prompt file name for this agent."""
         return f"analyst_{self.prompt_version}.md"
     
+    @override
     def get_allowed_tools(self) -> list[str]:
         """Return list of allowed tools for this agent."""
         return ["WebSearch"]  # Can be configured per analysis
     
-    async def process(self, input_data: str, **kwargs) -> AgentResult:
+    @override
+    async def process(self, input_data: str, **kwargs: Any) -> AgentResult:
         """
         Analyze a business idea.
         
@@ -117,8 +119,8 @@ class AnalystAgent(BaseAgent):
         idea: str,
         debug: bool = False,
         use_websearch: bool = True,
-        revision_context: Optional[dict] = None
-    ) -> Optional[AnalysisResult]:
+        revision_context: dict[str, str] | None = None
+    ) -> AnalysisResult | None:
         """
         Internal method to analyze a business idea.
         
@@ -134,7 +136,7 @@ class AnalystAgent(BaseAgent):
         
         # Setup
         start_time = time.time()
-        client: Optional[ClaudeSDKClient] = None
+        client: ClaudeSDKClient | None = None
         
         # Setup logger if debug mode (pipeline already has the main logger)
         import os
@@ -154,10 +156,11 @@ class AnalystAgent(BaseAgent):
         self.interrupt_event.clear()
         
         # Message processor
+        # MessageProcessor accepts both StructuredLogger and ConsoleLogger
         processor = MessageProcessor(logger)
         
         # Signal handler for interrupts (thread-safe)
-        def handle_interrupt(signum, frame):
+        def handle_interrupt(signum: int, frame: types.FrameType | None) -> None:
             # Only set the event - don't modify other state or create tasks
             # The event is thread-safe and will signal the main async context
             self.interrupt_event.set()
@@ -167,13 +170,13 @@ class AnalystAgent(BaseAgent):
         original_handler = signal.getsignal(signal.SIGINT)
         
         # Register signal handler
-        signal.signal(signal.SIGINT, handle_interrupt)
+        _ = signal.signal(signal.SIGINT, handle_interrupt)
         
         try:
             # Load the analyst prompt
             system_prompt = load_prompt(self.get_prompt_file(), self.config.prompts_dir)
             if logger:
-                logger.log_event("prompt_loaded", "Analyst", {
+                _ = logger.log_event("prompt_loaded", "Analyst", {
                     "prompt_file": self.get_prompt_file()
                 })
             
@@ -221,7 +224,7 @@ class AnalystAgent(BaseAgent):
             )
             
             if logger:
-                logger.log_event("analysis_start", "Analyst", {
+                _ = logger.log_event("analysis_start", "Analyst", {
                     "idea": idea,
                     "use_websearch": use_websearch
                 })
@@ -233,7 +236,7 @@ class AnalystAgent(BaseAgent):
                 await client.query(user_prompt)
                 
                 if logger:
-                    logger.log_event("analysis_receiving", "Analyst", {
+                    _ = logger.log_event("analysis_receiving", "Analyst", {
                         "use_websearch": use_websearch
                     })
                 
@@ -253,7 +256,7 @@ class AnalystAgent(BaseAgent):
                     stats = processor.get_statistics()
                     
                     if logger and stats['message_count'] % self.config.progress_interval == 0:
-                        logger.log_event("analysis_progress", "Analyst", {
+                        _ = logger.log_event("analysis_progress", "Analyst", {
                             "message_count": stats['message_count'],
                             "search_count": stats['search_count'] if use_websearch else 0
                         })
@@ -261,7 +264,7 @@ class AnalystAgent(BaseAgent):
                     # Check for completion
                     if processed.message_type == "ResultMessage":
                         if logger:
-                            logger.log_event("analysis_complete", "Analyst", {
+                            _ = logger.log_event("analysis_complete", "Analyst", {
                                 "search_count": stats['search_count'] if use_websearch else 0
                             })
                         
@@ -269,7 +272,7 @@ class AnalystAgent(BaseAgent):
                         content = processed.content[0] if processed.content else processor.get_final_content()
                         
                         if logger and content:
-                            logger.log_event("analysis_complete", "Analyst", {
+                            _ = logger.log_event("analysis_complete", "Analyst", {
                                 "duration": time.time() - start_time,
                                 "size": len(content),
                                 "search_count": processor.search_count
@@ -295,7 +298,7 @@ class AnalystAgent(BaseAgent):
             if final_content:
                 stats = processor.get_statistics()
                 if logger:
-                    logger.log_event("analysis_complete", "Analyst", {
+                    _ = logger.log_event("analysis_complete", "Analyst", {
                         "size": len(final_content)
                     })
                 return AnalysisResult(
@@ -336,19 +339,19 @@ class AnalystAgent(BaseAgent):
             print(f"[ANALYST] ERROR: {error_msg}", file=sys.stderr, flush=True)
             
             if logger:
-                logger.log_error(str(e), "Analyst", traceback=traceback.format_exc() if debug else None)
+                _ = logger.log_error(str(e), "Analyst", traceback=traceback.format_exc() if debug else None)
             if debug:
                 traceback.print_exc()
             return None
             
         finally:
             # Reset signal handler to original
-            signal.signal(signal.SIGINT, original_handler)
+            _ = signal.signal(signal.SIGINT, original_handler)
             
             # Finalize logging
             if logger:
                 stats = processor.get_statistics()
-                logger.finalize(
+                _ = logger.finalize(
                     success=True,
                     result={
                         "total_messages": stats['message_count'],

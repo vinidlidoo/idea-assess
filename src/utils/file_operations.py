@@ -2,7 +2,7 @@
 
 from pathlib import Path
 from datetime import datetime
-from typing import NamedTuple, Optional, Any
+from typing import NamedTuple, Any
 from functools import lru_cache
 from filelock import FileLock, Timeout
 import json
@@ -12,8 +12,8 @@ try:
     from ..core.prompt_registry import get_prompt_path
 except ImportError:
     # Fallback if running in different context
-    def get_prompt_path(name: str) -> str:
-        return name
+    def get_prompt_path(old_name: str) -> str:
+        return old_name
 
 
 class AnalysisResult(NamedTuple):
@@ -115,7 +115,7 @@ def safe_write_file(path: Path, content: str, timeout: float = 10.0) -> None:
     try:
         with lock:
             with open(path, 'w', encoding='utf-8') as f:
-                f.write(content)
+                _ = f.write(content)
     except Timeout:
         raise TimeoutError(f"Could not acquire lock for {path} within {timeout} seconds")
 

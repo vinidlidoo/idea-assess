@@ -1,7 +1,7 @@
 """Console logger for test harness and debugging."""
 
 import sys
-from typing import Any, Optional
+from typing import Any
 
 
 class ConsoleLogger:
@@ -66,7 +66,7 @@ class ConsoleLogger:
                 critical = data.get('critical_issues', 0)
                 print(f"[{self.agent_name}] Feedback saved: {rec} (critical issues: {critical})", file=sys.stderr, flush=True)
     
-    def log_error(self, error: str, agent: str, traceback: Optional[str] = None) -> None:
+    def log_error(self, error: str, agent: str, traceback: str | None = None) -> None:
         """Log an error to console."""
         print(f"[{self.agent_name}] ERROR: {error}", file=sys.stderr, flush=True)
         if traceback:
@@ -77,6 +77,6 @@ class ConsoleLogger:
         # Milestones are less important for console output
         pass
     
-    def finalize(self, success: bool = True, result: Optional[dict[str, Any]] = None) -> None:
+    def finalize(self, success: bool = True, result: dict[str, Any] | None = None) -> None:
         """Finalize logging (no-op for console logger)."""
         pass

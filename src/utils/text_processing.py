@@ -1,7 +1,6 @@
 """Text processing utilities for the idea assessment system."""
 
 import re
-from typing import Optional
 
 # Constants
 SLUG_MAX_LENGTH = 50
