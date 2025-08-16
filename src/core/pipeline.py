@@ -127,10 +127,31 @@ class AnalysisPipeline:
                     analyst_input = idea
                     
                     # Look for the previous iteration's feedback
-                    latest_feedback_file = iterations_dir / f"feedback_{iteration_count-1}.json"
+                    # The reviewer creates files named reviewer_feedback_iteration_{n}.json
+                    latest_feedback_file = iterations_dir / f"reviewer_feedback_iteration_{iteration_count-1}.json"
                     if not latest_feedback_file.exists():
+                        # Log warning about missing file before fallback
+                        if logger:
+                            logger.log_event("feedback_file_missing", "Pipeline", {
+                                "expected_file": str(latest_feedback_file),
+                                "iteration": iteration_count,
+                                "falling_back_to": str(analysis_dir / "reviewer_feedback.json")
+                            })
                         # Fallback to main feedback file
                         latest_feedback_file = analysis_dir / "reviewer_feedback.json"
+                        if not latest_feedback_file.exists():
+                            # Critical error - no feedback available for revision
+                            error_msg = f"No feedback file found for iteration {iteration_count}"
+                            if logger:
+                                logger.log_error(error_msg, "Pipeline")
+                            return {
+                                "success": False,
+                                "error": error_msg,
+                                "idea": idea,
+                                "slug": slug,
+                                "iteration_count": iteration_count,
+                                "timestamp": datetime.now().isoformat()
+                            }
                     
                     # Pass revision context via kwargs
                     revision_context = {

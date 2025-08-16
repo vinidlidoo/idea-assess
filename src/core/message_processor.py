@@ -31,17 +31,20 @@ class ProcessedMessage:
 class MessageProcessor:
     """Handles processing of Claude SDK messages."""
     
-    def __init__(self, logger: Optional[StructuredLogger] = None):
+    def __init__(self, logger: Optional[StructuredLogger] = None, max_buffer_size: int = MAX_CONTENT_SIZE):
         """
         Initialize the message processor.
         
         Args:
             logger: Optional structured logger
+            max_buffer_size: Maximum size of the result buffer in bytes
         """
         self.logger = logger
         self.message_count = 0
         self.search_count = 0
         self.result_text: list[str] = []
+        self.max_buffer_size = max_buffer_size
+        self._total_size = 0  # Track current buffer size
     
     def extract_session_id(self, message: Any) -> Optional[str]:
         """
@@ -147,16 +150,8 @@ class MessageProcessor:
                     text = block.text
                     text_content.append(text)
                     
-                    # Check memory limit before appending
-                    current_size = sum(len(t) for t in self.result_text)
-                    if current_size + len(text) > MAX_CONTENT_SIZE:
-                        print(f"⚠️  Warning: Content size limit ({MAX_CONTENT_SIZE} bytes) reached")
-                        # Truncate text to fit within limit
-                        remaining = MAX_CONTENT_SIZE - current_size
-                        if remaining > 0:
-                            self.result_text.append(text[:remaining])
-                    else:
-                        self.result_text.append(text)
+                    # Append to result buffer with proper size management
+                    self._append_to_buffer(text)
                 
                 # Handle tool result blocks
                 elif hasattr(block, 'content'):
@@ -192,6 +187,49 @@ class MessageProcessor:
                 "MessageProcessor",
                 msg_data
             )
+    
+    def _append_to_buffer(self, text: str) -> None:
+        """
+        Append text to the result buffer with size management.
+        
+        Uses a rolling buffer approach - when buffer is full, 
+        removes oldest entries to make room for new text.
+        
+        Args:
+            text: Text to append to the buffer
+        """
+        text_size = len(text)
+        
+        # If text itself exceeds max size, truncate it
+        if text_size > self.max_buffer_size:
+            text = text[:self.max_buffer_size]
+            text_size = self.max_buffer_size
+            if self.logger:
+                self.logger.log_event("buffer_text_truncated", "MessageProcessor", {
+                    "original_size": text_size,
+                    "truncated_to": self.max_buffer_size
+                })
+        
+        # Make room if needed by removing oldest entries
+        while self._total_size + text_size > self.max_buffer_size and self.result_text:
+            removed = self.result_text.pop(0)
+            self._total_size -= len(removed)
+            if self.logger:
+                self.logger.log_event("buffer_overflow_cleanup", "MessageProcessor", {
+                    "removed_size": len(removed),
+                    "entries_remaining": len(self.result_text)
+                })
+        
+        # Append new text
+        self.result_text.append(text)
+        self._total_size += text_size
+    
+    def clear_buffer(self) -> None:
+        """Clear the result buffer and reset size tracking."""
+        self.result_text.clear()
+        self._total_size = 0
+        if self.logger:
+            self.logger.log_event("buffer_cleared", "MessageProcessor", {})
     
     def get_final_content(self) -> str:
         """
@@ -244,9 +282,12 @@ class MessageProcessor:
         Get processing statistics.
         
         Returns:
-            Dictionary with message and search counts
+            Dictionary with message, search counts, and buffer info
         """
         return {
             'message_count': self.message_count,
-            'search_count': self.search_count
+            'search_count': self.search_count,
+            'buffer_size': self._total_size,
+            'buffer_entries': len(self.result_text),
+            'buffer_capacity': self.max_buffer_size
         }

@@ -1,5 +1,22 @@
 # Project-level TODO List
 
+## Critical Issues (P0) - From Expert Assessment
+
+*Reference: @session-logs/expert-recommendations-summary.md*
+
+- [x] **Fix silent iteration 2 failures** - ✅ COMPLETED 2025-08-15 - Added proper file naming and error logging
+- [x] **Fix memory leak in MessageProcessor** - ✅ COMPLETED 2025-08-15 - Implemented rolling buffer with size limits
+- [x] **Fix race condition in signal handling** - ✅ COMPLETED 2025-08-15 - Now only uses thread-safe event
+- [x] **Fix path traversal vulnerability** - ✅ COMPLETED 2025-08-15 - Uses proper path resolution validation
+
+## High Priority (P1) - Core Functionality
+
+- [ ] **Refactor god method** - Break up `run_analyst_reviewer_loop` (200+ lines)
+- [ ] **Implement proper error boundaries** - Add custom exception hierarchy with context
+- [x] **Add JSON schema validation** - ✅ COMPLETED 2025-08-15 - Validates and auto-fixes feedback
+- [ ] **Fix incorrect permission mode** - Change 'default' to 'allow' in SDK calls
+- [ ] **Add correlation IDs** - For request tracing across agents
+
 ## Features & Enhancements
 
 - [x] ~~Implement and integrate the improved logging system~~ ✅ COMPLETED 2025-08-15
@@ -15,38 +32,40 @@
 
 ### P2 - Medium Priority (Not Yet Completed)
 
-- [ ] __Break up god method__ - Refactor `run_analyst_reviewer_loop` (200+ lines)
-- [ ] __Add JSON schema validation__ - Validate reviewer feedback structure
-- [ ] __Use Path objects__ - Replace string paths with Path objects throughout (discuss with user why it's needed first)
+- [ ] **Use Path objects** - Replace string paths with Path objects throughout (discuss with user why it's needed first)
 
 ### P3 - Nice to Have (Future)
 
-- [ ] __Add performance monitoring__ - Track operation durations and resource usage
-- [ ] __Create CLI documentation__ - Document all commands and options
-- [ ] __Add configuration guide__ - Document all config options
-- [ ] __Define error codes__ - Create consistent error code system
-- [ ] __Consider merging FeedbackProcessor__ - Evaluate if it belongs in ReviewerAgent
-- [ ] __Add progress indicators__ - Show progress during long operations
-- [ ] __Implement stream buffering__ - More efficient message processing
-- [ ] __Add health checks__ - Verify system dependencies before running
-- [ ] __Create docker support__ - Containerize for consistent environments
-- [ ] __Add CI/CD pipeline__ - Automated testing and deployment
+- [ ] **Add performance monitoring** - Track operation durations and resource usage
+- [ ] **Create CLI documentation** - Document all commands and options
+- [ ] **Add configuration guide** - Document all config options
+- [ ] **Define error codes** - Create consistent error code system
+- [ ] **Consider merging FeedbackProcessor** - Evaluate if it belongs in ReviewerAgent
+- [ ] **Implement stream buffering** - More efficient message processing
+- [ ] **Add health checks** - Verify system dependencies before running
+- [ ] **Create docker support** - Containerize for consistent environments
+- [ ] **Add CI/CD pipeline** - Automated testing and deployment
+- [ ] **Implement prompt caching** - Reduce token usage for repeated system prompts
+- [ ] **Add circuit breakers** - For resilience in agent communication
+- [ ] **Optimize token usage** - Context window management
 
 ### Testing TODOs
 
-- [x] __Create comprehensive test script__ - ✅ COMPLETED 2025-08-15
+- [x] **Create comprehensive test script** - ✅ COMPLETED 2025-08-15
   - Created test_locally.sh with 8 test scenarios
   - Successfully tested Level 1 (basic functionality)
-- [x] __Run Level 2 tests__ - ✅ COMPLETED 2025-08-15
+- [x] **Run Level 2 tests** - ✅ COMPLETED 2025-08-15
   - All reviewer tests passing after bug fixes
-- [ ] __Run Level 3 tests__ - Full features with WebSearch
-- [ ] __Fix failing unit tests__ - 7 tests need mock setup fixes
-- [ ] __Add missing unit tests__:
+- [ ] **Create real integration tests** - Test with actual Claude SDK (not mocks)
+- [ ] **Run Level 3 tests** - Full features with WebSearch
+- [ ] **Fix failing unit tests** - 7 tests need mock setup fixes
+- [ ] **Add missing unit tests**:
   - [ ] Slug generation
   - [ ] Constants usage
-  - [ ] Message processor parsing
+  - [ ] Message processor parsing (especially memory leak fix)
   - [ ] Debug logger functionality
-- [ ] __Add edge case tests__:
+  - [ ] Signal handler synchronization
+- [ ] **Add edge case tests**:
   - [ ] Empty idea input
   - [ ] Very long idea input (>500 chars)
   - [ ] Special characters in idea
@@ -54,27 +73,29 @@
   - [ ] Concurrent pipeline runs
   - [ ] File permission errors
   - [ ] Network failures during WebSearch
+  - [ ] Iteration 2 file missing scenarios
+  - [ ] Corrupted JSON feedback files
 
 ### Documentation TODOs
 
-- [x] __Create prompt documentation__ - ✅ COMPLETED 2025-08-15
+- [x] **Create prompt documentation** - ✅ COMPLETED 2025-08-15
   - Created comprehensive README.md in config/prompts/
-- [ ] __Document AgentResult structure__ - Define all fields and their meanings
-- [ ] __Document pipeline return values__ - Specify what each method returns
-- [ ] __Create main README__ - Basic usage instructions and examples
-- [ ] __Add inline code comments__ - Explain complex logic sections
-- [ ] __Document SDK workarounds__ - Explain why file-based approach is used
-- [ ] __Create architecture diagram__ - Visual representation of agent flow
+- [ ] **Document AgentResult structure** - Define all fields and their meanings
+- [ ] **Document pipeline return values** - Specify what each method returns
+- [ ] **Create main README** - Basic usage instructions and examples
+- [ ] **Add inline code comments** - Explain complex logic sections
+- [ ] **Document SDK workarounds** - Explain why file-based approach is used
+- [ ] **Create architecture diagram** - Visual representation of agent flow
 
 ### Refactoring TODOs
 
-- [x] __Extract ALL inline prompts to separate files__ - ✅ COMPLETED 2025-08-15
+- [x] **Extract ALL inline prompts to separate files** - ✅ COMPLETED 2025-08-15
   - Moved to config/prompts/agents/ with organized structure
-- [x] __Reorganize prompts directory__ - ✅ COMPLETED 2025-08-15
+- [x] **Reorganize prompts directory** - ✅ COMPLETED 2025-08-15
   - Created agents/, versions/, archive/ structure
-- [x] __Repository cleanup__ - ✅ COMPLETED 2025-08-15
+- [x] **Repository cleanup** - ✅ COMPLETED 2025-08-15
   - Archived old analyses, research docs, removed unused code
-- [x] __Remove unused dependencies__ - ✅ COMPLETED 2025-08-15
+- [x] **Remove unused dependencies** - ✅ COMPLETED 2025-08-15
   - Removed async_file_operations, unused timeout constants
-- [ ] __Standardize error handling__ pattern across all agents
-- [ ] __Extract common agent logic__ to BaseAgent where appropriate
+- [ ] **Standardize error handling** pattern across all agents
+- [ ] **Extract common agent logic** to BaseAgent where appropriate

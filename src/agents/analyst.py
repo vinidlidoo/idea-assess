@@ -40,7 +40,6 @@ class AnalystAgent(BaseAgent):
         super().__init__(config)
         self.prompt_version = prompt_version
         self.interrupt_event = threading.Event()
-        self._interrupted = False
     
     @property
     def agent_name(self) -> str:
@@ -153,18 +152,16 @@ class AnalystAgent(BaseAgent):
             logger = getattr(self, '_pipeline_logger', None)
         # Reset interrupt state
         self.interrupt_event.clear()
-        self._interrupted = False
         
         # Message processor
         processor = MessageProcessor(logger)
         
         # Signal handler for interrupts (thread-safe)
         def handle_interrupt(signum, frame):
+            # Only set the event - don't modify other state or create tasks
+            # The event is thread-safe and will signal the main async context
             self.interrupt_event.set()
-            self._interrupted = True
             print("\n[ANALYST] Interrupt received, attempting graceful shutdown...", file=sys.stderr, flush=True)
-            if client:
-                asyncio.create_task(client.interrupt())
         
         # Store original handler for cleanup
         original_handler = signal.getsignal(signal.SIGINT)
@@ -242,8 +239,11 @@ class AnalystAgent(BaseAgent):
                 
                 async for message in client.receive_response():
                     
-                    # Check for interrupt
-                    if self._interrupted:
+                    # Check for interrupt using thread-safe event
+                    if self.interrupt_event.is_set():
+                        if client:
+                            # Safely interrupt the client in async context
+                            await client.interrupt()
                         raise AnalysisInterrupted("User interrupted analysis")
                     
                     # Process message
@@ -284,7 +284,7 @@ class AnalystAgent(BaseAgent):
                                 search_count=stats['search_count'],
                                 message_count=stats['message_count'],
                                 duration=time.time() - start_time,
-                                interrupted=self._interrupted
+                                interrupted=self.interrupt_event.is_set()
                             )
                         break
                     
@@ -354,6 +354,6 @@ class AnalystAgent(BaseAgent):
                         "total_messages": stats['message_count'],
                         "total_searches": stats['search_count'],
                         "total_time": time.time() - start_time,
-                        "interrupted": self._interrupted
+                        "interrupted": self.interrupt_event.is_set()
                     }
                 )

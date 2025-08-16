@@ -14,6 +14,7 @@ from ..core.constants import MAX_REVIEW_ITERATIONS, REVIEWER_MAX_TURNS
 from ..core.message_processor import MessageProcessor
 from ..utils.improved_logging import StructuredLogger
 from ..utils.file_operations import load_prompt
+from ..utils.json_validator import FeedbackValidator
 
 
 class ReviewerAgent(BaseAgent):
@@ -64,14 +65,14 @@ class ReviewerAgent(BaseAgent):
         project_root = Path(__file__).parent.parent.parent
         analyses_dir = (project_root / "analyses").resolve()
         
-        # Check if path is within analyses directory
-        # Python 3.12+ compatibility: handle both ValueError and new exception types
+        # Check if path is within analyses directory using secure comparison
+        # Both paths are already resolved, so we can safely compare
         try:
+            # This will raise ValueError if path is not relative to analyses_dir
             path.relative_to(analyses_dir)
         except (ValueError, TypeError) as e:
-            # Also check if path is a parent of analyses_dir (path traversal attempt)
-            if not str(path).startswith(str(analyses_dir)):
-                raise ValueError(f"Invalid path: must be within analyses directory")
+            # Path is outside analyses directory - this is the security check
+            raise ValueError(f"Invalid path: must be within analyses directory") from e
         
         # Check if file exists
         if not path.exists():
@@ -125,9 +126,10 @@ class ReviewerAgent(BaseAgent):
             # Save to both iterations directory and main directory
             iterations_dir = analysis_path.parent / "iterations"
             if iterations_dir.exists():
-                feedback_file = iterations_dir / f"feedback_{iteration_count}.json"
+                # Use consistent naming: reviewer_feedback_iteration_{n}.json
+                feedback_file = iterations_dir / f"reviewer_feedback_iteration_{iteration_count}.json"
             else:
-                # Fallback to old structure
+                # Fallback to old structure (same name pattern)
                 feedback_file = analysis_path.parent / f"reviewer_feedback_iteration_{iteration_count}.json"
             
             # Load review instructions template and format it
@@ -210,6 +212,40 @@ class ReviewerAgent(BaseAgent):
                 with open(feedback_file, 'r') as f:
                     feedback_json = json.load(f)
                 
+                # Validate the feedback structure
+                validator = FeedbackValidator()
+                is_valid, error_msg = validator.validate(feedback_json)
+                
+                if not is_valid:
+                    # Try to fix common issues
+                    if logger:
+                        logger.log_event("feedback_validation_failed", "Reviewer", {
+                            "error": error_msg,
+                            "attempting_fix": True
+                        })
+                    
+                    feedback_json = validator.fix_common_issues(feedback_json)
+                    is_valid, error_msg = validator.validate(feedback_json)
+                    
+                    if is_valid:
+                        # Save the fixed feedback
+                        with open(feedback_file, 'w') as f:
+                            json.dump(feedback_json, f, indent=2)
+                        if logger:
+                            logger.log_event("feedback_fixed", "Reviewer", {
+                                "feedback_file": str(feedback_file)
+                            })
+                    else:
+                        # Still invalid after fix attempt
+                        if logger:
+                            logger.log_error(f"Invalid feedback structure: {error_msg}", "Reviewer")
+                        return AgentResult(
+                            content="",
+                            metadata={'iteration': iteration_count, 'validation_error': error_msg},
+                            success=False,
+                            error=f"Invalid feedback structure: {error_msg}"
+                        )
+                
                 # Log summary of feedback
                 recommendation = feedback_json.get('iteration_recommendation', 'unknown')
                 critical_count = len(feedback_json.get('critical_issues', []))
@@ -267,17 +303,33 @@ class FeedbackProcessor:
     @staticmethod
     def load_feedback(feedback_file: str) -> dict[str, Any]:
         """
-        Load JSON feedback from file.
+        Load and validate JSON feedback from file.
         
         Args:
             feedback_file: Path to the feedback JSON file
             
         Returns:
-            Parsed feedback dictionary
+            Parsed and validated feedback dictionary
         """
         try:
             with open(feedback_file, 'r') as f:
-                return json.load(f)
+                feedback = json.load(f)
+            
+            # Validate the loaded feedback
+            validator = FeedbackValidator()
+            is_valid, error_msg = validator.validate(feedback)
+            
+            if not is_valid:
+                # Try to fix common issues
+                feedback = validator.fix_common_issues(feedback)
+                is_valid, error_msg = validator.validate(feedback)
+                
+                if not is_valid:
+                    # Return error indicator if still invalid
+                    return {"error": f"Invalid feedback structure: {error_msg}"}
+            
+            return feedback
+            
         except (json.JSONDecodeError, FileNotFoundError) as e:
             return {"error": f"Failed to load feedback: {str(e)}"}
     
