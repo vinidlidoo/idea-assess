@@ -1,8 +1,14 @@
 """Message processing utilities for Claude SDK interactions."""
 
 import re
-from typing import Any, TYPE_CHECKING
+from typing import Any, TYPE_CHECKING, TypedDict
 from dataclasses import dataclass
+
+class MessageMetadata(TypedDict, total=False):
+    """Metadata for processed messages."""
+    message_number: int
+    session_id: str
+    total_cost_usd: float
 
 if TYPE_CHECKING:
     from ..utils.improved_logging import StructuredLogger
@@ -11,8 +17,14 @@ from ..core.constants import MAX_CONTENT_SIZE
 
 # Try to import SDK message types
 try:
-    from claude_code_sdk import SystemMessage, ResultMessage, UserMessage, AssistantMessage
+    from claude_code_sdk import (
+        SystemMessage, ResultMessage, UserMessage, AssistantMessage,
+        TextBlock, ToolUseBlock, ToolResultBlock
+    )
     has_sdk_types = True
+    # Define union types for messages and content
+    MessageType = SystemMessage | ResultMessage | UserMessage | AssistantMessage
+    ContentBlockType = TextBlock | ToolUseBlock | ToolResultBlock | str
 except ImportError:
     # Fallback if SDK doesn't export these types
     has_sdk_types = False
@@ -20,6 +32,8 @@ except ImportError:
     ResultMessage = type('ResultMessage', (), {})
     UserMessage = type('UserMessage', (), {})
     AssistantMessage = type('AssistantMessage', (), {})
+    MessageType = Any  # Fallback to Any if SDK types aren't available
+    ContentBlockType = Any
 
 
 @dataclass
@@ -28,7 +42,7 @@ class ProcessedMessage:
     message_type: str
     content: list[str]
     search_queries: list[str]
-    metadata: dict[str, Any]
+    metadata: MessageMetadata
 
 
 class MessageProcessor:
@@ -42,14 +56,14 @@ class MessageProcessor:
             logger: Optional structured logger
             max_buffer_size: Maximum size of the result buffer in bytes
         """
-        self.logger = logger
-        self.message_count = 0
-        self.search_count = 0
+        self.logger: StructuredLogger | ConsoleLogger | None = logger
+        self.message_count: int = 0
+        self.search_count: int = 0
         self.result_text: list[str] = []
-        self.max_buffer_size = max_buffer_size
-        self._total_size = 0  # Track current buffer size
+        self.max_buffer_size: int = max_buffer_size
+        self._total_size: int = 0  # Track current buffer size
     
-    def extract_session_id(self, message: Any) -> str | None:
+    def extract_session_id(self, message: MessageType) -> str | None:
         """
         Extract session ID from a SystemMessage.
         
@@ -72,7 +86,7 @@ class MessageProcessor:
                 return match.group(1)
         return None
     
-    def process_message(self, message: Any) -> ProcessedMessage:
+    def process_message(self, message: MessageType) -> ProcessedMessage:
         """
         Process a single message from Claude SDK.
         
@@ -88,7 +102,7 @@ class MessageProcessor:
         
         content = []
         search_queries = []
-        metadata: dict[str, Any] = {'message_number': self.message_count}
+        metadata: MessageMetadata = {'message_number': self.message_count}
         
         # Extract session ID if available
         session_id = self.extract_session_id(message)
@@ -118,7 +132,7 @@ class MessageProcessor:
         )
         return result
     
-    def _extract_content(self, msg_content: Any) -> tuple[list[str], list[str]]:
+    def _extract_content(self, msg_content: list[ContentBlockType] | ContentBlockType | None) -> tuple[list[str], list[str]]:
         """
         Extract text content and search queries from message content.
         
@@ -168,7 +182,7 @@ class MessageProcessor:
         return text_content, search_queries
     
     def _log_message(self, message_type: str, content: list[str], 
-                     search_queries: list[str], metadata: dict[str, Any]) -> None:
+                     search_queries: list[str], metadata: MessageMetadata) -> None:
         """Log message details using StructuredLogger."""
         msg_data = {
             "number": self.message_count,
@@ -243,7 +257,7 @@ class MessageProcessor:
         """
         return "".join(self.result_text)
     
-    def _get_message_type(self, message: Any) -> str:
+    def _get_message_type(self, message: MessageType) -> str:
         """
         Get the type name of a message using isinstance checks when possible.
         
@@ -266,7 +280,7 @@ class MessageProcessor:
         # Fallback to string comparison
         return type(message).__name__
     
-    def _is_result_message(self, message: Any) -> bool:
+    def _is_result_message(self, message: MessageType) -> bool:
         """
         Check if a message is a ResultMessage.
         

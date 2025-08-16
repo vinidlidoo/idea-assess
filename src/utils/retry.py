@@ -2,7 +2,8 @@
 
 import asyncio
 import time
-from typing import TypeVar, Callable, Awaitable
+from typing import TypeVar, Callable
+from collections.abc import Awaitable
 from functools import wraps
 
 # SDK doesn't export these error types, so define them
@@ -10,9 +11,9 @@ has_sdk_errors = False
 
 class RateLimitError(Exception):
     """Placeholder for SDK RateLimitError."""
-    def __init__(self, message="", retry_after=None):
+    def __init__(self, message: str = "", retry_after: float | None = None):
         super().__init__(message)
-        self.retry_after = retry_after
+        self.retry_after: float | None = retry_after
 
 class SDKTimeoutError(Exception):
     """Placeholder for SDK TimeoutError."""
@@ -47,11 +48,11 @@ class RetryConfig:
             exponential_base: Base for exponential backoff
             jitter: Whether to add random jitter to delays
         """
-        self.max_retries = max_retries
-        self.initial_delay = initial_delay
-        self.max_delay = max_delay
-        self.exponential_base = exponential_base
-        self.jitter = jitter
+        self.max_retries: int = max_retries
+        self.initial_delay: float = initial_delay
+        self.max_delay: float = max_delay
+        self.exponential_base: float = exponential_base
+        self.jitter: bool = jitter
     
     def get_delay(self, attempt: int) -> float:
         """
@@ -78,9 +79,9 @@ class RetryConfig:
 
 async def retry_with_backoff(
     func: Callable[..., Awaitable[T]],
-    *args,
+    *args: object,
     config: RetryConfig | None = None,
-    **kwargs
+    **kwargs: object
 ) -> T:
     """
     Retry an async function with exponential backoff.
@@ -178,9 +179,9 @@ def retry_on_transient_errors(
         max_delay=max_delay
     )
     
-    def decorator(func):
+    def decorator(func: Callable[..., Awaitable[T]]) -> Callable[..., Awaitable[T]]:
         @wraps(func)
-        async def wrapper(*args, **kwargs):
+        async def wrapper(*args: object, **kwargs: object) -> T:
             return await retry_with_backoff(func, *args, config=config, **kwargs)
         return wrapper
     
@@ -190,9 +191,9 @@ def retry_on_transient_errors(
 # Synchronous version for non-async functions
 def retry_sync_with_backoff(
     func: Callable[..., T],
-    *args,
+    *args: object,
     config: RetryConfig | None = None,
-    **kwargs
+    **kwargs: object
 ) -> T:
     """
     Retry a synchronous function with exponential backoff.
