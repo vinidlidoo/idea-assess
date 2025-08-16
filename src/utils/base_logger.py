@@ -6,9 +6,33 @@ import json
 import shutil
 from datetime import datetime
 from pathlib import Path
-from typing import Any
+from typing import Any, TypedDict
 import logging
 import sys
+
+
+class EventData(TypedDict, total=False):
+    """Data for logged events."""
+    idea: str
+    slug: str
+    word_count: int
+    character_count: int
+    search_count: int
+    iteration: int
+    feedback_count: int
+    file: str
+    size: int
+    duration: float
+    message_count: int
+    search_number: int
+    query: str
+
+
+class LogMetrics(TypedDict):
+    """Metrics tracked during logging."""
+    events: list[dict[str, Any]]
+    errors: list[dict[str, Any]]
+    milestones: list[dict[str, Any]]
 
 
 class BaseStructuredLogger:
@@ -42,7 +66,7 @@ class BaseStructuredLogger:
         self.debug_file: Path = self.log_dir / "debug.log"
         
         # Track metrics
-        self.metrics: dict[str, Any] = {
+        self.metrics: LogMetrics = {
             "start_time": self.start_time.isoformat(),
             "run_id": run_id,
             "name": name,
@@ -103,7 +127,7 @@ class BaseStructuredLogger:
         """Get title for summary file. Override in subclasses."""
         return f"Run Summary: {self.name}"
     
-    def log_event(self, event_type: str, agent: str, data: dict[str, Any]) -> None:
+    def log_event(self, event_type: str, agent: str, data: EventData) -> None:
         """
         Log a structured event.
         
@@ -200,7 +224,7 @@ class BaseStructuredLogger:
         with open(self.summary_file, 'a') as f:
             _ = f.write(f"- **[{self._format_time(elapsed)}]** ❌ ERROR in {agent}: {error}\n")
     
-    def _update_summary(self, elapsed: float, agent: str, event_type: str, data: dict[str, Any]) -> None:
+    def _update_summary(self, elapsed: float, agent: str, event_type: str, data: EventData) -> None:
         """Update the summary file with important events."""
         with open(self.summary_file, 'a') as f:
             time_str = self._format_time(elapsed)
@@ -208,7 +232,7 @@ class BaseStructuredLogger:
             if summary_line:
                 _ = f.write(summary_line)
     
-    def _format_summary_line(self, time_str: str, agent: str, event_type: str, data: dict[str, Any]) -> str:
+    def _format_summary_line(self, time_str: str, agent: str, event_type: str, data: EventData) -> str:
         """Format a summary line for an event. Override in subclasses for custom formatting."""
         if event_type == "analysis_complete":
             size = data.get("size", 0)

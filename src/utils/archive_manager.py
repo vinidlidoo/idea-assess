@@ -4,8 +4,41 @@ import json
 import shutil
 from datetime import datetime
 from pathlib import Path
-from typing import Any
+from typing import Any, TypedDict
 import re
+
+
+class ArchiveMetadata(TypedDict, total=False):
+    """Metadata for archived runs."""
+    archived_at: str
+    run_type: str
+    run_number: int
+    created_at: str
+    final_status: str
+    iteration_count: int
+    word_count: int
+    character_count: int
+    reviewer_decision: str
+    critical_issues: int
+    improvements: int
+    assessment: str
+    iterations: list[dict[str, Any]]
+
+
+class ArchiveSummaryItem(TypedDict):
+    """Single archive summary item."""
+    name: str
+    run_type: str
+    archived_at: str
+    run_number: int
+
+
+class ArchiveSummary(TypedDict):
+    """Summary of all archives."""
+    archives: list[ArchiveSummaryItem]
+    total: int
+    test_runs: int
+    production_runs: int
 
 
 class ArchiveManager:
@@ -26,7 +59,7 @@ class ArchiveManager:
         self, 
         analysis_dir: Path,
         run_type: str = "production",
-        metadata: dict[str, Any] | None = None
+        metadata: ArchiveMetadata | None = None
     ) -> Path | None:
         """
         Archive the current analysis files before creating new ones.
@@ -81,7 +114,7 @@ class ArchiveManager:
             _ = shutil.move(str(iterations_dir), str(archive_dir / "iterations"))
         
         # Save archive metadata
-        archive_metadata = {
+        archive_metadata: ArchiveMetadata = {
             "archived_at": datetime.now().isoformat(),
             "run_type": run_type,
             "run_number": run_number,
@@ -212,7 +245,7 @@ class ArchiveManager:
         analysis_result: dict[str, Any],
         reviewer_feedback: dict[str, Any] | None = None,
         iteration_history: list[dict[str, Any]] | None = None
-    ) -> dict[str, Any]:
+    ) -> ArchiveMetadata:
         """
         Create consolidated metadata for the current run.
         
@@ -224,7 +257,7 @@ class ArchiveManager:
         Returns:
             Consolidated metadata dictionary
         """
-        metadata = {
+        metadata: ArchiveMetadata = {
             "created_at": datetime.now().isoformat(),
             "final_status": analysis_result.get("final_status", "completed"),
             "iteration_count": len(iteration_history) if iteration_history else 1,
@@ -251,7 +284,7 @@ class ArchiveManager:
         
         return metadata
     
-    def get_archive_summary(self, analysis_dir: Path) -> dict[str, Any]:
+    def get_archive_summary(self, analysis_dir: Path) -> ArchiveSummary:
         """
         Get a summary of archived runs.
         
@@ -263,25 +296,25 @@ class ArchiveManager:
         """
         archive_base = analysis_dir / ".archive"
         if not archive_base.exists():
-            return {"archives": [], "total": 0}
+            return ArchiveSummary(archives=[], total=0, test_runs=0, production_runs=0)
         
-        archives = []
+        archives: list[ArchiveSummaryItem] = []
         for archive_dir in sorted(archive_base.iterdir()):
             if archive_dir.is_dir() and archive_dir.name != "migrated_old_files":
                 metadata_file = archive_dir / "archive_metadata.json"
                 if metadata_file.exists():
                     with open(metadata_file) as f:
                         metadata = json.load(f)
-                        archives.append({
-                            "name": archive_dir.name,
-                            "run_type": metadata.get("run_type", "unknown"),
-                            "archived_at": metadata.get("archived_at", "unknown"),
-                            "run_number": metadata.get("run_number", 0)
-                        })
+                        archives.append(ArchiveSummaryItem(
+                            name=archive_dir.name,
+                            run_type=metadata.get("run_type", "unknown"),
+                            archived_at=metadata.get("archived_at", "unknown"),
+                            run_number=metadata.get("run_number", 0)
+                        ))
         
-        return {
-            "archives": archives,
-            "total": len(archives),
-            "test_runs": len([a for a in archives if a["run_type"] == "test"]),
-            "production_runs": len([a for a in archives if a["run_type"] == "production"])
-        }
+        return ArchiveSummary(
+            archives=archives,
+            total=len(archives),
+            test_runs=len([a for a in archives if a["run_type"] == "test"]),
+            production_runs=len([a for a in archives if a["run_type"] == "production"])
+        )

@@ -1,9 +1,21 @@
 """Pipeline orchestrator that uses file-based communication between agents."""
 
 import json
-from typing import Any
+from typing import Any, TypedDict
 from datetime import datetime
 from pathlib import Path
+
+
+class PipelineResult(TypedDict, total=False):
+    """Result from pipeline execution."""
+    success: bool
+    error: str
+    iteration_count: int
+    final_status: str
+    file_path: str
+    history_path: str
+    feedback_history: list[dict[str, Any]]
+    final_analysis: str
 
 from ..agents import AnalystAgent
 from ..agents.reviewer import ReviewerAgent, FeedbackProcessor
@@ -178,7 +190,7 @@ class AnalysisPipeline:
         max_iterations: int = 3,
         debug: bool = False,
         use_websearch: bool = True
-    ) -> dict[str, Any]:
+    ) -> PipelineResult:
         """
         Run the analyst-reviewer feedback loop using file-based communication.
         
@@ -466,7 +478,7 @@ class SimplePipeline:
         config: AnalysisConfig,
         debug: bool = False,
         use_websearch: bool = True
-    ) -> dict[str, Any]:
+    ) -> PipelineResult:
         """
         Run analyst without reviewer feedback.
         
