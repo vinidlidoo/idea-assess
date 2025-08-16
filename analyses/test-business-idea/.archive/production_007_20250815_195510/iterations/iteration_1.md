@@ -1,3 +1,0 @@
-# Analysis
-
-Some content.

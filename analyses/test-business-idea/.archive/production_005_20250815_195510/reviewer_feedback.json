@@ -1,3 +1,0 @@
-{
-  "error": "Failed to load feedback: [Errno 2] No such file or directory: '{\"decision\": \"accept\", \"feedback\": {\"positive\": [\"Good structure\"], \"critical\": [], \"suggestions\": []}}'"
-}

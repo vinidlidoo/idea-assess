@@ -46,18 +46,24 @@ class TestPipelineIntegration:
             metadata={"duration": 1.0}
         ))
         
+        # Create feedback file that reviewer will return (accept)
+        feedback_dir = tmp_path / "feedback"
+        feedback_dir.mkdir(exist_ok=True)
+        
+        accept_feedback_file = feedback_dir / "accept_feedback.json"
+        accept_feedback_file.write_text(json.dumps({
+            "iteration_recommendation": "accept",
+            "iteration_reason": "Analysis meets requirements",
+            "critical_issues": [],
+            "positive_aspects": ["Good structure"],
+            "suggestions": []
+        }))
+        
         # Mock the reviewer agent
         mock_reviewer = AsyncMock()
         mock_reviewer.process = AsyncMock(return_value=AgentResult(
             success=True,
-            content=json.dumps({
-                "decision": "accept",
-                "feedback": {
-                    "positive": ["Good structure"],
-                    "critical": [],
-                    "suggestions": []
-                }
-            }),
+            content=str(accept_feedback_file),  # Return file path
             metadata={"duration": 0.5}
         ))
         
@@ -105,31 +111,41 @@ class TestPipelineIntegration:
             )
         ])
         
+        # Create feedback files that reviewer will return
+        feedback_dir = tmp_path / "feedback"
+        feedback_dir.mkdir(exist_ok=True)
+        
+        # First iteration feedback (reject)
+        feedback1_file = feedback_dir / "feedback1.json"
+        feedback1_file.write_text(json.dumps({
+            "iteration_recommendation": "reject",
+            "iteration_reason": "Analysis is too short and missing key elements",
+            "critical_issues": ["Too short", "Missing market analysis"],
+            "positive_aspects": ["Good start"],
+            "suggestions": ["Add more detail", "Include competition"]
+        }))
+        
+        # Second iteration feedback (accept)
+        feedback2_file = feedback_dir / "feedback2.json"
+        feedback2_file.write_text(json.dumps({
+            "iteration_recommendation": "accept",
+            "iteration_reason": "Analysis is now comprehensive",
+            "critical_issues": [],
+            "positive_aspects": ["Much improved", "Good detail"],
+            "suggestions": []
+        }))
+        
         # Mock reviewer that rejects first, accepts second
         mock_reviewer = AsyncMock()
         mock_reviewer.process = AsyncMock(side_effect=[
             AgentResult(
                 success=True,
-                content=json.dumps({
-                    "decision": "reject",
-                    "feedback": {
-                        "positive": ["Good start"],
-                        "critical": ["Too short", "Missing market analysis"],
-                        "suggestions": ["Add more detail", "Include competition"]
-                    }
-                }),
+                content=str(feedback1_file),  # Return file path
                 metadata={"duration": 0.5}
             ),
             AgentResult(
                 success=True,
-                content=json.dumps({
-                    "decision": "accept",
-                    "feedback": {
-                        "positive": ["Much improved", "Good detail"],
-                        "critical": [],
-                        "suggestions": []
-                    }
-                }),
+                content=str(feedback2_file),  # Return file path
                 metadata={"duration": 0.5}
             )
         ])
@@ -170,18 +186,24 @@ class TestPipelineIntegration:
             metadata={"duration": 1.0}
         ))
         
+        # Create feedback file that reviewer will return (always reject)
+        feedback_dir = tmp_path / "feedback"
+        feedback_dir.mkdir(exist_ok=True)
+        
+        reject_feedback_file = feedback_dir / "reject_feedback.json"
+        reject_feedback_file.write_text(json.dumps({
+            "iteration_recommendation": "reject",
+            "iteration_reason": "Still not meeting quality standards",
+            "critical_issues": ["Still not good enough"],
+            "positive_aspects": [],
+            "suggestions": ["Keep trying"]
+        }))
+        
         # Mock reviewer that always rejects
         mock_reviewer = AsyncMock()
         mock_reviewer.process = AsyncMock(return_value=AgentResult(
             success=True,
-            content=json.dumps({
-                "decision": "reject",
-                "feedback": {
-                    "positive": [],
-                    "critical": ["Still not good enough"],
-                    "suggestions": ["Keep trying"]
-                }
-            }),
+            content=str(reject_feedback_file),  # Return file path
             metadata={"duration": 0.5}
         ))
         
@@ -241,35 +263,53 @@ class TestPipelineIntegration:
     @pytest.mark.integration  
     async def test_pipeline_file_creation(self, pipeline, config, tmp_path):
         """Test that pipeline creates appropriate files."""
+        # Use the actual analyses directory for this test
+        # Get the project root
+        from pathlib import Path
+        project_root = Path(__file__).parent.parent.parent
+        analyses_dir = project_root / "analyses"
+        
         # Create test idea slug
-        idea_slug = "test-business-idea"
-        idea_dir = config.analyses_dir / idea_slug
-        idea_dir.mkdir(parents=True, exist_ok=True)
+        idea_slug = "test-file-creation"
+        idea_dir = analyses_dir / idea_slug
         
-        # Create initial analysis file
-        analysis_file = idea_dir / "analysis.md"
-        analysis_file.write_text("# Initial Analysis\n\nTest content.")
-        
-        # Mock reviewer
-        mock_reviewer = AsyncMock()
-        mock_reviewer.process = AsyncMock(return_value=AgentResult(
-            success=True,
-            content=json.dumps({
-                "decision": "accept",
-                "feedback": {
-                    "positive": ["Good"],
-                    "critical": [],
-                    "suggestions": []
-                }
-            }),
-            metadata={"duration": 0.5}
-        ))
-        
-        # Test that reviewer can read the file
-        from src.agents.reviewer import ReviewerAgent
-        reviewer = ReviewerAgent(config)
-        
-        # Validate the path works
-        validated_path = reviewer._validate_analysis_path(str(idea_dir))
-        assert validated_path.exists()
-        assert (validated_path / "analysis.md").exists()
+        try:
+            # Create the directory and file
+            idea_dir.mkdir(parents=True, exist_ok=True)
+            
+            # Create initial analysis file
+            analysis_file = idea_dir / "analysis.md"
+            analysis_file.write_text("# Initial Analysis\n\nTest content.")
+            
+            # Create feedback file
+            feedback_file = tmp_path / "feedback.json"
+            feedback_file.write_text(json.dumps({
+                "iteration_recommendation": "accept",
+                "iteration_reason": "Analysis is complete",
+                "critical_issues": [],
+                "positive_aspects": ["Good"],
+                "suggestions": []
+            }))
+            
+            # Mock reviewer
+            mock_reviewer = AsyncMock()
+            mock_reviewer.process = AsyncMock(return_value=AgentResult(
+                success=True,
+                content=str(feedback_file),  # Return file path
+                metadata={"duration": 0.5}
+            ))
+            
+            # Test that reviewer can validate paths
+            from src.agents.reviewer import ReviewerAgent
+            reviewer = ReviewerAgent(config)
+            
+            # Validate the path works
+            validated_path = reviewer._validate_analysis_path(str(idea_dir))
+            assert validated_path.exists()
+            assert (validated_path / "analysis.md").exists()
+            
+        finally:
+            # Clean up the test directory
+            import shutil
+            if idea_dir.exists():
+                shutil.rmtree(idea_dir)
