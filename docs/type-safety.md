@@ -11,11 +11,12 @@ This codebase follows a **pragmatic type safety** approach that balances strict 
 3. **Type safety where it matters** - Public APIs, data validation, core logic
 4. **Dynamic typing where appropriate** - JSON, external data, SDK interfaces
 
-## Current State
+## Current State (2025-08-16)
 
 - **Errors**: 0 ✅
 - **Warnings**: 77 (84% reduction from 467)
 - **Type Checker**: basedpyright (strict mode)
+- **Linter**: ruff (for style and basic type issues)
 
 ## Accepted Patterns
 
@@ -87,6 +88,23 @@ result = await agent.process(input_data)
 
 **Why**: Outside our control, part of Python/SDK runtime.
 
+## Tools We Use
+
+### basedpyright
+
+- **Purpose**: Strict type checking (more strict than pyright)
+- **Configuration**: Strict mode enabled
+- **Focus**: Type safety, type inference, type completeness
+
+### ruff
+
+- **Purpose**: Fast Python linter and formatter
+- **Configuration**: Default rules + type-related checks
+- **Focus**: Code style, unused imports, basic type issues
+- **Note**: ruff doesn't do deep type checking like basedpyright
+
+Both tools complement each other - basedpyright for deep type analysis, ruff for fast style and basic checks.
+
 ## Type Architecture
 
 ### Protocol-Based Polymorphism
@@ -132,8 +150,13 @@ class FeedbackDict(TypedDict):
 ### Recommended GitHub Actions
 
 ```yaml
-- name: Type Check
+- name: Lint and Type Check
   run: |
+    # Fast style check with ruff
+    ruff check src/
+    ruff format --check src/
+    
+    # Deep type check with basedpyright
     basedpyright src/
     # Fail on errors, succeed with warnings
     if [ $? -eq 2 ]; then exit 1; fi
@@ -143,6 +166,14 @@ class FeedbackDict(TypedDict):
 
 ```yaml
 repos:
+  # Ruff for fast linting and formatting
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.1.0
+    hooks:
+      - id: ruff
+      - id: ruff-format
+  
+  # Basedpyright for type checking
   - repo: local
     hooks:
       - id: type-check
