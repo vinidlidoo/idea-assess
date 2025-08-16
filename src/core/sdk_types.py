@@ -1,6 +1,6 @@
 """Type definitions for Claude SDK compatibility."""
 
-from typing import Protocol, runtime_checkable, Any
+from typing import Protocol, runtime_checkable
 
 
 @runtime_checkable
@@ -16,7 +16,7 @@ class SystemMessageProtocol(SDKMessage, Protocol):
     """Protocol for SystemMessage type."""
 
     @property
-    def data(self) -> dict[str, Any] | None:
+    def data(self) -> dict[str, object] | None:
         """System message data."""
         ...
 
@@ -65,7 +65,7 @@ class ContentBlock(Protocol):
         ...
 
     @property
-    def input(self) -> dict[str, Any] | None:
+    def input(self) -> dict[str, object] | None:
         """Tool input if tool block."""
         ...
 

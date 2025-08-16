@@ -151,7 +151,7 @@ class MessageProcessor:
                     if block.name == "WebSearch" and block.input:
                         self.search_count += 1
                         query = block.input.get("query", "unknown")
-                        search_queries.append(query)
+                        search_queries.append(str(query))
                         import sys
 
                         print(

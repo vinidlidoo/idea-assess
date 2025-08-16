@@ -88,12 +88,12 @@ Examples:
 
     args = parser.parse_args()
 
-    # Extract typed values from args
-    idea: str = args.idea
-    debug: bool = args.debug
-    no_websearch: bool = args.no_websearch
-    with_review: bool = args.with_review
-    max_iterations: int = args.max_iterations
+    # Extract typed values from args with explicit casting
+    idea = str(getattr(args, "idea", ""))
+    debug = bool(getattr(args, "debug", False))
+    no_websearch = bool(getattr(args, "no_websearch", False))
+    with_review = bool(getattr(args, "with_review", False))
+    max_iterations = int(getattr(args, "max_iterations", 3))
 
     # Run the analysis
     print("\n" + "=" * 60)
@@ -181,7 +181,7 @@ Examples:
                 print("\n📊 Statistics:")
                 print(f"  • Duration: {metadata.get('duration', 0):.1f}s")
                 print(f"  • Messages: {metadata.get('message_count', 0)}")
-                if not args.no_websearch:
+                if not no_websearch:
                     print(f"  • Web searches: {metadata.get('search_count', 0)}")
 
             analysis = result.get("analysis", "")

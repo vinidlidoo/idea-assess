@@ -21,6 +21,11 @@ from ..utils.archive_manager import ArchiveManager
 class AnalysisPipeline:
     """Orchestrates the flow of data between agents using file-based communication."""
 
+    config: AnalysisConfig
+    agents: dict[str, Any]
+    feedback_processor: FeedbackProcessor
+    archive_manager: ArchiveManager
+
     def __init__(self, config: AnalysisConfig):
         """
         Initialize the pipeline with configuration.
@@ -33,7 +38,7 @@ class AnalysisPipeline:
         self.feedback_processor = FeedbackProcessor()
         self.archive_manager = ArchiveManager(max_archives=5)
 
-    def register_agent(self, name: str, agent):
+    def register_agent(self, name: str, agent: Any) -> None:
         """
         Register an agent in the pipeline.
 
@@ -241,7 +246,7 @@ class AnalysisPipeline:
             Dictionary containing final analysis and metadata
         """
         # Initialize logging
-        logger, run_id, slug = self._initialize_logging(
+        logger, _, slug = self._initialize_logging(
             idea, debug, max_iterations, use_websearch
         )
 
@@ -256,8 +261,8 @@ class AnalysisPipeline:
         iteration_count = 0
         current_analysis = None
         current_analysis_file = None
-        feedback_history = []
-        iteration_results = []
+        feedback_history: list[dict[str, Any]] = []
+        iteration_results: list[dict[str, Any]] = []
 
         try:
             while iteration_count < max_iterations:
@@ -376,7 +381,7 @@ class AnalysisPipeline:
                     reviewer_result.content
                 )  # This should be the path to feedback file
                 feedback = self.feedback_processor.load_feedback(feedback_file)
-                feedback_history.append(feedback)
+                feedback_history.append(cast(dict[str, Any], feedback))
 
                 # Also save/update main reviewer_feedback.json for easy access
                 main_feedback = analysis_dir / "reviewer_feedback.json"
@@ -480,9 +485,11 @@ class AnalysisPipeline:
 
                 # Save consolidated metadata
                 metadata = self.archive_manager.create_metadata(
-                    result,
-                    feedback_history[-1] if feedback_history else None,
-                    iteration_results,
+                    cast(dict[str, object], result),
+                    cast(dict[str, object], feedback_history[-1])
+                    if feedback_history
+                    else None,
+                    cast(list[dict[str, object]], iteration_results),
                 )
                 metadata_path = analysis_dir / "metadata.json"
                 with open(metadata_path, "w") as f:
@@ -619,7 +626,7 @@ class SimplePipeline:
                 _ = f.write(result.content)
 
             # Create metadata
-            analysis_result = {
+            analysis_result: dict[str, object] = {
                 "final_status": "completed",
                 "word_count": len(result.content.split()),
                 "character_count": len(result.content),

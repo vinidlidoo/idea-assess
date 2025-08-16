@@ -45,10 +45,12 @@ class TestLogger(BaseStructuredLogger):
             _ = f.write(f"**Test Result:** {result['test_result']}  \n")
         if "output_files" in result:
             _ = f.write("\n### Output Files\n\n")
-            files = result.get("output_files", [])
-            if isinstance(files, list):
-                for file in files:
-                    _ = f.write(f"- {file}\n")
+            files_raw = result.get("output_files", [])
+            if isinstance(files_raw, list):
+                # Type assertion: files_raw items should be strings or convertible to strings
+                for item in files_raw:
+                    if item is not None:
+                        _ = f.write(f"- {item}\n")
 
 
 def extract_events_from_output(content: str, idea: str) -> list[dict[str, object]]:
@@ -62,7 +64,7 @@ def extract_events_from_output(content: str, idea: str) -> list[dict[str, object
     Returns:
         List of events
     """
-    events = []
+    events: list[dict[str, object]] = []
     lines = content.split("\n")
 
     # Track approximate timestamps based on line position
