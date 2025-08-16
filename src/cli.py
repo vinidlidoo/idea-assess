@@ -6,25 +6,36 @@ This module provides a CLI tool for analyzing business ideas using the modular
 agent system with the Claude SDK.
 """
 
-import argparse
-import asyncio
 import sys
-from pathlib import Path
+import os
+import traceback
 from datetime import datetime
+
+try:
+    import argparse
+    import asyncio
+    from pathlib import Path
+except Exception as e:
+    print(f"Import failure: {e}", file=sys.stderr)
+    raise
 
 # Add parent directory to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from dotenv import load_dotenv
-
-from src.core import get_default_config
-from src.core.pipeline import AnalysisPipeline, SimplePipeline
-from src.agents import AnalystAgent
-from src.utils.file_operations import save_analysis, AnalysisResult
-from src.utils.text_processing import show_preview
-
-# Load environment variables
-load_dotenv()
+try:
+    from dotenv import load_dotenv
+    
+    from src.core import get_default_config
+    from src.core.pipeline import AnalysisPipeline, SimplePipeline
+    from src.agents import AnalystAgent
+    from src.utils.file_operations import save_analysis, AnalysisResult
+    from src.utils.text_processing import show_preview
+    
+    # Load environment variables
+    load_dotenv()
+except Exception as e:
+    print(f"Module import failure: {e}", file=sys.stderr)
+    raise
 
 
 async def main():
@@ -94,6 +105,7 @@ Examples:
         print(f"\n🔄 Running analysis with reviewer feedback (max {args.max_iterations} iterations)...")
         
         pipeline = AnalysisPipeline(config)
+        
         result = await pipeline.run_analyst_reviewer_loop(
             idea=args.idea,
             max_iterations=args.max_iterations,
@@ -167,4 +179,13 @@ Examples:
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    try:
+        asyncio.run(main())
+    except KeyboardInterrupt:
+        print("\n[INFO] Operation cancelled by user", file=sys.stderr)
+        sys.exit(130)
+    except Exception as e:
+        print(f"\n[FATAL] Unhandled error: {e}", file=sys.stderr)
+        if os.environ.get('DEBUG'):
+            print(f"[FATAL] Traceback: {traceback.format_exc()}", file=sys.stderr)
+        sys.exit(1)

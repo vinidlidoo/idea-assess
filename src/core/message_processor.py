@@ -77,7 +77,9 @@ class MessageProcessor:
             ProcessedMessage with extracted data
         """
         self.message_count += 1
+        
         message_type = self._get_message_type(message)
+        
         content = []
         search_queries = []
         metadata = {'message_number': self.message_count}
@@ -86,7 +88,6 @@ class MessageProcessor:
         session_id = self.extract_session_id(message)
         if session_id:
             metadata['session_id'] = session_id
-            # Session ID is now tracked in event metadata
         
         # Process different message types
         if hasattr(message, 'content'):
@@ -103,12 +104,13 @@ class MessageProcessor:
         if self.logger:
             self._log_message(message_type, content, search_queries, metadata)
         
-        return ProcessedMessage(
+        result = ProcessedMessage(
             message_type=message_type,
             content=content,
             search_queries=search_queries,
             metadata=metadata
         )
+        return result
     
     def _extract_content(self, msg_content: Any) -> tuple[list[str], list[str]]:
         """
@@ -132,7 +134,8 @@ class MessageProcessor:
                     self.search_count += 1
                     query = getattr(block, 'input', {}).get('query', 'unknown')
                     search_queries.append(query)
-                    print(f"  🔍 Search #{self.search_count}: {query} (may take 30-120s)...")
+                    import sys
+                    print(f"  🔍 Search #{self.search_count}: {query} (may take 30-120s)...", file=sys.stderr, flush=True)
                     if self.logger:
                         self.logger.log_event("websearch_query", "MessageProcessor", {
                             "search_number": self.search_count,
@@ -183,11 +186,12 @@ class MessageProcessor:
         if search_queries:
             msg_data["search_queries"] = search_queries
         
-        self.logger.log_event(
-            f"sdk_message_{message_type.lower()}",
-            "MessageProcessor",
-            msg_data
-        )
+        if self.logger:
+            self.logger.log_event(
+                f"sdk_message_{message_type.lower()}",
+                "MessageProcessor",
+                msg_data
+            )
     
     def get_final_content(self) -> str:
         """

@@ -39,11 +39,13 @@ class ArchiveManager:
         Returns:
             Path to the archive directory, or None if nothing to archive
         """
+        
         if not analysis_dir.exists():
             return None
             
         # Check if there's anything to archive
         analysis_file = analysis_dir / "analysis.md"
+        
         if not analysis_file.exists() or analysis_file.is_symlink():
             # If it's a symlink, we're still using old structure
             self._migrate_old_structure(analysis_dir)
@@ -101,7 +103,7 @@ class ArchiveManager:
         Args:
             analysis_dir: Directory to migrate
         """
-        print(f"🔄 Migrating old file structure in {analysis_dir.name}...")
+        import sys
         
         # Create archive directory
         archive_base = analysis_dir / ".archive"
@@ -136,7 +138,7 @@ class ArchiveManager:
                     # Broken symlink, just remove it
                     link_path.unlink()
         
-        print(f"✅ Migrated {len(list(old_files_dir.iterdir()))} old files to archive")
+        file_count = len(list(old_files_dir.iterdir())) if old_files_dir.exists() else 0
     
     def _get_next_run_number(self, archive_base: Path, run_type: str) -> int:
         """

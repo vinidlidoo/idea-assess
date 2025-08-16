@@ -1,0 +1,100 @@
+{
+  "iterations": [
+    {
+      "iteration": 1,
+      "analysis_file": "analyses/b2b-marketplace-for-recycled-materials/iterations/iteration_1.md",
+      "analysis_length": 7256,
+      "metadata": {
+        "idea": "B2B marketplace for recycled materials",
+        "slug": "b2b-marketplace-for-recycled-materials",
+        "timestamp": "2025-08-15T18:52:16.338676",
+        "search_count": 0,
+        "message_count": 3,
+        "duration": 58.86551809310913,
+        "interrupted": false
+      }
+    }
+  ],
+  "feedback": [
+    {
+      "overall_assessment": "Strong analysis with compelling narrative and solid metrics, but missing critical bottom-up market calculations and needs more specific competitive differentiation. The 10x improvement claim needs clearer justification.",
+      "strengths": [
+        "Excellent opening with 'holy shit' stat: 7.6 billion tons of waste with 67% landfilled",
+        "Strong customer pain example with specific dollar amounts ($18K disposal vs $31K virgin material)",
+        "Clear unit economics: CAC $2,100, LTV $121,000, 67% gross margin",
+        "Good use of 2024-2025 data sources and references",
+        "Specific milestones with measurable targets"
+      ],
+      "critical_issues": [
+        {
+          "section": "The Solution",
+          "issue": "10x improvement claim (10x faster transactions) lacks clear baseline comparison",
+          "suggestion": "Specify exact comparison: '72 hours vs 6-8 weeks (15x faster)' or provide clearer metrics showing 10x improvement in value, not just speed",
+          "priority": "critical"
+        },
+        {
+          "section": "Market Size",
+          "issue": "Bottom-up TAM calculation uses unclear assumptions",
+          "suggestion": "Break down: How many of 320K facilities are addressable? What % will use a marketplace? Current calc assumes 100% adoption at 15% take rate. More realistic: 50K facilities (SMBs) \u00d7 30% adoption \u00d7 $85K \u00d7 15% = $191M TAM",
+          "priority": "critical"
+        },
+        {
+          "section": "Competition & Moat",
+          "issue": "Unfair advantage (50K transaction dataset) not sufficiently defensible",
+          "suggestion": "Explain why competitors can't quickly build similar dataset. What proprietary insights does this data provide? How long would it take a funded competitor to replicate?",
+          "priority": "critical"
+        }
+      ],
+      "improvements": [
+        {
+          "section": "Business Model",
+          "issue": "Path to $100M ARR seems overly optimistic with only 1,650 customers",
+          "suggestion": "Add validation: What % market share is 1,650 customers? Show comparable marketplaces that achieved similar concentration. Address platform risk of depending on small customer base",
+          "priority": "important"
+        },
+        {
+          "section": "Why Now?",
+          "issue": "Missing clear explanation why BigCo hasn't done this",
+          "suggestion": "Add specific section: 'Why hasn't Waste Management or Amazon Business built this?' Address their innovation barriers, channel conflicts, or strategic blindspots",
+          "priority": "important"
+        },
+        {
+          "section": "Key Risks & Mitigation",
+          "issue": "Economic downturn mitigation seems hand-wavy",
+          "suggestion": "Provide specific 2008 recession data for industrial recycling (not consumer). Show how unit economics change in downturn. Consider offering recession pricing model",
+          "priority": "important"
+        },
+        {
+          "section": "The Problem",
+          "issue": "78% SMB exclusion stat needs source",
+          "suggestion": "Add citation for minimum volume requirements and SMB exclusion percentage. This is a key claim that needs verification",
+          "priority": "important"
+        }
+      ],
+      "minor_suggestions": [
+        {
+          "section": "What We Do",
+          "issue": "Could be even simpler",
+          "suggestion": "Try: 'eBay for industrial waste - we help factories sell their scrap to other factories who need it'",
+          "priority": "minor"
+        },
+        {
+          "section": "Milestones",
+          "issue": "Series A timeline seems aggressive",
+          "suggestion": "Consider adding fallback milestones if Series A takes longer. Show path to profitability without additional funding",
+          "priority": "minor"
+        },
+        {
+          "section": "References",
+          "issue": "Could use more recent Q1 2025 data",
+          "suggestion": "Look for January 2025 reports on recycling markets or EPA updates to show most current market conditions",
+          "priority": "minor"
+        }
+      ],
+      "iteration_recommendation": "reject",
+      "iteration_reason": "Analysis has 3 critical issues that must be addressed: unclear 10x improvement justification, unrealistic TAM assumptions, and weak competitive moat explanation. Additionally, missing key 'Why hasn't BigCo done this?' analysis. These gaps would significantly weaken investor confidence."
+    }
+  ],
+  "final_status": "max_iterations_reached",
+  "idea": "B2B marketplace for recycled materials"
+}

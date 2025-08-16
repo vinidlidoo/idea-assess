@@ -2,6 +2,7 @@
 
 import asyncio
 import signal
+import sys
 import threading
 import time
 import traceback
@@ -63,18 +64,23 @@ class AnalystAgent(BaseAgent):
             **kwargs: Additional options:
                 - debug: Enable debug logging
                 - use_websearch: Enable WebSearch tool
+                - revision_context: Dict with previous_analysis_file and feedback_file paths
                 
         Returns:
             AgentResult containing the analysis
         """
+        
         debug = kwargs.get('debug', False)
         use_websearch = kwargs.get('use_websearch', True)
+        revision_context = kwargs.get('revision_context', None)
+        
         
         try:
             result = await self._analyze_idea(
                 idea=input_data,
                 debug=debug,
-                use_websearch=use_websearch
+                use_websearch=use_websearch,
+                revision_context=revision_context
             )
             
             if result:
@@ -111,7 +117,8 @@ class AnalystAgent(BaseAgent):
         self,
         idea: str,
         debug: bool = False,
-        use_websearch: bool = True
+        use_websearch: bool = True,
+        revision_context: Optional[dict] = None
     ) -> Optional[AnalysisResult]:
         """
         Internal method to analyze a business idea.
@@ -120,10 +127,12 @@ class AnalystAgent(BaseAgent):
             idea: One-liner business idea to analyze
             debug: If True, log all messages to logs/ directory
             use_websearch: If True, allow WebSearch tool usage
+            revision_context: Optional dict with previous_analysis_file and feedback_file paths
             
         Returns:
             AnalysisResult containing the analysis and metadata, or None if error
         """
+        
         # Setup
         start_time = time.time()
         client: Optional[ClaudeSDKClient] = None
@@ -131,9 +140,11 @@ class AnalystAgent(BaseAgent):
         # Setup logger if debug mode (pipeline already has the main logger)
         import os
         
-        # Don't create logs when running from test harness
+        # Use appropriate logger based on context
         if os.environ.get('TEST_HARNESS_RUN') == '1':
-            logger = None
+            # Use console logger for test visibility
+            from ..utils.console_logger import ConsoleLogger
+            logger = ConsoleLogger("Analyst")
         elif debug and not hasattr(self, '_pipeline_logger'):
             run_id = datetime.now().strftime('%Y%m%d_%H%M%S')
             slug = create_slug(idea)
@@ -151,7 +162,7 @@ class AnalystAgent(BaseAgent):
         def handle_interrupt(signum, frame):
             self.interrupt_event.set()
             self._interrupted = True
-            print("\n⚠️  Interrupt received, attempting graceful shutdown...")
+            print("\n[ANALYST] Interrupt received, attempting graceful shutdown...", file=sys.stderr, flush=True)
             if client:
                 asyncio.create_task(client.interrupt())
         
@@ -184,13 +195,25 @@ class AnalystAgent(BaseAgent):
                 max_websearches=self.config.max_websearches if use_websearch else 0
             )
             
-            # Load and format user prompt template
-            user_template = load_prompt("analyst_user.md", Path("config/prompts"))
-            user_prompt = user_template.format(
-                idea=idea,
-                resource_note=resource_note,
-                websearch_instruction=websearch_instruction
-            )
+            # Build user prompt based on whether this is a revision
+            if revision_context:
+                # Load revision-specific user prompt
+                revision_template = load_prompt("analyst_user_revision.md", Path("config/prompts"))
+                user_prompt = revision_template.format(
+                    idea=idea,
+                    previous_analysis_file=revision_context['previous_analysis_file'],
+                    feedback_file=revision_context['feedback_file'],
+                    resource_note=resource_note,
+                    websearch_instruction=websearch_instruction
+                )
+            else:
+                # Load and format standard user prompt template
+                user_template = load_prompt("analyst_user.md", Path("config/prompts"))
+                user_prompt = user_template.format(
+                    idea=idea,
+                    resource_note=resource_note,
+                    websearch_instruction=websearch_instruction
+                )
 
             # Configure options
             allowed_tools = self.get_allowed_tools() if use_websearch else []
@@ -200,21 +223,25 @@ class AnalystAgent(BaseAgent):
                 allowed_tools=allowed_tools
             )
             
-            print(f"🎯 Analyzing: {idea}")
-            print(f"🔧 WebSearch: {'Enabled' if use_websearch else 'Disabled'}")
-            print("🔌 Connecting to Claude...")
+            if logger:
+                logger.log_event("analysis_start", "Analyst", {
+                    "idea": idea,
+                    "use_websearch": use_websearch
+                })
             
             # Create client and analyze
             async with ClaudeSDKClient(options=options) as client_instance:
                 client = client_instance
                 
-                print("📤 Sending analysis request...")
                 await client.query(user_prompt)
                 
-                websearch_note = " (WebSearch may take 30-120s per search)" if use_websearch else ""
-                print(f"📥 Receiving analysis{websearch_note}...")
+                if logger:
+                    logger.log_event("analysis_receiving", "Analyst", {
+                        "use_websearch": use_websearch
+                    })
                 
                 async for message in client.receive_response():
+                    
                     # Check for interrupt
                     if self._interrupted:
                         raise AnalysisInterrupted("User interrupted analysis")
@@ -224,14 +251,19 @@ class AnalystAgent(BaseAgent):
                     
                     # Show progress
                     stats = processor.get_statistics()
-                    if stats['message_count'] % self.config.progress_interval == 0:
-                        searches_info = f", {stats['search_count']} searches" if use_websearch else ""
-                        print(f"  ⏳ Processing... (message {stats['message_count']}{searches_info})")
+                    
+                    if logger and stats['message_count'] % self.config.progress_interval == 0:
+                        logger.log_event("analysis_progress", "Analyst", {
+                            "message_count": stats['message_count'],
+                            "search_count": stats['search_count'] if use_websearch else 0
+                        })
                     
                     # Check for completion
                     if processed.message_type == "ResultMessage":
-                        search_info = f" ({stats['search_count']} searches used)" if use_websearch else ""
-                        print(f"✅ Analysis complete{search_info}")
+                        if logger:
+                            logger.log_event("analysis_complete", "Analyst", {
+                                "search_count": stats['search_count'] if use_websearch else 0
+                            })
                         
                         # Get content from ResultMessage or collected text
                         content = processed.content[0] if processed.content else processor.get_final_content()
@@ -255,12 +287,17 @@ class AnalystAgent(BaseAgent):
                                 interrupted=self._interrupted
                             )
                         break
+                    
+            
             
             # If no ResultMessage but we have text
             final_content = processor.get_final_content()
             if final_content:
                 stats = processor.get_statistics()
-                print(f"✅ Analysis complete ({len(final_content)} chars)")
+                if logger:
+                    logger.log_event("analysis_complete", "Analyst", {
+                        "size": len(final_content)
+                    })
                 return AnalysisResult(
                     content=final_content,
                     idea=idea,
@@ -272,11 +309,11 @@ class AnalystAgent(BaseAgent):
                     interrupted=False
                 )
             else:
-                print("❌ No analysis generated")
+                print("[ANALYST] ERROR: No analysis generated", file=sys.stderr, flush=True)
                 return None
                 
         except AnalysisInterrupted as e:
-            print(f"\n⚠️  {e}")
+            print(f"\n[ANALYST] WARNING: {e}", file=sys.stderr, flush=True)
             # Return partial results if available
             final_content = processor.get_final_content()
             if final_content:
@@ -296,7 +333,7 @@ class AnalystAgent(BaseAgent):
         except Exception as e:
             duration = time.time() - start_time
             error_msg = f"\n❌ Error during analysis after {duration:.1f}s: {e}"
-            print(error_msg)
+            print(f"[ANALYST] ERROR: {error_msg}", file=sys.stderr, flush=True)
             
             if logger:
                 logger.log_error(str(e), "Analyst", traceback=traceback.format_exc() if debug else None)

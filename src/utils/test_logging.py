@@ -218,7 +218,4 @@ def create_structured_logs(test_dir: str, output_file: str, test_scenario: str, 
     with open(metrics_file, 'w') as f:
         json.dump(metrics, f, indent=2)
     
-    # Create debug.log (copy of output.log for consistency)
-    debug_file = test_path / "debug.log"
-    with open(debug_file, 'w') as f:
-        f.write(content)
+    # Note: debug.log removed as it was redundant with output.log

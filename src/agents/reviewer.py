@@ -101,9 +101,11 @@ class ReviewerAgent(BaseAgent):
         import os
         logger = None
         
-        # Don't create logs when running from test harness
+        # Use appropriate logger based on context
         if os.environ.get('TEST_HARNESS_RUN') == '1':
-            logger = None
+            # Use console logger for test visibility
+            from ..utils.console_logger import ConsoleLogger
+            logger = ConsoleLogger("Reviewer")
         elif debug:
             from datetime import datetime
             run_id = datetime.now().strftime('%Y%m%d_%H%M%S')
@@ -151,10 +153,22 @@ class ReviewerAgent(BaseAgent):
             # Query Claude for review
             review_complete = False
             
+            if logger:
+                logger.log_event("review_start", "Reviewer", {
+                    "idea_slug": idea_slug,
+                    "iteration": iteration_count
+                })
+            
             async with ClaudeSDKClient(options=options) as client:
                 await client.query(review_prompt)
                 
+                if logger:
+                    logger.log_event("review_processing", "Reviewer", {})
+                
+                message_count = 0
+                
                 async for message in client.receive_response():
+                    message_count += 1
                     # Debug log the raw message
                     if logger:
                         logger.log_event(f"raw_message_{type(message).__name__}", "Reviewer", {
@@ -163,6 +177,12 @@ class ReviewerAgent(BaseAgent):
                         })
                     
                     result = processor.process_message(message)
+                    
+                    # Show progress periodically
+                    if logger and message_count % 2 == 0:
+                        logger.log_event("review_progress", "Reviewer", {
+                            "message_count": message_count
+                        })
                     
                     if logger:
                         logger.log_event(f"reviewer_message_{result.message_type}", "Reviewer", {
@@ -190,12 +210,16 @@ class ReviewerAgent(BaseAgent):
                 with open(feedback_file, 'r') as f:
                     feedback_json = json.load(f)
                 
+                # Log summary of feedback
+                recommendation = feedback_json.get('iteration_recommendation', 'unknown')
+                critical_count = len(feedback_json.get('critical_issues', []))
+                
                 if logger:
                     logger.log_event("review_complete", "Reviewer", {
                         "iteration": iteration_count,
                         "feedback_file": str(feedback_file),
-                        "recommendation": feedback_json.get('iteration_recommendation'),
-                        "critical_issues": len(feedback_json.get('critical_issues', [])),
+                        "recommendation": recommendation,
+                        "critical_issues": critical_count,
                         "improvements": len(feedback_json.get('improvements', []))
                     })
                 

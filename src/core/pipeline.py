@@ -63,6 +63,7 @@ class AnalysisPipeline:
         """
         # Setup structured logging
         import os
+        import sys
         
         run_id = datetime.now().strftime('%Y%m%d_%H%M%S')
         slug = create_slug(idea)
@@ -119,29 +120,32 @@ class AnalysisPipeline:
                 if iteration_count == 1:
                     # Initial analysis
                     analyst_input = idea
+                    revision_context = None
                 else:
                     # Refined analysis based on feedback
+                    # Pass the ORIGINAL idea, not revision instructions
+                    analyst_input = idea
+                    
                     # Look for the previous iteration's feedback
                     latest_feedback_file = iterations_dir / f"feedback_{iteration_count-1}.json"
                     if not latest_feedback_file.exists():
                         # Fallback to main feedback file
                         latest_feedback_file = analysis_dir / "reviewer_feedback.json"
                     
-                    # Load revision prompt template and format it
-                    revision_template = load_prompt("revision.md", Path("config/prompts/agents/analyst"))
-                    analyst_input = revision_template.format(
-                        idea=idea,
-                        current_analysis_file=current_analysis_file,
-                        latest_feedback_file=latest_feedback_file
-                    )
+                    # Pass revision context via kwargs
+                    revision_context = {
+                        'previous_analysis_file': str(current_analysis_file),
+                        'feedback_file': str(latest_feedback_file)
+                    }
                 
                 # Run analyst
                 analyst_result = await analyst.process(
-                    analyst_input,
+                    analyst_input,  # Always the original idea
                     debug=debug,
                     use_websearch=use_websearch and iteration_count == 1,  # Only search on first iteration
                     iteration=iteration_count,
-                    analysis_dir=str(analysis_dir)
+                    analysis_dir=str(analysis_dir),
+                    revision_context=revision_context  # Pass revision info separately
                 )
                 
                 if not analyst_result.success:
@@ -150,7 +154,15 @@ class AnalysisPipeline:
                             f"Analyst failed: {analyst_result.error}",
                             "Analyst"
                         )
-                    break
+                    # Return failure result immediately
+                    return {
+                        "success": False,
+                        "error": f"Analyst failed: {analyst_result.error}",
+                        "idea": idea,
+                        "slug": slug,
+                        "iteration_count": iteration_count,
+                        "timestamp": datetime.now().isoformat()
+                    }
                 
                 current_analysis = analyst_result.content
                 

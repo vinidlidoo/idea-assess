@@ -1,0 +1,25 @@
+{
+  "created_at": "2025-08-15T18:58:22.616363",
+  "final_status": "accepted",
+  "iteration_count": 2,
+  "word_count": 0,
+  "character_count": 0,
+  "reviewer_decision": "N/A",
+  "critical_issues": 2,
+  "improvements": 3,
+  "assessment": "",
+  "iterations": [
+    {
+      "iteration": 1,
+      "timestamp": "",
+      "accepted": false,
+      "reason": ""
+    },
+    {
+      "iteration": 2,
+      "timestamp": "",
+      "accepted": false,
+      "reason": ""
+    }
+  ]
+}

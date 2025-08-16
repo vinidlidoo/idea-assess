@@ -106,8 +106,18 @@ Clear context for next session:
   - Eliminated 200+ lines of duplicated code with base_logger.py
   - Removed obsolete debug_logging.py
   - Updated all documentation
-- Next immediate action: Refactor the 200+ line god method in pipeline.py
-- Watch out for: Some tests may timeout - appears to be test harness issue, not code issue
+
+**CRITICAL ISSUE DISCOVERED POST-SESSION:**
+
+- Test 6 (review_multi) for Virtual Interior Design AR is FAILING
+- Debug logs are empty/minimal - logging not capturing the actual failure
+- See: `logs/tests/20250815_132134_6_review_multi_Virtual_interior_design/`
+- Status shows as "UNKNOWN" with empty output.log and debug.log files
+
+- Next immediate actions:
+  1. **URGENT**: Fix test 6 failure - investigate why logs are empty
+  2. Refactor the 200+ line god method in pipeline.py
+- Watch out for: Virtual interior design tests consistently timeout or fail
 - Session cleanup completed: old files removed, imports updated, READMEs current
 
 ## Session Metrics

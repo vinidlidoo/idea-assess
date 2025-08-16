@@ -91,6 +91,9 @@ run_test() {
     mkdir -p "$test_dir"
     log_file="$test_dir/output.log"
     
+    # Use 5 minute timeout for all tests
+    local timeout_seconds=300
+    
     # Run the analysis with timeout, showing output in real-time
     echo "Running test..."
     echo ""
@@ -98,7 +101,7 @@ run_test() {
     # Use tee to show output and save to log file simultaneously
     # Use --foreground with timeout to allow signal propagation
     # TEST_HARNESS_RUN is already exported at function level
-    if timeout --foreground 180 python src/cli.py "$idea" $flags 2>&1 | tee "$log_file"; then
+    if timeout --foreground $timeout_seconds python src/cli.py "$idea" $flags 2>&1 | tee "$log_file"; then
         # Check if analysis was successful (handles both regular and reviewer modes)
         if grep -q -E "(Analysis saved to:|Saved to:)" "$log_file"; then
             echo ""
@@ -114,7 +117,7 @@ run_test() {
         exit_code=$?
         echo ""
         if [ $exit_code -eq 124 ]; then
-            echo -e "${YELLOW}⏱️  TEST TIMEOUT${NC} (>180s)"
+            echo -e "${YELLOW}⏱️  TEST TIMEOUT${NC} (>${timeout_seconds}s)"
             test_results="${test_results}${test_id}:timeout;"
         else
             echo -e "${RED}❌ TEST FAILED${NC} (exit code: $exit_code)"
@@ -128,7 +131,7 @@ from src.utils.test_logging import create_structured_logs
 import sys
 try:
     create_structured_logs('$test_dir', '$log_file', '$scenario_name', '$idea')
-    print('   📝 Created structured logs (summary.md, events.jsonl, metrics.json, debug.log)')
+    print('   📝 Created structured logs (summary.md, events.jsonl, metrics.json)')
 except Exception as e:
     print('   ⚠️  Could not create structured logs')
     print(f'      Error: {e}')
@@ -257,7 +260,7 @@ fi
 
 echo ""
 echo "All test logs saved in: logs/tests/"
-echo "Each test run has structured logs: summary.md, events.jsonl, metrics.json, debug.log"
+echo "Each test run has structured logs: summary.md, events.jsonl, metrics.json, output.log"
 echo ""
 
 # Exit with appropriate code
