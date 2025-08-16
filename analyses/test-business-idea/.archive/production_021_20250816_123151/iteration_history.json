@@ -1,0 +1,58 @@
+{
+  "iterations": [
+    {
+      "iteration": 1,
+      "analysis_file": "analyses/test-business-idea/iterations/iteration_1.md",
+      "analysis_length": 25,
+      "metadata": {
+        "duration": 1.0
+      }
+    },
+    {
+      "iteration": 2,
+      "analysis_file": "analyses/test-business-idea/iterations/iteration_2.md",
+      "analysis_length": 25,
+      "metadata": {
+        "duration": 1.0
+      }
+    }
+  ],
+  "feedback": [
+    {
+      "iteration_recommendation": "reject",
+      "iteration_reason": "Still not meeting quality standards",
+      "critical_issues": [
+        {
+          "issue": "Still not good enough",
+          "suggestion": "Address this issue",
+          "priority": "critical"
+        }
+      ],
+      "positive_aspects": [],
+      "suggestions": [
+        "Keep trying"
+      ],
+      "improvements": [],
+      "minor_suggestions": []
+    },
+    {
+      "iteration_recommendation": "reject",
+      "iteration_reason": "Still not meeting quality standards",
+      "critical_issues": [
+        {
+          "issue": "Still not good enough",
+          "suggestion": "Address this issue",
+          "priority": "critical"
+        }
+      ],
+      "positive_aspects": [],
+      "suggestions": [
+        "Keep trying"
+      ],
+      "improvements": [],
+      "minor_suggestions": []
+    }
+  ],
+  "final_status": "max_iterations_reached",
+  "idea": "Test business idea"
+}

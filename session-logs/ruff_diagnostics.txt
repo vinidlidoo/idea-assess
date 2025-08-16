@@ -1,0 +1,459 @@
+F401 [*] `asyncio` imported but unused
+ --> src/agents/analyst.py:3:8
+  |
+1 | """Analyst agent implementation for business idea analysis."""
+2 |
+3 | import asyncio
+  |        ^^^^^^^
+4 | import signal
+5 | import sys
+  |
+help: Remove unused import: `asyncio`
+
+F401 [*] `typing.Any` imported but unused
+  --> src/agents/analyst.py:10:30
+   |
+ 8 | import traceback
+ 9 | from datetime import datetime
+10 | from typing import Optional, Any
+   |                              ^^^
+11 | from pathlib import Path
+   |
+help: Remove unused import: `typing.Any`
+
+F401 [*] `pathlib.Path` imported but unused
+  --> src/agents/analyst.py:11:21
+   |
+ 9 | from datetime import datetime
+10 | from typing import Optional, Any
+11 | from pathlib import Path
+   |                     ^^^^
+12 |
+13 | from claude_code_sdk import ClaudeSDKClient, ClaudeCodeOptions
+   |
+help: Remove unused import: `pathlib.Path`
+
+F401 [*] `..core.constants.ANALYST_MAX_TURNS` imported but unused
+  --> src/agents/analyst.py:17:30
+   |
+15 | from ..core.agent_base import BaseAgent, AgentResult
+16 | from ..core.config import AnalysisConfig
+17 | from ..core.constants import ANALYST_MAX_TURNS, PREVIEW_CHAR_LIMIT
+   |                              ^^^^^^^^^^^^^^^^^
+18 | from ..core.message_processor import MessageProcessor
+19 | from ..utils.text_processing import create_slug
+   |
+help: Remove unused import
+
+F401 [*] `..core.constants.PREVIEW_CHAR_LIMIT` imported but unused
+  --> src/agents/analyst.py:17:49
+   |
+15 | from ..core.agent_base import BaseAgent, AgentResult
+16 | from ..core.config import AnalysisConfig
+17 | from ..core.constants import ANALYST_MAX_TURNS, PREVIEW_CHAR_LIMIT
+   |                                                 ^^^^^^^^^^^^^^^^^^
+18 | from ..core.message_processor import MessageProcessor
+19 | from ..utils.text_processing import create_slug
+   |
+help: Remove unused import
+
+F401 [*] `asyncio` imported but unused
+ --> src/agents/reviewer.py:4:8
+  |
+3 | import json
+4 | import asyncio
+  |        ^^^^^^^
+5 | import traceback
+6 | from typing import Any, Optional
+  |
+help: Remove unused import: `asyncio`
+
+F401 [*] `traceback` imported but unused
+ --> src/agents/reviewer.py:5:8
+  |
+3 | import json
+4 | import asyncio
+5 | import traceback
+  |        ^^^^^^^^^
+6 | from typing import Any, Optional
+7 | from pathlib import Path
+  |
+help: Remove unused import: `traceback`
+
+F401 [*] `typing.Optional` imported but unused
+ --> src/agents/reviewer.py:6:25
+  |
+4 | import asyncio
+5 | import traceback
+6 | from typing import Any, Optional
+  |                         ^^^^^^^^
+7 | from pathlib import Path
+  |
+help: Remove unused import: `typing.Optional`
+
+F541 [*] f-string without any placeholders
+  --> src/agents/reviewer.py:75:30
+   |
+73 |         except (ValueError, TypeError) as e:
+74 |             # Path is outside analyses directory - this is the security check
+75 |             raise ValueError(f"Invalid path: must be within analyses directory") from e
+   |                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+76 |         
+77 |         # Check if file exists
+   |
+help: Remove extraneous `f` prefix
+
+F401 [*] `datetime.datetime` imported but unused
+  --> src/cli.py:12:22
+   |
+10 | import os
+11 | import traceback
+12 | from datetime import datetime
+   |                      ^^^^^^^^
+13 |
+14 | try:
+   |
+help: Remove unused import: `datetime.datetime`
+
+F401 [*] `src.agents.AnalystAgent` imported but unused
+  --> src/cli.py:30:28
+   |
+28 |     from src.core import get_default_config
+29 |     from src.core.pipeline import AnalysisPipeline, SimplePipeline
+30 |     from src.agents import AnalystAgent
+   |                            ^^^^^^^^^^^^
+31 |     from src.utils.file_operations import save_analysis, AnalysisResult
+32 |     from src.utils.text_processing import show_preview
+   |
+help: Remove unused import: `src.agents.AnalystAgent`
+
+F401 [*] `src.utils.file_operations.save_analysis` imported but unused
+  --> src/cli.py:31:43
+   |
+29 |     from src.core.pipeline import AnalysisPipeline, SimplePipeline
+30 |     from src.agents import AnalystAgent
+31 |     from src.utils.file_operations import save_analysis, AnalysisResult
+   |                                           ^^^^^^^^^^^^^
+32 |     from src.utils.text_processing import show_preview
+   |
+help: Remove unused import
+
+F401 [*] `src.utils.file_operations.AnalysisResult` imported but unused
+  --> src/cli.py:31:58
+   |
+29 |     from src.core.pipeline import AnalysisPipeline, SimplePipeline
+30 |     from src.agents import AnalystAgent
+31 |     from src.utils.file_operations import save_analysis, AnalysisResult
+   |                                                          ^^^^^^^^^^^^^^
+32 |     from src.utils.text_processing import show_preview
+   |
+help: Remove unused import
+
+F541 [*] f-string without any placeholders
+   --> src/cli.py:129:23
+    |
+127 |             if result.get('feedback_history'):
+128 |                 last_feedback = result['feedback_history'][-1]
+129 |                 print(f"\n📋 Final Review:")
+    |                       ^^^^^^^^^^^^^^^^^^^^^
+130 |                 print(f"   • Assessment: {last_feedback.get('overall_assessment', 'N/A')}")
+131 |                 print(f"   • Critical issues: {len(last_feedback.get('critical_issues', []))}")
+    |
+help: Remove extraneous `f` prefix
+
+F541 [*] f-string without any placeholders
+   --> src/cli.py:140:23
+    |
+138 |             if result.get('final_analysis'):
+139 |                 word_count = len(result['final_analysis'].split())
+140 |                 print(f"\n📊 Final Statistics:")
+    |                       ^^^^^^^^^^^^^^^^^^^^^^^^^
+141 |                 print(f"   • Size: {len(result['final_analysis']):,} characters ({word_count:,} words)")
+142 |                 show_preview(result['final_analysis'])
+    |
+help: Remove extraneous `f` prefix
+
+F541 [*] f-string without any placeholders
+   --> src/cli.py:163:23
+    |
+161 |             if result.get('metadata'):
+162 |                 meta = result['metadata']
+163 |                 print(f"\n📊 Statistics:")
+    |                       ^^^^^^^^^^^^^^^^^^^
+164 |                 print(f"  • Duration: {meta.get('duration', 0):.1f}s")
+165 |                 print(f"  • Messages: {meta.get('message_count', 0)}")
+    |
+help: Remove extraneous `f` prefix
+
+F401 [*] `asyncio` imported but unused
+ --> src/core/pipeline.py:3:8
+  |
+1 | """Pipeline orchestrator that uses file-based communication between agents."""
+2 |
+3 | import asyncio
+  |        ^^^^^^^
+4 | import json
+5 | from typing import Any, Optional
+  |
+help: Remove unused import: `asyncio`
+
+F401 [*] `..core.agent_base.AgentResult` imported but unused
+  --> src/core/pipeline.py:11:31
+   |
+ 9 | from ..agents import AnalystAgent
+10 | from ..agents.reviewer import ReviewerAgent, FeedbackProcessor
+11 | from ..core.agent_base import AgentResult
+   |                               ^^^^^^^^^^^
+12 | from ..core.config import AnalysisConfig
+13 | from ..utils.improved_logging import StructuredLogger
+   |
+help: Remove unused import: `..core.agent_base.AgentResult`
+
+F401 [*] `..utils.file_operations.save_analysis` imported but unused
+  --> src/core/pipeline.py:14:37
+   |
+12 | from ..core.config import AnalysisConfig
+13 | from ..utils.improved_logging import StructuredLogger
+14 | from ..utils.file_operations import save_analysis, create_or_update_symlink
+   |                                     ^^^^^^^^^^^^^
+15 | from ..utils.text_processing import create_slug
+16 | from ..utils.file_operations import load_prompt
+   |
+help: Remove unused import
+
+F401 [*] `..utils.file_operations.create_or_update_symlink` imported but unused
+  --> src/core/pipeline.py:14:52
+   |
+12 | from ..core.config import AnalysisConfig
+13 | from ..utils.improved_logging import StructuredLogger
+14 | from ..utils.file_operations import save_analysis, create_or_update_symlink
+   |                                                    ^^^^^^^^^^^^^^^^^^^^^^^^
+15 | from ..utils.text_processing import create_slug
+16 | from ..utils.file_operations import load_prompt
+   |
+help: Remove unused import
+
+F401 [*] `..utils.file_operations.load_prompt` imported but unused
+  --> src/core/pipeline.py:16:37
+   |
+14 | from ..utils.file_operations import save_analysis, create_or_update_symlink
+15 | from ..utils.text_processing import create_slug
+16 | from ..utils.file_operations import load_prompt
+   |                                     ^^^^^^^^^^^
+17 | from ..utils.archive_manager import ArchiveManager
+   |
+help: Remove unused import: `..utils.file_operations.load_prompt`
+
+F401 [*] `pathlib.Path` imported but unused
+ --> src/core/prompt_registry.py:3:21
+  |
+1 | """Centralized prompt registry for managing prompt file locations."""
+2 |
+3 | from pathlib import Path
+  |                     ^^^^
+4 | from typing import Dict
+  |
+help: Remove unused import: `pathlib.Path`
+
+F401 [*] `sys` imported but unused
+   --> src/utils/archive_manager.py:106:16
+    |
+104 |             analysis_dir: Directory to migrate
+105 |         """
+106 |         import sys
+    |                ^^^
+107 |         
+108 |         # Create archive directory
+    |
+help: Remove unused import: `sys`
+
+F841 Local variable `file_count` is assigned to but never used
+   --> src/utils/archive_manager.py:141:9
+    |
+139 |                     link_path.unlink()
+140 |         
+141 |         file_count = len(list(old_files_dir.iterdir())) if old_files_dir.exists() else 0
+    |         ^^^^^^^^^^
+142 |     
+143 |     def _get_next_run_number(self, archive_base: Path, run_type: str) -> int:
+    |
+help: Remove assignment to unused variable `file_count`
+
+F541 [*] f-string without any placeholders
+   --> src/utils/base_logger.py:279:25
+    |
+278 |             if self.metrics["errors"]:
+279 |                 f.write(f"\n### Errors Encountered\n\n")
+    |                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+280 |                 for error in self.metrics["errors"]:
+281 |                     f.write(f"- {error['agent']}: {error['error']}\n")
+    |
+help: Remove extraneous `f` prefix
+
+F401 [*] `typing.List` imported but unused
+ --> src/utils/cleanup_manager.py:6:20
+  |
+4 | from datetime import datetime, timedelta
+5 | from pathlib import Path
+6 | from typing import List, Optional
+  |                    ^^^^
+7 | import re
+  |
+help: Remove unused import
+
+F401 [*] `typing.Optional` imported but unused
+ --> src/utils/cleanup_manager.py:6:26
+  |
+4 | from datetime import datetime, timedelta
+5 | from pathlib import Path
+6 | from typing import List, Optional
+  |                          ^^^^^^^^
+7 | import re
+  |
+help: Remove unused import
+
+F841 Local variable `to_keep` is assigned to but never used
+   --> src/utils/cleanup_manager.py:149:17
+    |
+148 |                 # Keep the newest N logs
+149 |                 to_keep = log_files[:max_logs_per_test]
+    |                 ^^^^^^^
+150 |                 to_archive = log_files[max_logs_per_test:]
+    |
+help: Remove assignment to unused variable `to_keep`
+
+F401 [*] `typing.Optional` imported but unused
+ --> src/utils/file_operations.py:5:32
+  |
+3 | from pathlib import Path
+4 | from datetime import datetime
+5 | from typing import NamedTuple, Optional, Any
+  |                                ^^^^^^^^
+6 | from functools import lru_cache
+7 | from filelock import FileLock, Timeout
+  |
+help: Remove unused import: `typing.Optional`
+
+F401 [*] `typing.Dict` imported but unused
+ --> src/utils/improved_logging.py:6:20
+  |
+5 | from datetime import datetime
+6 | from typing import Dict, Any, Optional
+  |                    ^^^^
+7 | from .base_logger import BaseStructuredLogger
+  |
+help: Remove unused import
+
+F401 [*] `typing.Any` imported but unused
+ --> src/utils/improved_logging.py:6:26
+  |
+5 | from datetime import datetime
+6 | from typing import Dict, Any, Optional
+  |                          ^^^
+7 | from .base_logger import BaseStructuredLogger
+  |
+help: Remove unused import
+
+F401 [*] `typing.Optional` imported but unused
+ --> src/utils/improved_logging.py:6:31
+  |
+5 | from datetime import datetime
+6 | from typing import Dict, Any, Optional
+  |                               ^^^^^^^^
+7 | from .base_logger import BaseStructuredLogger
+  |
+help: Remove unused import
+
+F401 [*] `jsonschema` imported but unused
+ --> src/utils/json_validator.py:6:8
+  |
+4 | from typing import Any, Optional
+5 | from pathlib import Path
+6 | import jsonschema
+  |        ^^^^^^^^^^
+7 | from jsonschema import validate, ValidationError
+  |
+help: Remove unused import: `jsonschema`
+
+F401 [*] `typing.Any` imported but unused
+ --> src/utils/retry.py:5:49
+  |
+3 | import asyncio
+4 | import time
+5 | from typing import TypeVar, Callable, Optional, Any, Union
+  |                                                 ^^^
+6 | from functools import wraps
+  |
+help: Remove unused import
+
+F401 [*] `typing.Union` imported but unused
+ --> src/utils/retry.py:5:54
+  |
+3 | import asyncio
+4 | import time
+5 | from typing import TypeVar, Callable, Optional, Any, Union
+  |                                                      ^^^^^
+6 | from functools import wraps
+  |
+help: Remove unused import
+
+F841 [*] Local variable `e` is assigned to but never used
+   --> src/utils/retry.py:152:29
+    |
+150 |                 raise
+151 |                 
+152 |         except Exception as e:
+    |                             ^
+153 |             # For other exceptions, don't retry unless explicitly transient
+154 |             raise
+    |
+help: Remove assignment to unused variable `e`
+
+F823 Local variable `datetime` referenced before assignment
+   --> src/utils/test_logging.py:169:66
+    |
+167 |     dir_name = test_path.name
+168 |     timestamp_match = re.match(r'^(\d{8}_\d{6})_', dir_name)
+169 |     timestamp = timestamp_match.group(1) if timestamp_match else datetime.now().strftime('%Y%m%d_%H%M%S')
+    |                                                                  ^^^^^^^^
+170 |     
+171 |     # Create log files directly in the test directory (don't create a new one)
+    |
+
+F541 [*] f-string without any placeholders
+   --> src/utils/test_logging.py:186:17
+    |
+184 |         f.write(f"# Test Run: {test_scenario}\n\n")
+185 |         f.write(f"**Run ID:** `{timestamp}`  \n")
+186 |         f.write(f"**Type:** test  \n")
+    |                 ^^^^^^^^^^^^^^^^^^^^^
+187 |         f.write(f"**Idea:** {idea}  \n")
+188 |         f.write(f"**Started:** {start_time.strftime('%Y-%m-%d %H:%M:%S')}  \n\n")
+    |
+help: Remove extraneous `f` prefix
+
+F541 [*] f-string without any placeholders
+   --> src/utils/test_logging.py:190:17
+    |
+188 |         f.write(f"**Started:** {start_time.strftime('%Y-%m-%d %H:%M:%S')}  \n\n")
+189 |         f.write("## Timeline\n\n")
+190 |         f.write(f"- **[0.0s]** Test started\n")
+    |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+191 |         f.write(f"- **[0.1s]** {result}\n\n")
+192 |         f.write("## Final Result\n\n")
+    |
+help: Remove extraneous `f` prefix
+
+F401 [*] `typing.Optional` imported but unused
+ --> src/utils/text_processing.py:4:20
+  |
+3 | import re
+4 | from typing import Optional
+  |                    ^^^^^^^^
+5 |
+6 | # Constants
+  |
+help: Remove unused import: `typing.Optional`
+
+Found 40 errors.
+[*] 37 fixable with the `--fix` option (2 hidden fixes can be enabled with the `--unsafe-fixes` option).

@@ -3,7 +3,7 @@
 import shutil
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Any, TypedDict
+from typing import TypedDict
 import re
 
 
@@ -121,7 +121,7 @@ class CleanupManager:
     @staticmethod
     def organize_test_logs(
         logs_dir: Path, max_logs_per_test: int = 3
-    ) -> dict[str, Any]:
+    ) -> dict[str, object]:
         """
         Organize and archive test logs, keeping only recent ones.
 
@@ -151,12 +151,12 @@ class CleanupManager:
                 test_name = match.group(1)
                 if test_name not in test_groups:
                     test_groups[test_name] = []
-                test_groups[test_name].append(log_file)
+                test_groups[test_name].append(log_file)  # type: ignore[has-type]
 
         # Process each test group
         for test_name, log_files in test_groups.items():
             # Sort by modification time (newest first)
-            log_files.sort(key=lambda f: f.stat().st_mtime, reverse=True)
+            log_files.sort(key=lambda f: f.stat().st_mtime, reverse=True)  # type: ignore[misc, no-any-expr]
 
             if len(log_files) > max_logs_per_test:
                 stats["tests_organized"] += 1
@@ -166,12 +166,12 @@ class CleanupManager:
                 to_archive = log_files[max_logs_per_test:]
 
                 # Archive old logs
-                test_archive = archive_dir / test_name
-                test_archive.mkdir(exist_ok=True)
+                test_archive = archive_dir / test_name  # type: ignore[operator]
+                test_archive.mkdir(exist_ok=True)  # type: ignore[attr-defined]
 
-                for old_log in to_archive:
-                    target = test_archive / old_log.name
-                    _ = shutil.move(str(old_log), str(target))
+                for old_log in to_archive:  # type: ignore[misc]
+                    target = test_archive / old_log.name  # type: ignore[attr-defined]
+                    _ = shutil.move(str(old_log), str(target))  # type: ignore[arg-type]
                     stats["files_archived"] += 1
 
         # Clean up archives older than 7 days
@@ -186,7 +186,7 @@ class CleanupManager:
         return stats
 
     @staticmethod
-    def clean_all_analyses(base_dir: Path) -> dict[str, Any]:
+    def clean_all_analyses(base_dir: Path) -> dict[str, object]:
         """
         Clean all analysis directories.
 

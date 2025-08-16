@@ -1,7 +1,7 @@
 """Reviewer agent implementation that reads analysis from file."""
 
 import json
-from typing import Any, override
+from typing import override, Any
 from pathlib import Path
 
 from claude_code_sdk import ClaudeSDKClient, ClaudeCodeOptions
@@ -18,55 +18,55 @@ from ..utils.json_validator import FeedbackValidator
 
 class ReviewerAgent(BaseAgent):
     """Agent responsible for reviewing analyses by reading from files."""
-    
+
     def __init__(self, config: AnalysisConfig, prompt_version: str = "v1"):
         """
         Initialize the Reviewer agent.
-        
+
         Args:
             config: System configuration
             prompt_version: Version of the reviewer prompt to use
         """
         super().__init__(config)
         self.prompt_version: str = prompt_version
-    
+
     @property
     @override
     def agent_name(self) -> str:
         """Return the name of this agent."""
         return "Reviewer"
-    
+
     @override
     def get_prompt_file(self) -> str:
         """Return the prompt file name for this agent."""
         return f"reviewer_{self.prompt_version}.md"
-    
+
     @override
     def get_allowed_tools(self) -> list[str]:
         """Return list of allowed tools for this agent."""
         # Reviewer needs Read and Write tools to read analysis and write feedback
-        return ['Read', 'Write']
-    
+        return ["Read", "Write"]
+
     def _validate_analysis_path(self, file_path: str) -> Path:
         """Validate that path is within analyses directory.
-        
+
         Args:
             file_path: Path to validate
-            
+
         Returns:
             Validated Path object
-            
+
         Raises:
             ValueError: If path is outside analyses directory
             FileNotFoundError: If file doesn't exist
         """
         # Convert to absolute path and resolve any .. or symlinks
         path = Path(file_path).resolve()
-        
+
         # Get the analyses directory (relative to project root)
         project_root = Path(__file__).parent.parent.parent
         analyses_dir = (project_root / "analyses").resolve()
-        
+
         # Check if path is within analyses directory using secure comparison
         # Both paths are already resolved, so we can safely compare
         try:
@@ -75,227 +75,284 @@ class ReviewerAgent(BaseAgent):
         except (ValueError, TypeError) as e:
             # Path is outside analyses directory - this is the security check
             raise ValueError("Invalid path: must be within analyses directory") from e
-        
+
         # Check if file exists
         if not path.exists():
             raise FileNotFoundError(f"Analysis file not found: {path}")
-            
+
         return path
-    
+
     @override
-    async def process(self, input_data: str, **kwargs: Any) -> AgentResult:
+    async def process(self, input_data: str, **kwargs: object) -> AgentResult:
         """
         Review a business analysis by reading from file and write feedback to JSON.
-        
+
         Args:
             input_data: Path to the analysis file to review
             **kwargs: Additional options:
                 - debug: Enable debug logging
                 - iteration_count: Current iteration number (for context)
                 - idea_slug: The idea slug for file naming
-                
+
         Returns:
             AgentResult containing path to feedback JSON file
         """
-        debug = kwargs.get('debug', False)
-        iteration_count = kwargs.get('iteration_count', 1)
-        idea_slug = kwargs.get('idea_slug', 'unknown')
-        
+        debug: bool = bool(kwargs.get("debug", False))
+        iteration_count: int = int(kwargs.get("iteration_count", 1))
+        idea_slug: str = str(kwargs.get("idea_slug", "unknown"))
+
         # Setup debug logging if requested
         import os
+
         logger = None
-        
+
         # Use appropriate logger based on context
-        if os.environ.get('TEST_HARNESS_RUN') == '1':
+        if os.environ.get("TEST_HARNESS_RUN") == "1":
             # Use console logger for test visibility
             from ..utils.console_logger import ConsoleLogger
+
             logger = ConsoleLogger("Reviewer")
         elif debug:
             from datetime import datetime
-            run_id = datetime.now().strftime('%Y%m%d_%H%M%S')
+
+            run_id = datetime.now().strftime("%Y%m%d_%H%M%S")
             logger = StructuredLogger(run_id, idea_slug, "test")
-            logger.log_event("review_start", "Reviewer", {
-                "iteration": iteration_count,
-                "analysis_file": input_data,
-                "idea_slug": idea_slug
-            })
-        
+            logger.log_event(
+                "review_start",
+                "Reviewer",
+                {
+                    "iteration": iteration_count,
+                    "analysis_file": input_data,
+                    "idea_slug": idea_slug,
+                },
+            )
+
         try:
             # Validate input path for security
             analysis_path = self._validate_analysis_path(input_data)
-            
+
             # Load the reviewer prompt
             prompt_content = load_prompt(self.get_prompt_file(), Path("config/prompts"))
             # Save to both iterations directory and main directory
             iterations_dir = analysis_path.parent / "iterations"
             if iterations_dir.exists():
                 # Use consistent naming: reviewer_feedback_iteration_{n}.json
-                feedback_file = iterations_dir / f"reviewer_feedback_iteration_{iteration_count}.json"
+                feedback_file = (
+                    iterations_dir
+                    / f"reviewer_feedback_iteration_{iteration_count}.json"
+                )
             else:
                 # Fallback to old structure (same name pattern)
-                feedback_file = analysis_path.parent / f"reviewer_feedback_iteration_{iteration_count}.json"
-            
+                feedback_file = (
+                    analysis_path.parent
+                    / f"reviewer_feedback_iteration_{iteration_count}.json"
+                )
+
             # Load review instructions template and format it
-            review_template = load_prompt("reviewer_instructions.md", Path("config/prompts"))
+            review_template = load_prompt(
+                "reviewer_instructions.md", Path("config/prompts")
+            )
             review_prompt = review_template.format(
                 iteration_count=iteration_count,
                 max_iterations=MAX_REVIEW_ITERATIONS,
                 analysis_path=analysis_path,
-                feedback_file=feedback_file
+                feedback_file=feedback_file,
             )
 
             # Setup Claude SDK options with tools enabled
             options = ClaudeCodeOptions(
                 system_prompt=prompt_content,
                 max_turns=REVIEWER_MAX_TURNS,  # Allow multiple turns for reading, analyzing, writing
-                allowed_tools=['Read', 'Write'],  # Enable file operations
-                permission_mode='default'  # Use default permission mode for automation
+                allowed_tools=["Read", "Write"],  # Enable file operations
+                permission_mode="default",  # Use default permission mode for automation
             )
-            
+
             # Initialize message processor
             # MessageProcessor accepts both StructuredLogger and ConsoleLogger
             processor = MessageProcessor(logger)
-            
+
             # Query Claude for review
             review_complete = False
-            
+
             if logger:
-                logger.log_event("review_start", "Reviewer", {
-                    "idea_slug": idea_slug,
-                    "iteration": iteration_count
-                })
-            
+                logger.log_event(
+                    "review_start",
+                    "Reviewer",
+                    {"idea_slug": idea_slug, "iteration": iteration_count},
+                )
+
             async with ClaudeSDKClient(options=options) as client:
                 await client.query(review_prompt)
-                
+
                 if logger:
                     logger.log_event("review_processing", "Reviewer", {})
-                
+
                 message_count = 0
-                
+
                 async for message in client.receive_response():
                     message_count += 1
                     # Debug log the raw message
                     if logger:
-                        logger.log_event(f"raw_message_{type(message).__name__}", "Reviewer", {
-                            "message_type": type(message).__name__,
-                            "has_content_attr": hasattr(message, 'content')
-                        })
-                    
+                        logger.log_event(
+                            f"raw_message_{type(message).__name__}",
+                            "Reviewer",
+                            {
+                                "message_type": type(message).__name__,
+                                "has_content_attr": hasattr(message, "content"),
+                            },
+                        )
+
                     result = processor.process_message(message)
-                    
+
                     # Show progress periodically
                     if logger and message_count % 2 == 0:
-                        logger.log_event("review_progress", "Reviewer", {
-                            "message_count": message_count
-                        })
-                    
+                        logger.log_event(
+                            "review_progress",
+                            "Reviewer",
+                            {"message_count": message_count},
+                        )
+
                     if logger:
-                        logger.log_event(f"reviewer_message_{result.message_type}", "Reviewer", {
-                            "has_content": bool(result.content),
-                            "content_preview": result.content[0][:100] if result.content else None
-                        })
-                    
+                        logger.log_event(
+                            f"reviewer_message_{result.message_type}",
+                            "Reviewer",
+                            {
+                                "has_content": bool(result.content),
+                                "content_preview": result.content[0][:100]
+                                if result.content
+                                else None,
+                            },
+                        )
+
                     # Check if review is complete
                     if result.message_type == "AssistantMessage" and result.content:
-                        if any("REVIEW_COMPLETE" in content for content in result.content):
+                        if any(
+                            "REVIEW_COMPLETE" in content for content in result.content
+                        ):
                             review_complete = True
-                    
+
                     # Process when we hit ResultMessage (end of stream)
                     if result.message_type == "ResultMessage":
                         if logger:
-                            logger.log_event("review_stream_end", "Reviewer", {
-                                "review_complete": review_complete,
-                                "feedback_file_expected": str(feedback_file)
-                            })
+                            logger.log_event(
+                                "review_stream_end",
+                                "Reviewer",
+                                {
+                                    "review_complete": review_complete,
+                                    "feedback_file_expected": str(feedback_file),
+                                },
+                            )
                         break
-            
+
             # Check if the feedback file was created
             if feedback_file.exists():
                 # Read the feedback to verify and get metadata
-                with open(feedback_file, 'r') as f:
+                with open(feedback_file, "r") as f:
                     feedback_json: dict[str, Any] = json.load(f)
-                
+
                 # Validate the feedback structure
                 validator = FeedbackValidator()
                 is_valid, error_msg = validator.validate(feedback_json)
-                
+
                 if not is_valid:
                     # Try to fix common issues
                     if logger:
-                        logger.log_event("feedback_validation_failed", "Reviewer", {
-                            "error": error_msg,
-                            "attempting_fix": True
-                        })
-                    
+                        logger.log_event(
+                            "feedback_validation_failed",
+                            "Reviewer",
+                            {"error": error_msg, "attempting_fix": True},
+                        )
+
                     feedback_json = validator.fix_common_issues(feedback_json)
                     is_valid, error_msg = validator.validate(feedback_json)
-                    
+
                     if is_valid:
                         # Save the fixed feedback
-                        with open(feedback_file, 'w') as f:
+                        with open(feedback_file, "w") as f:
                             json.dump(feedback_json, f, indent=2)
                         if logger:
-                            logger.log_event("feedback_fixed", "Reviewer", {
-                                "feedback_file": str(feedback_file)
-                            })
+                            logger.log_event(
+                                "feedback_fixed",
+                                "Reviewer",
+                                {"feedback_file": str(feedback_file)},
+                            )
                     else:
                         # Still invalid after fix attempt
                         if logger:
-                            logger.log_error(f"Invalid feedback structure: {error_msg}", "Reviewer")
+                            logger.log_error(
+                                f"Invalid feedback structure: {error_msg}", "Reviewer"
+                            )
                         return AgentResult(
                             content="",
-                            metadata={'iteration': iteration_count, 'validation_error': error_msg},
+                            metadata={
+                                "iteration": iteration_count,
+                                "validation_error": error_msg,
+                            },
                             success=False,
-                            error=f"Invalid feedback structure: {error_msg}"
+                            error=f"Invalid feedback structure: {error_msg}",
                         )
-                
+
                 # Log summary of feedback
-                recommendation = feedback_json.get('iteration_recommendation', 'unknown')
-                critical_count = len(feedback_json.get('critical_issues', []))
-                
+                recommendation = feedback_json.get(
+                    "iteration_recommendation", "unknown"
+                )
+                critical_count = len(feedback_json.get("critical_issues", []))
+
                 if logger:
-                    logger.log_event("review_complete", "Reviewer", {
-                        "iteration": iteration_count,
-                        "feedback_file": str(feedback_file),
-                        "recommendation": recommendation,
-                        "critical_issues": critical_count,
-                        "improvements": len(feedback_json.get('improvements', []))
-                    })
-                
+                    logger.log_event(
+                        "review_complete",
+                        "Reviewer",
+                        {
+                            "iteration": iteration_count,
+                            "feedback_file": str(feedback_file),
+                            "recommendation": recommendation,
+                            "critical_issues": critical_count,
+                            "improvements": len(feedback_json.get("improvements", [])),
+                        },
+                    )
+
                 return AgentResult(
                     content=str(feedback_file),  # Return the path to the feedback file
                     metadata={
-                        'iteration': iteration_count,
-                        'feedback_file': str(feedback_file),
-                        'recommendation': feedback_json.get('iteration_recommendation', 'unknown'),
-                        'critical_issues_count': len(feedback_json.get('critical_issues', [])),
-                        'improvements_count': len(feedback_json.get('improvements', [])),
-                        'minor_suggestions_count': len(feedback_json.get('minor_suggestions', []))
+                        "iteration": iteration_count,
+                        "feedback_file": str(feedback_file),
+                        "recommendation": feedback_json.get(
+                            "iteration_recommendation", "unknown"
+                        ),
+                        "critical_issues_count": len(
+                            feedback_json.get("critical_issues", [])
+                        ),
+                        "improvements_count": len(
+                            feedback_json.get("improvements", [])
+                        ),
+                        "minor_suggestions_count": len(
+                            feedback_json.get("minor_suggestions", [])
+                        ),
                     },
-                    success=True
+                    success=True,
                 )
             else:
                 # Reviewer failed to create feedback file
                 return AgentResult(
                     content="",
-                    metadata={'iteration': iteration_count},
+                    metadata={"iteration": iteration_count},
                     success=False,
-                    error="Reviewer did not create the expected feedback file"
+                    error="Reviewer did not create the expected feedback file",
                 )
-                
+
         except Exception as e:
             if logger:
-                logger.log_event("review_error", "Reviewer", {
-                    "error": str(e),
-                    "iteration": iteration_count
-                })
-            
+                logger.log_event(
+                    "review_error",
+                    "Reviewer",
+                    {"error": str(e), "iteration": iteration_count},
+                )
+
             return AgentResult(
                 content="",
-                metadata={'iteration': iteration_count},
+                metadata={"iteration": iteration_count},
                 success=False,
-                error=str(e)
+                error=str(e),
             )
         finally:
             pass  # Logger finalization handled in pipeline
@@ -303,99 +360,105 @@ class ReviewerAgent(BaseAgent):
 
 class FeedbackProcessor:
     """Utility class to process reviewer feedback and apply it to analyses."""
-    
+
     @staticmethod
     def load_feedback(feedback_file: str) -> FeedbackDict | dict[str, str]:
         """
         Load and validate JSON feedback from file.
-        
+
         Args:
             feedback_file: Path to the feedback JSON file
-            
+
         Returns:
             Parsed and validated feedback dictionary
         """
         try:
-            with open(feedback_file, 'r') as f:
+            with open(feedback_file, "r") as f:
                 feedback: dict[str, Any] = json.load(f)
-            
+
             # Validate the loaded feedback
             validator = FeedbackValidator()
             is_valid, error_msg = validator.validate(feedback)
-            
+
             if not is_valid:
                 # Try to fix common issues
                 feedback = validator.fix_common_issues(feedback)
                 is_valid, error_msg = validator.validate(feedback)
-                
+
                 if not is_valid:
                     # Return error indicator if still invalid
                     return {"error": f"Invalid feedback structure: {error_msg}"}
-            
+
             return feedback
-            
+
         except (json.JSONDecodeError, FileNotFoundError) as e:
             return {"error": f"Failed to load feedback: {str(e)}"}
-    
+
     @staticmethod
-    def should_continue_iteration(feedback: FeedbackDict | dict[str, Any], iteration_count: int) -> bool:
+    def should_continue_iteration(
+        feedback: FeedbackDict | dict[str, Any], iteration_count: int
+    ) -> bool:
         """
         Determine if another iteration is needed based on feedback.
-        
+
         Args:
             feedback: Parsed feedback dictionary
             iteration_count: Current iteration number
-            
+
         Returns:
             True if another iteration should occur (reviewer rejected)
         """
         # Check iteration limit
         if iteration_count >= 3:
             return False
-        
+
         # Check recommendation - only continue if rejected
-        recommendation = feedback.get('iteration_recommendation', 'accept')
-        return recommendation == 'reject'
-    
+        recommendation = feedback.get("iteration_recommendation", "accept")
+        return recommendation == "reject"
+
     @staticmethod
     def format_feedback_for_analyst(feedback: FeedbackDict | dict[str, Any]) -> str:
         """
         Format reviewer feedback into instructions for the analyst.
-        
+
         Args:
             feedback: Parsed feedback dictionary
-            
+
         Returns:
             Formatted instructions for analyst to incorporate
         """
         instructions: list[str] = []
-        
+
         # Add overall assessment
-        if 'overall_assessment' in feedback:
+        if "overall_assessment" in feedback:
             instructions.append(f"OVERALL ASSESSMENT: {feedback['overall_assessment']}")
             instructions.append("")
-        
+
         # Add critical issues that must be addressed
-        if feedback.get('critical_issues'):
+        if feedback.get("critical_issues"):
             instructions.append("CRITICAL ISSUES TO ADDRESS:")
-            for issue in feedback['critical_issues']:
+            for issue in feedback["critical_issues"]:
                 instructions.append(f"- {issue['section']}: {issue['issue']}")
                 instructions.append(f"  Suggestion: {issue['suggestion']}")
             instructions.append("")
-        
+
         # Add important improvements
-        if feedback.get('improvements'):
+        if feedback.get("improvements"):
             instructions.append("IMPORTANT IMPROVEMENTS:")
-            for improvement in feedback['improvements']:
-                instructions.append(f"- {improvement['section']}: {improvement['issue']}")
+            for improvement in feedback["improvements"]:
+                instructions.append(
+                    f"- {improvement['section']}: {improvement['issue']}"
+                )
                 instructions.append(f"  Suggestion: {improvement['suggestion']}")
             instructions.append("")
-        
+
         # Add minor suggestions if no critical issues
-        if not feedback.get('critical_issues') and feedback.get('minor_suggestions'):
+        if not feedback.get("critical_issues") and feedback.get("minor_suggestions"):
             instructions.append("MINOR ENHANCEMENTS:")
-            for suggestion in feedback['minor_suggestions'][:3]:  # Limit to top 3
-                instructions.append(f"- {suggestion['section']}: {suggestion['suggestion']}")
+            for suggestion in feedback["minor_suggestions"][:3]:  # Limit to top 3
+                instructions.append(
+                    f"- {suggestion['section']}: {suggestion['suggestion']}"
+                )
             instructions.append("")
-        
+
         return "\n".join(instructions)
