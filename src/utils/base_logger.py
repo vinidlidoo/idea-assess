@@ -6,7 +6,7 @@ import json
 import shutil
 from datetime import datetime
 from pathlib import Path
-from typing import TypedDict, TextIO
+from typing import TypedDict, TextIO, Any, cast
 import logging
 import sys
 
@@ -27,6 +27,22 @@ class EventData(TypedDict, total=False):
     message_count: int
     search_number: int
     query: str
+    # Allow any additional fields
+    use_websearch: bool
+    analysis_file: str
+    idea_slug: str
+    message_type: str
+    has_content_attr: bool
+    has_content: bool
+    content_preview: str | None
+    review_complete: bool
+    feedback_file_expected: str
+    error: str | None
+    attempting_fix: bool
+    feedback_file: str
+    recommendation: Any
+    critical_issues: int
+    improvements: int
 
 
 class LogMetrics(TypedDict, total=False):
@@ -163,7 +179,7 @@ class BaseStructuredLogger:
 
         # Add to metrics
         if "events" in self.metrics:
-            self.metrics["events"].append(event)  # type: ignore[arg-type]
+            self.metrics["events"].append(cast(dict[str, object], event))
 
         # Log to debug logger
         self.debug_logger.debug(f"[{agent}] {event_type}: {data}")
@@ -234,7 +250,7 @@ class BaseStructuredLogger:
         }
 
         if "errors" in self.metrics:
-            self.metrics["errors"].append(error_data)  # type: ignore[arg-type]
+            self.metrics["errors"].append(cast(dict[str, object], error_data))
 
         # Log to debug logger
         self.debug_logger.error(f"[{agent}] ERROR: {error}")

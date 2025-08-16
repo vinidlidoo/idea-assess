@@ -98,8 +98,19 @@ class ReviewerAgent(BaseAgent):
             AgentResult containing path to feedback JSON file
         """
         debug: bool = bool(kwargs.get("debug", False))
-        iteration_count: int = int(kwargs.get("iteration_count", 1))
-        idea_slug: str = str(kwargs.get("idea_slug", "unknown"))
+
+        # Handle iteration_count safely
+        iteration_count_raw = kwargs.get("iteration_count", 1)
+        if isinstance(iteration_count_raw, int):
+            iteration_count = iteration_count_raw
+        elif isinstance(iteration_count_raw, str) and iteration_count_raw.isdigit():
+            iteration_count = int(iteration_count_raw)
+        else:
+            iteration_count = 1
+
+        # Handle idea_slug safely
+        idea_slug_raw = kwargs.get("idea_slug", "unknown")
+        idea_slug: str = str(idea_slug_raw) if idea_slug_raw is not None else "unknown"
 
         # Setup debug logging if requested
         import os

@@ -1,19 +1,41 @@
 """Console logger for test harness and debugging."""
 
 import sys
-from typing import TypedDict
+from typing import TypedDict, Any
 
 
 class EventData(TypedDict, total=False):
     """Data for logged events."""
 
     idea: str
-    idea_slug: str
-    use_websearch: bool
-    message_count: int
+    slug: str
+    word_count: int
+    character_count: int
+    search_count: int
     iteration: int
-    recommendation: str
+    feedback_count: int
+    file: str
+    size: int
+    duration: float
+    message_count: int
+    search_number: int
+    query: str
+    # Allow any additional fields
+    use_websearch: bool
+    analysis_file: str
+    idea_slug: str
+    message_type: str
+    has_content_attr: bool
+    has_content: bool
+    content_preview: str | None
+    review_complete: bool
+    feedback_file_expected: str
+    error: str | None
+    attempting_fix: bool
+    feedback_file: str
+    recommendation: Any
     critical_issues: int
+    improvements: int
 
 
 class ConsoleLogger:

@@ -3,6 +3,7 @@
 import shutil
 from datetime import datetime, timedelta
 from pathlib import Path
+from typing import cast
 from typing import TypedDict
 import re
 
@@ -183,7 +184,7 @@ class CleanupManager:
                         old_file.unlink()
                         stats["files_deleted"] += 1
 
-        return stats
+        return cast(dict[str, object], stats)
 
     @staticmethod
     def clean_all_analyses(base_dir: Path) -> dict[str, object]:
@@ -218,4 +219,4 @@ class CleanupManager:
                         "duplicates_removed", 0
                     )
 
-        return total_stats
+        return cast(dict[str, object], total_stats)

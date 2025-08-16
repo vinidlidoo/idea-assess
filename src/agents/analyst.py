@@ -241,7 +241,7 @@ class AnalystAgent(BaseAgent):
                 _ = logger.log_event(
                     "analysis_start",
                     "Analyst",
-                    {"idea": idea, "use_websearch": use_websearch},
+                    {"idea": idea, "use_websearch": use_websearch},  # type: ignore[arg-type]
                 )
 
             # Create client and analyze
@@ -254,7 +254,7 @@ class AnalystAgent(BaseAgent):
                     _ = logger.log_event(
                         "analysis_receiving",
                         "Analyst",
-                        {"use_websearch": use_websearch},
+                        {"use_websearch": use_websearch},  # type: ignore[arg-type]
                     )
 
                 async for message in client.receive_response():

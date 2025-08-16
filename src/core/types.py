@@ -93,14 +93,32 @@ class FeedbackDict(TypedDict):
     metadata: dict[str, object]
 
 
-class PipelineResult(TypedDict):
+class PipelineResult(TypedDict, total=False):
     """Result from running the analysis pipeline."""
 
+    # Required fields
+    success: bool
+    idea: str
+
+    # Success fields
+    slug: str
     analysis_file: str
     idea_slug: str
     iterations_completed: int
+    iteration_count: int
     feedback_history: list[FeedbackDict]
     metadata: dict[str, object]
+    file_path: str
+    final_status: str
+    history_path: str
+    final_analysis: str
+    analysis: str
+
+    # Error fields
+    error: str
+    error_context: str
+    iterations: list[dict[str, object]]
+    timestamp: str
 
 
 class AgentKwargs(TypedDict, total=False):
