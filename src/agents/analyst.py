@@ -15,7 +15,6 @@ from ..core.agent_base import BaseAgent, AgentResult
 from ..core.config import AnalysisConfig
 from ..core.message_processor import MessageProcessor
 from ..utils.text_processing import create_slug
-from ..utils.improved_logging import StructuredLogger
 from ..utils.file_operations import load_prompt, AnalysisResult
 
 
@@ -141,25 +140,25 @@ class AnalystAgent(BaseAgent):
 
         # Setup logger if debug mode (pipeline already has the main logger)
         import os
+        from ..utils.logger import Logger
 
         # Use appropriate logger based on context
         if os.environ.get("TEST_HARNESS_RUN") == "1":
-            # Use console logger for test visibility
-            from ..utils.console_logger import ConsoleLogger
-
-            logger = ConsoleLogger("Analyst")
+            # Use Logger for test visibility
+            run_id = datetime.now().strftime("%Y%m%d_%H%M%S")
+            slug = create_slug(idea)
+            logger = Logger(run_id, slug, "test", console_output=True)
         elif debug and not hasattr(self, "_pipeline_logger"):
             run_id = datetime.now().strftime("%Y%m%d_%H%M%S")
             slug = create_slug(idea)
-            logger = StructuredLogger(run_id, slug, "test")
+            logger = Logger(run_id, slug, "test", console_output=True)
         else:
             logger = getattr(self, "_pipeline_logger", None)
         # Reset interrupt state
         self.interrupt_event.clear()
 
-        # Message processor
-        # MessageProcessor accepts both StructuredLogger and ConsoleLogger
-        processor = MessageProcessor(logger)
+        # Message processor with debug mode flag
+        processor = MessageProcessor(logger, debug_mode=debug)
 
         # Signal handler for interrupts (thread-safe)
         def handle_interrupt(signum: int, frame: types.FrameType | None) -> None:
@@ -292,13 +291,9 @@ class AnalystAgent(BaseAgent):
                                 {},  # type: ignore[arg-type]
                             )
 
-                        # Get content from ResultMessage or collected text
+                        # Get content from ResultMessage
                         extracted_content = processor.extract_content(message)
-                        content = (
-                            extracted_content[0]
-                            if extracted_content
-                            else processor.get_final_content()
-                        )
+                        content = extracted_content[0] if extracted_content else ""
 
                         if logger and content:
                             _ = logger.log_event(
@@ -320,50 +315,25 @@ class AnalystAgent(BaseAgent):
                             )
                         break
 
-            # If no ResultMessage but we have text
-            final_content = processor.get_final_content()
-            if final_content:
-                stats = processor.get_statistics()
-                if logger:
-                    _ = logger.log_event(
-                        "analysis_complete",
-                        "Analyst",
-                        {},  # type: ignore[arg-type]
-                    )
-                return AnalysisResult(
-                    content=final_content,
-                    idea=idea,
-                    slug=create_slug(idea),
-                    timestamp=datetime.now(),
-                    search_count=stats["search_count"],
-                    message_count=stats["message_count"],
-                    duration=time.time() - start_time,
-                    interrupted=False,
+            # If no ResultMessage was found, log error and return None
+            # (Previously used get_final_content() from buffer as fallback)
+            print(
+                "[ANALYST] ERROR: No analysis generated (no ResultMessage received)",
+                file=sys.stderr,
+                flush=True,
+            )
+            if logger:
+                _ = logger.log_event(
+                    "analysis_failed",
+                    "Analyst",
+                    {"reason": "No ResultMessage received"},  # type: ignore[arg-type]
                 )
-            else:
-                print(
-                    "[ANALYST] ERROR: No analysis generated",
-                    file=sys.stderr,
-                    flush=True,
-                )
-                return None
+            return None
 
         except AnalysisInterrupted as e:
             print(f"\n[ANALYST] WARNING: {e}", file=sys.stderr, flush=True)
-            # Return partial results if available
-            final_content = processor.get_final_content()
-            if final_content:
-                stats = processor.get_statistics()
-                return AnalysisResult(
-                    content=final_content,
-                    idea=idea,
-                    slug=create_slug(idea),
-                    timestamp=datetime.now(),
-                    search_count=stats["search_count"],
-                    message_count=stats["message_count"],
-                    duration=time.time() - start_time,
-                    # Already set by signal handler
-                )
+            # No partial results available without buffer
+            # (Previously used get_final_content() to return partial results)
             return None
 
         except Exception as e:
@@ -372,11 +342,29 @@ class AnalystAgent(BaseAgent):
             print(f"[ANALYST] ERROR: {error_msg}", file=sys.stderr, flush=True)
 
             if logger:
-                _ = logger.log_error(
-                    str(e),
-                    "Analyst",
-                    traceback=traceback.format_exc() if debug else None,
+                # Use SDK-aware error logging if it's an SDK error
+                from claude_code_sdk._errors import (
+                    CLINotFoundError,
+                    CLIConnectionError,
+                    ProcessError,
+                    CLIJSONDecodeError,
+                    MessageParseError,
                 )
+
+                if isinstance(
+                    e,
+                    (
+                        CLINotFoundError,
+                        CLIConnectionError,
+                        ProcessError,
+                        CLIJSONDecodeError,
+                        MessageParseError,
+                    ),
+                ):
+                    logger.log_sdk_error(e, "Analyst")
+                else:
+                    logger.error(str(e), "Analyst", exc_info=debug)
+
             if debug:
                 traceback.print_exc()
             return None

@@ -1,0 +1,17 @@
+{
+  "iteration_recommendation": "reject",
+  "iteration_reason": "Still not meeting quality standards",
+  "critical_issues": [
+    {
+      "issue": "Still not good enough",
+      "suggestion": "Address this issue",
+      "priority": "critical"
+    }
+  ],
+  "positive_aspects": [],
+  "suggestions": [
+    "Keep trying"
+  ],
+  "improvements": [],
+  "minor_suggestions": []
+}

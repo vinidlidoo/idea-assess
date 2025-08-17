@@ -11,7 +11,7 @@ from ..core.types import FeedbackDict
 from ..core.config import AnalysisConfig
 from ..core.constants import MAX_REVIEW_ITERATIONS, REVIEWER_MAX_TURNS
 from ..core.message_processor import MessageProcessor
-from ..utils.improved_logging import StructuredLogger
+from ..utils.logger import Logger
 from ..utils.file_operations import load_prompt
 from ..utils.json_validator import FeedbackValidator
 
@@ -119,15 +119,16 @@ class ReviewerAgent(BaseAgent):
 
         # Use appropriate logger based on context
         if os.environ.get("TEST_HARNESS_RUN") == "1":
-            # Use console logger for test visibility
-            from ..utils.console_logger import ConsoleLogger
+            # Use Logger for test visibility
+            from datetime import datetime
 
-            logger = ConsoleLogger("Reviewer")
+            run_id = datetime.now().strftime("%Y%m%d_%H%M%S")
+            logger = Logger(run_id, idea_slug, "test", console_output=True)
         elif debug:
             from datetime import datetime
 
             run_id = datetime.now().strftime("%Y%m%d_%H%M%S")
-            logger = StructuredLogger(run_id, idea_slug, "test")
+            logger = Logger(run_id, idea_slug, "test", console_output=True)
             logger.log_event(
                 "review_start",
                 "Reviewer",
@@ -178,9 +179,8 @@ class ReviewerAgent(BaseAgent):
                 permission_mode="default",  # Use default permission mode for automation
             )
 
-            # Initialize message processor
-            # MessageProcessor accepts both StructuredLogger and ConsoleLogger
-            processor = MessageProcessor(logger)
+            # Initialize message processor with debug mode flag
+            processor = MessageProcessor(logger, debug_mode=debug)
 
             # Query Claude for review
             review_complete = False

@@ -1,0 +1,61 @@
+{
+  "iterations": [
+    {
+      "iteration": 1,
+      "analysis_file": "analyses/test-business-idea/iterations/iteration_1.md",
+      "analysis_length": 41,
+      "metadata": {
+        "duration": 1.0
+      }
+    },
+    {
+      "iteration": 2,
+      "analysis_file": "analyses/test-business-idea/iterations/iteration_2.md",
+      "analysis_length": 62,
+      "metadata": {
+        "duration": 1.5
+      }
+    }
+  ],
+  "feedback": [
+    {
+      "iteration_recommendation": "reject",
+      "iteration_reason": "Analysis is too short and missing key elements",
+      "critical_issues": [
+        {
+          "issue": "Too short",
+          "suggestion": "Address this issue",
+          "priority": "critical"
+        },
+        {
+          "issue": "Missing market analysis",
+          "suggestion": "Address this issue",
+          "priority": "critical"
+        }
+      ],
+      "positive_aspects": [
+        "Good start"
+      ],
+      "suggestions": [
+        "Add more detail",
+        "Include competition"
+      ],
+      "improvements": [],
+      "minor_suggestions": []
+    },
+    {
+      "iteration_recommendation": "accept",
+      "iteration_reason": "Analysis is now comprehensive",
+      "critical_issues": [],
+      "positive_aspects": [
+        "Much improved",
+        "Good detail"
+      ],
+      "suggestions": [],
+      "improvements": [],
+      "minor_suggestions": []
+    }
+  ],
+  "final_status": "accepted",
+  "idea": "Test business idea"
+}

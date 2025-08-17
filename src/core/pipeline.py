@@ -3,7 +3,7 @@
 import json
 from datetime import datetime
 from pathlib import Path
-from typing import cast
+from typing import cast, Literal
 
 
 # PipelineResult imported from types.py
@@ -14,7 +14,7 @@ from ..agents.reviewer import ReviewerAgent, FeedbackProcessor
 from ..core.config import AnalysisConfig
 from ..core.types import PipelineResult
 from ..core.agent_protocol import AgentProtocol
-from ..utils.improved_logging import StructuredLogger
+from ..utils.logger import Logger
 from ..utils.text_processing import create_slug
 from ..utils.archive_manager import ArchiveManager
 
@@ -56,7 +56,7 @@ class AnalysisPipeline:
         debug: bool,
         max_iterations: int = 3,
         use_websearch: bool = True,
-    ) -> tuple[StructuredLogger | None, str, str]:
+    ) -> tuple[Logger | None, str, str]:
         """
         Initialize logging for the pipeline run.
 
@@ -74,13 +74,15 @@ class AnalysisPipeline:
 
         run_id = datetime.now().strftime("%Y%m%d_%H%M%S")
         slug = create_slug(idea)
-        run_type = "test" if debug else "production"
+        run_type: Literal["run", "test"] = "test" if debug else "run"
 
         # Don't create pipeline logs when running from test harness
         if os.environ.get("TEST_HARNESS_RUN") == "1":
             logger = None
         else:
-            logger = StructuredLogger(run_id, slug, run_type) if debug else None
+            logger = (
+                Logger(run_id, slug, run_type, console_output=True) if debug else None
+            )
 
         if logger:
             logger.log_milestone(
@@ -130,7 +132,7 @@ class AnalysisPipeline:
         iterations_dir: Path,
         iteration_count: int,
         analysis_dir: Path,
-        logger: StructuredLogger | None,
+        logger: Logger | None,
     ) -> Path | None:
         """
         Find the appropriate feedback file for the current iteration.
@@ -181,7 +183,7 @@ class AnalysisPipeline:
         iteration_count: int,
         analysis_dir: Path,
         iterations_dir: Path,
-        logger: StructuredLogger | None,
+        logger: Logger | None,
     ) -> Path:
         """
         Save analysis to both iteration file and main file.

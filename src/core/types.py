@@ -116,7 +116,7 @@ class AgentKwargs(TypedDict, total=False):
     iteration_count: int
     idea_slug: str
     revision_context: dict[str, str] | None
-    logger: object  # StructuredLogger | ConsoleLogger | None
+    logger: object  # Logger | None
 
 
 class AnalysisConfigDict(TypedDict):

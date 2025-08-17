@@ -1,37 +1,53 @@
 """Message tracking and content extraction utilities for Claude SDK interactions."""
 
 import re
-from typing import TYPE_CHECKING
 
-from claude_code_sdk.types import ContentBlock
+from claude_code_sdk.types import (
+    ContentBlock,
+    SystemMessage,
+    UserMessage,
+    AssistantMessage,
+    ResultMessage,
+    TextBlock,
+    ToolUseBlock,
+    ToolResultBlock,
+)
+
 from ..core.constants import MAX_CONTENT_SIZE
-
-if TYPE_CHECKING:
-    from ..utils.improved_logging import StructuredLogger
-    from ..utils.console_logger import ConsoleLogger
+from ..utils.logger import Logger
 
 
 class MessageProcessor:
-    """Tracks message statistics and helps extract content from Claude SDK messages."""
+    """
+    Tracks message statistics and logs full message details for debugging.
+
+    Primary responsibilities:
+    1. Count messages and WebSearch tool usage
+    2. Extract session IDs from SystemMessages
+    3. Extract text content and search queries from messages
+    4. Log message details to disk for debugging (when debug_mode=True)
+
+    """
 
     def __init__(
         self,
-        logger: "StructuredLogger | ConsoleLogger | None" = None,
-        max_buffer_size: int = MAX_CONTENT_SIZE,
+        logger: Logger | None = None,
+        max_buffer_size: int = MAX_CONTENT_SIZE,  # Deprecated parameter, ignored
+        debug_mode: bool = False,
     ):
         """
         Initialize the message processor.
 
         Args:
-            logger: Optional structured logger
-            max_buffer_size: Maximum size of the result buffer in bytes
+            logger: Optional logger instance
+            max_buffer_size: Deprecated parameter, ignored (kept for backward compatibility)
+            debug_mode: Whether to log full message details for debugging
         """
-        self.logger: StructuredLogger | ConsoleLogger | None = logger
+        self.logger: Logger | None = logger
+        self.debug_mode: bool = debug_mode
         self.message_count: int = 0
         self.search_count: int = 0
-        self.result_text: list[str] = []
-        self.max_buffer_size: int = max_buffer_size
-        self._total_size: int = 0  # Track current buffer size
+        # Buffer system removed - content is now logged to disk when debug_mode=True
 
     def get_session_id(self, message: object) -> str | None:
         """
@@ -43,7 +59,6 @@ class MessageProcessor:
         Returns:
             Session ID if found, None otherwise
         """
-        from claude_code_sdk.types import SystemMessage
 
         if isinstance(message, SystemMessage):
             if message.data:
@@ -54,50 +69,46 @@ class MessageProcessor:
 
     def track_message(self, message: object) -> None:
         """
-        Track a message and update internal statistics.
+        Track message statistics, extract search queries, and optionally log full message details.
+
+        Increments message_count, tracks WebSearch tool usage (incrementing search_count),
+        and logs message details to disk when debug_mode is True.
 
         Args:
             message: The SDK message to track
         """
         self.message_count += 1
 
-        from claude_code_sdk.types import (
-            UserMessage,
-            AssistantMessage,
-            ResultMessage,
-        )
-
-        # Process content for messages that have it
-        if isinstance(message, (UserMessage, AssistantMessage)):
-            content, search_queries = self._extract_content_and_queries(message.content)
-
-            # Update buffer with text content
-            for text in content:
-                self._append_to_buffer(text)
-
-            # Log search queries
-            if self.logger and search_queries:
-                for query in search_queries:
-                    self.logger.log_event(
-                        "websearch_query",
-                        "MessageProcessor",
-                        {"query": query, "search_number": self.search_count},
-                    )
-
-        # Log message details if logger available
+        # Log message type first (lightweight tracking)
         if self.logger:
             message_type = type(message).__name__
-            metadata: dict[str, object] = {"message_number": self.message_count}
-
-            # Add cost info for ResultMessage
-            if isinstance(message, ResultMessage) and message.total_cost_usd:
-                metadata["cost_usd"] = message.total_cost_usd
-
             self.logger.log_event(
                 f"sdk_message_{message_type.lower()}",
                 "MessageProcessor",
                 {},  # type: ignore[arg-type]
             )
+
+        # Log full message details when in debug mode (heavier operation)
+        if self.debug_mode:
+            self._log_message_details(message)
+
+        # Extract and log search queries from user/assistant messages
+        # Note: search_count is incremented inside _extract_content_and_queries()
+        if isinstance(message, (UserMessage, AssistantMessage)):
+            _, search_queries = self._extract_content_and_queries(message.content)
+
+            # Log each search query found
+            # Note: search_count was already incremented for each query in _extract_content_and_queries
+            # so we need to calculate the correct number for each query
+            if self.logger and search_queries:
+                # Calculate starting search number (current count - number of queries found)
+                start_num = self.search_count - len(search_queries) + 1
+                for i, query in enumerate(search_queries):
+                    self.logger.log_event(
+                        "websearch_query",
+                        "MessageProcessor",
+                        {"query": query, "search_number": start_num + i},
+                    )
 
     def extract_content(self, message: object) -> list[str]:
         """
@@ -109,11 +120,6 @@ class MessageProcessor:
         Returns:
             List of text content strings
         """
-        from claude_code_sdk.types import (
-            UserMessage,
-            AssistantMessage,
-            ResultMessage,
-        )
 
         if isinstance(message, (UserMessage, AssistantMessage)):
             content, _ = self._extract_content_and_queries(message.content)
@@ -128,19 +134,164 @@ class MessageProcessor:
         """
         Extract search queries from a message.
 
+        Can return multiple queries if a message contains multiple ToolUseBlock
+        elements calling WebSearch, though typically there's only one per message.
+
         Args:
             message: The SDK message to extract from
 
         Returns:
-            List of search query strings
+            List of search query strings (usually 0 or 1, but can be multiple)
         """
-        from claude_code_sdk.types import UserMessage, AssistantMessage
-
         if isinstance(message, (UserMessage, AssistantMessage)):
             _, queries = self._extract_content_and_queries(message.content)
             return queries
 
         return []
+
+    def _log_message_details(self, message: object) -> None:
+        """
+        Log full message structure preserving SDK types.
+
+        Args:
+            message: The SDK message to log
+        """
+        if not self.logger or not self.debug_mode:
+            return
+
+        # Only log SDK message types
+        if not isinstance(
+            message, (UserMessage, AssistantMessage, SystemMessage, ResultMessage)
+        ):
+            return
+
+        msg_dict = self._serialize_message(message)
+
+        # Use type: ignore since EventData is a TypedDict with specific fields
+        # but we're adding dynamic fields for message logging
+        self.logger.log_event(
+            event_type="sdk_message",
+            agent="MessageProcessor",
+            data={},  # type: ignore[arg-type]
+        )
+
+        # Log the actual message data as a separate event for now
+        # This avoids type conflicts with EventData
+        if self.logger and self.debug_mode:
+            import json
+            from datetime import datetime
+
+            # Write directly to a debug messages JSONL file
+            # Create a separate file for SDK messages when in debug mode
+            log_dir = self.logger.log_file.parent
+            messages_file = log_dir / f"{self.logger.log_file.stem}_messages.jsonl"
+
+            event = {
+                "timestamp": datetime.now().isoformat(),
+                "event_type": "sdk_message_detail",
+                "agent": "MessageProcessor",
+                "message_index": self.message_count,
+                "message_type": type(message).__name__,
+                "message": msg_dict,
+            }
+
+            with open(messages_file, "a") as f:
+                _ = f.write(json.dumps(event) + "\n")
+
+    def _serialize_message(
+        self, message: object, max_content_length: int = 1000
+    ) -> dict[str, object]:
+        """
+        Serialize SDK message preserving structure but truncating content.
+
+        Args:
+            message: The SDK message to serialize
+            max_content_length: Maximum length for text content
+
+        Returns:
+            Dictionary representation of the message
+        """
+        if isinstance(message, (UserMessage, AssistantMessage)):
+            msg_type = type(message).__name__
+            content = message.content
+
+            # UserMessage can have str or list[ContentBlock], AssistantMessage always has list[ContentBlock]
+            if isinstance(content, str):
+                truncated = (
+                    content[:max_content_length] + "..."
+                    if len(content) > max_content_length
+                    else content
+                )
+                return {"type": msg_type, "content": truncated}
+            else:  # list[ContentBlock]
+                return {
+                    "type": msg_type,
+                    "content": [
+                        self._serialize_block(block) for block in content[:5]
+                    ],  # Max 5 blocks
+                }
+
+        elif isinstance(message, SystemMessage):
+            return {
+                "type": "SystemMessage",
+                "subtype": message.subtype,
+                "data": message.data,  # Usually small metadata
+            }
+
+        elif isinstance(message, ResultMessage):
+            result_text = (
+                message.result[:max_content_length] + "..."
+                if message.result and len(message.result) > max_content_length
+                else message.result
+            )
+            return {
+                "type": "ResultMessage",
+                "subtype": message.subtype,
+                "duration_ms": message.duration_ms,
+                "duration_api_ms": message.duration_api_ms,  # Added missing field
+                "is_error": message.is_error,
+                "num_turns": message.num_turns,
+                "session_id": message.session_id,
+                "total_cost_usd": message.total_cost_usd,
+                "usage": message.usage,  # Added missing field
+                "result": result_text,
+            }
+        return {"type": "Unknown"}
+
+    def _serialize_block(self, block: ContentBlock) -> dict[str, object]:
+        """
+        Serialize content blocks with truncation.
+
+        Args:
+            block: The content block to serialize
+
+        Returns:
+            Dictionary representation of the block
+        """
+        if isinstance(block, TextBlock):
+            text = block.text[:500] + "..." if len(block.text) > 500 else block.text
+            return {"type": "TextBlock", "text": text}
+        elif isinstance(block, ToolUseBlock):
+            return {
+                "type": "ToolUseBlock",
+                "name": block.name,
+                "id": block.id,
+                "input": block.input,
+            }
+        elif isinstance(block, ToolResultBlock):  # pyright: ignore[reportUnnecessaryIsInstance]
+            content_str = str(block.content) if block.content else None
+            truncated = (
+                content_str[:500] + "..."
+                if content_str and len(content_str) > 500
+                else content_str
+            )
+            return {
+                "type": "ToolResultBlock",
+                "content": truncated,
+                "is_error": block.is_error,
+            }
+        # Handle other block types (e.g., ThinkingBlock, future additions)
+        return {"type": "Unknown"}
 
     def _extract_content_and_queries(
         self, msg_content: str | list[ContentBlock]
@@ -154,11 +305,6 @@ class MessageProcessor:
         Returns:
             Tuple of (text_content, search_queries)
         """
-        from claude_code_sdk.types import (
-            TextBlock,
-            ToolUseBlock,
-            ToolResultBlock,
-        )
         import sys
 
         text_content: list[str] = []
@@ -206,71 +352,14 @@ class MessageProcessor:
 
         return text_content, search_queries
 
-    def _append_to_buffer(self, text: str) -> None:
-        """
-        Append text to the result buffer with size management.
-
-        Uses a rolling buffer approach - when buffer is full,
-        removes oldest entries to make room for new text.
-
-        Args:
-            text: Text to append to the buffer
-        """
-        text_size = len(text)
-
-        # If text itself exceeds max size, truncate it
-        if text_size > self.max_buffer_size:
-            text = text[: self.max_buffer_size]
-            text_size = self.max_buffer_size
-            if self.logger:
-                self.logger.log_event(
-                    "buffer_text_truncated",
-                    "MessageProcessor",
-                    {},  # type: ignore[arg-type]
-                )
-
-        # Make room if needed by removing oldest entries
-        while self._total_size + text_size > self.max_buffer_size and self.result_text:
-            removed = self.result_text.pop(0)
-            self._total_size -= len(removed)
-            if self.logger:
-                self.logger.log_event(
-                    "buffer_overflow_cleanup",
-                    "MessageProcessor",
-                    {},  # type: ignore[arg-type]
-                )
-
-        # Append new text
-        self.result_text.append(text)
-        self._total_size += text_size
-
-    def clear_buffer(self) -> None:
-        """Clear the result buffer and reset size tracking."""
-        self.result_text.clear()
-        self._total_size = 0
-        if self.logger:
-            self.logger.log_event("buffer_cleared", "MessageProcessor", {})  # type: ignore[arg-type]
-
-    def get_final_content(self) -> str:
-        """
-        Get the final aggregated content.
-
-        Returns:
-            Combined text content from all messages
-        """
-        return "".join(self.result_text)
-
     def get_statistics(self) -> dict[str, int]:
         """
         Get processing statistics.
 
         Returns:
-            Dictionary with message, search counts, and buffer info
+            Dictionary with message and search counts
         """
         return {
             "message_count": self.message_count,
             "search_count": self.search_count,
-            "buffer_size": self._total_size,
-            "buffer_entries": len(self.result_text),
-            "buffer_capacity": self.max_buffer_size,
         }

@@ -32,6 +32,9 @@
 - [ ] Consider making iteration limit configurable (currently hardcoded to 3)
 - [ ] Add async parallel processing for multiple analyses
 - [ ] Improve error messages when feedback files are missing
+- [ ] Deprecate logger compatibility methods (see session-logs/2025-08-17-logger-deprecation-plan.md)
+- [ ] Consider adding log rotation for large log files
+- [ ] Optimize logging verbosity - remove redundant log events
 
 ## Remaining Items from Code Review Assessment
 
