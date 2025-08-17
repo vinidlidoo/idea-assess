@@ -12,7 +12,8 @@ Building an AI-powered business idea evaluation system using Claude SDK and MCP 
 
 **Phase:** Phase 2 - Complete with logger refactoring done  
 **Latest Session:** `session-logs/2025-08-17-logger-refactor-complete.md`  
-**Immediate Focus:** Phase 3 - Implement Judge evaluation agent
+**Immediate Focus:** Complete logger transition (remove compatibility methods), then Q&A session
+**Note:** Phase 3 Judge implementation on hold until explicitly requested
 
 ## Key Documents
 

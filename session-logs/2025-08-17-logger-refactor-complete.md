@@ -101,9 +101,11 @@ Successfully completed the logger refactoring, merging three logger classes (Bas
 
 ## Next Session Priority
 
-1. **Must Do:** Complete Phase 3 - Judge evaluation agent implementation
-2. **Should Do:** Deprecate logger compatibility methods (see deprecation plan)
-3. **Could Do:** Further optimize logging output based on usage patterns
+1. **Must Do:** Complete transition to new logger - deprecate compatibility methods
+2. **Should Do:** Remove all 39 calls to log_event/log_error/log_milestone
+3. **Could Do:** Another Q&A session on codebase after logger transition
+
+**Note:** Phase 3 Judge implementation on hold until explicitly requested by user
 
 ## Open Questions
 
@@ -115,9 +117,11 @@ Successfully completed the logger refactoring, merging three logger classes (Bas
 Clear context for next session:
 
 - Current state: Logger refactoring complete, all tests passing, backwards compatibility maintained
-- Next immediate action: Implement Judge agent for Phase 3
-- Watch out for: 39 calls to compatibility methods that should be cleaned up
-- Reference: See `session-logs/2025-08-17-logger-deprecation-plan.md` for cleanup guide
+- Next immediate action: Complete logger transition by removing compatibility methods
+- Watch out for: 39 calls to compatibility methods that need conversion
+- Reference: See `session-logs/2025-08-17-logger-deprecation-plan.md` for detailed cleanup guide
+- After logger transition: Conduct another Q&A session on codebase
+- Phase 3 Judge: On hold until user explicitly requests it
 
 ## Session Metrics
 
