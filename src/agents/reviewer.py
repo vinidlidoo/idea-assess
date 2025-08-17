@@ -129,15 +129,7 @@ class ReviewerAgent(BaseAgent):
 
             run_id = datetime.now().strftime("%Y%m%d_%H%M%S")
             logger = Logger(run_id, idea_slug, "test", console_output=True)
-            logger.log_event(
-                "review_start",
-                "Reviewer",
-                {
-                    "iteration": iteration_count,
-                    "analysis_file": input_data,
-                    "idea_slug": idea_slug,
-                },
-            )
+            logger.info(f"Starting review for {idea_slug}, iteration {iteration_count}")
 
         try:
             # Validate input path for security
@@ -185,59 +177,30 @@ class ReviewerAgent(BaseAgent):
             # Query Claude for review
             review_complete = False
 
-            if logger:
-                logger.log_event(
-                    "review_start",
-                    "Reviewer",
-                    {"idea_slug": idea_slug, "iteration": iteration_count},
-                )
+            # Review start already logged above in debug mode
 
             async with ClaudeSDKClient(options=options) as client:
                 await client.query(review_prompt)
 
-                if logger:
-                    logger.log_event("review_processing", "Reviewer", {})
+                # Processing review (redundant logging removed)
 
                 message_count = 0
 
                 async for message in client.receive_response():
                     message_count += 1
-                    # Debug log the raw message
-                    if logger:
-                        logger.log_event(
-                            f"raw_message_{type(message).__name__}",
-                            "Reviewer",
-                            {
-                                "message_type": type(message).__name__,
-                                "has_content_attr": hasattr(message, "content"),
-                            },
-                        )
+                    # Raw message tracking (redundant debug logging removed)
 
                     processor.track_message(message)
 
-                    # Show progress periodically
-                    if logger and message_count % 2 == 0:
-                        logger.log_event(
-                            "review_progress",
-                            "Reviewer",
-                            {"message_count": message_count},
+                    # Progress tracking (converted to debug level)
+                    if logger and message_count % 5 == 0:
+                        logger.debug(
+                            f"Review progress: {message_count} messages processed"
                         )
 
                     from claude_code_sdk.types import AssistantMessage, ResultMessage
 
-                    if logger:
-                        message_type = type(message).__name__
-                        content = processor.extract_content(message)
-                        logger.log_event(
-                            f"reviewer_message_{message_type}",
-                            "Reviewer",
-                            {
-                                "has_content": bool(content),
-                                "content_preview": content[0][:100]
-                                if content
-                                else None,
-                            },
-                        )
+                    # Message content tracking (redundant debug logging removed)
 
                     # Check if review is complete
                     if isinstance(message, AssistantMessage):
@@ -249,15 +212,7 @@ class ReviewerAgent(BaseAgent):
 
                     # Process when we hit ResultMessage (end of stream)
                     if isinstance(message, ResultMessage):
-                        if logger:
-                            logger.log_event(
-                                "review_stream_end",
-                                "Reviewer",
-                                {
-                                    "review_complete": review_complete,
-                                    "feedback_file_expected": str(feedback_file),
-                                },
-                            )
+                        # Stream ended (redundant logging removed)
                         break
 
             # Check if the feedback file was created
@@ -273,10 +228,8 @@ class ReviewerAgent(BaseAgent):
                 if not is_valid:
                     # Try to fix common issues
                     if logger:
-                        logger.log_event(
-                            "feedback_validation_failed",
-                            "Reviewer",
-                            {"error": error_msg, "attempting_fix": True},
+                        logger.warning(
+                            f"Feedback validation failed: {error_msg}, attempting fix"
                         )
 
                     feedback_json = validator.fix_common_issues(feedback_json)
@@ -287,16 +240,13 @@ class ReviewerAgent(BaseAgent):
                         with open(feedback_file, "w") as f:
                             json.dump(feedback_json, f, indent=2)
                         if logger:
-                            logger.log_event(
-                                "feedback_fixed",
-                                "Reviewer",
-                                {"feedback_file": str(feedback_file)},
-                            )
+                            logger.info(f"Feedback fixed and saved to {feedback_file}")
                     else:
                         # Still invalid after fix attempt
                         if logger:
-                            logger.log_error(
-                                f"Invalid feedback structure: {error_msg}", "Reviewer"
+                            logger.error(
+                                f"Invalid feedback structure: {error_msg}",
+                                agent="Reviewer",
                             )
                         return AgentResult(
                             content="",
@@ -318,18 +268,14 @@ class ReviewerAgent(BaseAgent):
                 )
 
                 if logger:
-                    logger.log_event(
-                        "review_complete",
-                        "Reviewer",
-                        {
-                            "iteration": iteration_count,
-                            "feedback_file": str(feedback_file),
-                            "recommendation": recommendation,
-                            "critical_issues": critical_count,
-                            "improvements": len(feedback_json.get("improvements", []))
-                            if isinstance(feedback_json.get("improvements", []), list)
-                            else 0,
-                        },
+                    improvements_count = (
+                        len(feedback_json.get("improvements", []))
+                        if isinstance(feedback_json.get("improvements", []), list)
+                        else 0
+                    )
+                    logger.info(
+                        f"Review complete: {recommendation} with {critical_count} critical issues, "
+                        f"{improvements_count} improvements suggested"
                     )
 
                 return AgentResult(
@@ -367,11 +313,7 @@ class ReviewerAgent(BaseAgent):
 
         except Exception as e:
             if logger:
-                logger.log_event(
-                    "review_error",
-                    "Reviewer",
-                    {"error": str(e), "iteration": iteration_count},
-                )
+                logger.error(f"Review error: {str(e)}", agent="Reviewer", exc_info=True)
 
             return AgentResult(
                 content="",

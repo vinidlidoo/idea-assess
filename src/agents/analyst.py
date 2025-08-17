@@ -182,12 +182,7 @@ class AnalystAgent(BaseAgent):
         try:
             # Load the analyst prompt
             system_prompt = load_prompt(self.get_prompt_file(), self.config.prompts_dir)
-            if logger:
-                _ = logger.log_event(
-                    "prompt_loaded",
-                    "Analyst",
-                    {},  # type: ignore[arg-type]
-                )
+            # Prompt loaded (redundant logging removed)
 
             # Craft the user prompt with resource constraints
             websearch_instruction = (
@@ -237,10 +232,10 @@ class AnalystAgent(BaseAgent):
             )
 
             if logger:
-                _ = logger.log_event(
-                    "analysis_start",
-                    "Analyst",
-                    {"idea": idea, "use_websearch": use_websearch},  # type: ignore[arg-type]
+                logger.info(
+                    f"Starting analysis for: {idea[:50]}..."
+                    if len(idea) > 50
+                    else f"Starting analysis for: {idea}"
                 )
 
             # Create client and analyze
@@ -249,12 +244,7 @@ class AnalystAgent(BaseAgent):
 
                 await client.query(user_prompt)
 
-                if logger:
-                    _ = logger.log_event(
-                        "analysis_receiving",
-                        "Analyst",
-                        {"use_websearch": use_websearch},  # type: ignore[arg-type]
-                    )
+                # Receiving analysis (redundant logging removed)
 
                 async for message in client.receive_response():
                     # Check for interrupt using thread-safe event
@@ -274,32 +264,23 @@ class AnalystAgent(BaseAgent):
                         logger
                         and stats["message_count"] % self.config.progress_interval == 0
                     ):
-                        _ = logger.log_event(
-                            "analysis_progress",
-                            "Analyst",
-                            {"message_count": stats["message_count"]},  # type: ignore[arg-type]
+                        logger.debug(
+                            f"Analysis progress: {stats['message_count']} messages processed"
                         )
 
                     # Check for completion
                     from claude_code_sdk.types import ResultMessage
 
                     if isinstance(message, ResultMessage):
-                        if logger:
-                            _ = logger.log_event(
-                                "analysis_complete",
-                                "Analyst",
-                                {},  # type: ignore[arg-type]
-                            )
+                        # Analysis complete (logged after content check)
 
                         # Get content from ResultMessage
                         extracted_content = processor.extract_content(message)
                         content = extracted_content[0] if extracted_content else ""
 
                         if logger and content:
-                            _ = logger.log_event(
-                                "analysis_complete",
-                                "Analyst",
-                                {},  # type: ignore[arg-type]
+                            logger.info(
+                                f"Analysis complete: {stats['message_count']} messages, {stats['search_count']} searches"
                             )
 
                         if content:
@@ -323,10 +304,8 @@ class AnalystAgent(BaseAgent):
                 flush=True,
             )
             if logger:
-                _ = logger.log_event(
-                    "analysis_failed",
-                    "Analyst",
-                    {"reason": "No ResultMessage received"},  # type: ignore[arg-type]
+                logger.error(
+                    "Analysis failed: No ResultMessage received", agent="Analyst"
                 )
             return None
 

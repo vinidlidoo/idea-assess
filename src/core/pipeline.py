@@ -85,18 +85,7 @@ class AnalysisPipeline:
             )
 
         if logger:
-            logger.log_milestone(
-                "Pipeline started", f"Max iterations: {max_iterations}"
-            )
-            logger.log_event(
-                "pipeline_start",
-                "Pipeline",
-                {
-                    "idea": idea,
-                    "max_iterations": max_iterations,
-                    "use_websearch": use_websearch,
-                },
-            )
+            logger.info(f"🎯 Pipeline started - Max iterations: {max_iterations}")
 
         return logger, run_id, slug
 
@@ -155,23 +144,15 @@ class AnalysisPipeline:
         if not latest_feedback_file.exists():
             # Log warning about missing file before fallback
             if logger:
-                logger.log_event(
-                    "feedback_file_missing",
-                    "Pipeline",
-                    {
-                        "expected_file": str(latest_feedback_file),
-                        "iteration": iteration_count,
-                        "falling_back_to": str(analysis_dir / "reviewer_feedback.json"),
-                    },
-                )
+                logger.warning(f"Feedback file missing: {latest_feedback_file}")
             # Fallback to main feedback file
             latest_feedback_file = analysis_dir / "reviewer_feedback.json"
             if not latest_feedback_file.exists():
                 # Critical error - no feedback available for revision
                 if logger:
-                    logger.log_error(
+                    logger.error(
                         f"No feedback file found for iteration {iteration_count}",
-                        "Pipeline",
+                        agent="Pipeline",
                     )
                 return None
 
@@ -209,15 +190,7 @@ class AnalysisPipeline:
             _ = f.write(analysis)
 
         if logger:
-            logger.log_event(
-                "analysis_saved",
-                "Pipeline",
-                {
-                    "iteration": iteration_count,
-                    "file": str(iteration_file),
-                    "size": len(analysis),
-                },
-            )
+            logger.debug(f"Analysis saved: {iteration_file}")
 
         return iteration_file
 
@@ -264,14 +237,7 @@ class AnalysisPipeline:
                 iteration_count += 1
 
                 if logger:
-                    logger.log_event(
-                        "iteration_start",
-                        "Pipeline",
-                        {
-                            "iteration": iteration_count,
-                            "has_feedback": len(feedback_history) > 0,
-                        },
-                    )
+                    logger.info(f"Starting iteration {iteration_count}")
 
                 # Step 1: Generate or refine analysis
                 if iteration_count == 1:
@@ -317,8 +283,8 @@ class AnalysisPipeline:
 
                 if not analyst_result.success:
                     if logger:
-                        logger.log_error(
-                            f"Analyst failed: {analyst_result.error}", "Analyst"
+                        logger.error(
+                            f"Analyst failed: {analyst_result.error}", agent="Analyst"
                         )
                     # Return failure result immediately
                     return {
@@ -362,8 +328,9 @@ class AnalysisPipeline:
 
                 if not reviewer_result.success:
                     if logger:
-                        logger.log_error(
-                            f"Reviewer failed: {reviewer_result.error}", "Reviewer"
+                        logger.error(
+                            f"Reviewer failed: {reviewer_result.error}",
+                            agent="Reviewer",
                         )
                     # If reviewer fails, accept the analysis by default
                     break
@@ -380,75 +347,46 @@ class AnalysisPipeline:
                 with open(main_feedback, "w") as f:
                     json.dump(feedback, f, indent=2)
 
+                    # Iteration complete (logged with milestone below)
+                # Also log as milestone for visibility
+                recommendation = feedback.get("iteration_recommendation", "unknown")
+                critical_issues_raw = feedback.get("critical_issues", [])
+                issues = (
+                    len(critical_issues_raw)
+                    if isinstance(critical_issues_raw, list)
+                    else 0
+                )
                 if logger:
-                    logger.log_event(
-                        "iteration_complete",
-                        "Pipeline",
-                        {
-                            "iteration": iteration_count,
-                            "feedback_file": feedback_file,
-                            "recommendation": str(
-                                feedback.get("iteration_recommendation")
-                            )
-                            if feedback.get("iteration_recommendation")
-                            else None,
-                            "critical_issues": (
-                                lambda x: len(x) if isinstance(x, list) else 0
-                            )(feedback.get("critical_issues", [])),
-                            "reason": str(feedback.get("iteration_reason"))
-                            if feedback.get("iteration_reason")
-                            else None,
-                        },
-                    )
-                    # Also log as milestone for visibility
-                    recommendation = feedback.get("iteration_recommendation", "unknown")
-                    critical_issues_raw = feedback.get("critical_issues", [])
-                    issues = (
-                        len(critical_issues_raw)
-                        if isinstance(critical_issues_raw, list)
-                        else 0
-                    )
-                    logger.log_milestone(
-                        f"Iteration {iteration_count} complete",
-                        f"Recommendation: {recommendation}, Critical issues: {issues}",
+                    logger.info(
+                        f"🎯 Iteration {iteration_count} complete - "
+                        f"Recommendation: {recommendation}, Critical issues: {issues}"
                     )
 
                 # Check if we should continue (reviewer rejected the analysis)
                 if not self.feedback_processor.should_continue_iteration(
                     feedback, iteration_count
                 ):
+                    # Analysis accepted (logged with milestone below)
                     if logger:
-                        logger.log_event(
-                            "analysis_accepted",
-                            "Pipeline",
-                            {
-                                "iteration": iteration_count,
-                                "recommendation": str(
-                                    feedback.get("iteration_recommendation")
-                                )
-                                if feedback.get("iteration_recommendation")
-                                else None,
-                                "reason": str(feedback.get("iteration_reason"))
-                                if feedback.get("iteration_reason")
-                                else None,
-                            },
-                        )
-                        logger.log_milestone(
-                            "Analysis accepted", f"After {iteration_count} iteration(s)"
+                        logger.info(
+                            f"🎯 Analysis accepted after {iteration_count} iteration(s)"
                         )
                     break
                 else:
                     if logger:
-                        logger.log_event(
-                            "analysis_rejected",
-                            "Pipeline",
-                            {
-                                "iteration": iteration_count,
-                                "must_continue": iteration_count < max_iterations,
-                                "reason": str(feedback.get("iteration_reason"))
-                                if feedback.get("iteration_reason")
-                                else None,
-                            },
+                        critical_issues = feedback.get("critical_issues", [])
+                        improvements = feedback.get("improvements", [])
+                        critical_count = (
+                            len(critical_issues)
+                            if isinstance(critical_issues, list)
+                            else 0
+                        )
+                        improvements_count = (
+                            len(improvements) if isinstance(improvements, list) else 0
+                        )
+                        logger.info(
+                            f"Analysis rejected - {critical_count} critical issues, "
+                            f"{improvements_count} improvements needed"
                         )
 
             # Prepare final result
@@ -508,31 +446,13 @@ class AnalysisPipeline:
                 result["history_path"] = str(history_path)
 
             if logger:
-                logger.log_milestone(
-                    "Pipeline complete", f"Success after {iteration_count} iteration(s)"
-                )
-                logger.log_event(
-                    "pipeline_complete",
-                    "Pipeline",
-                    {
-                        "success": True,
-                        "iterations_used": iteration_count,
-                        "final_recommendation": str(
-                            feedback_history[-1].get("iteration_recommendation")
-                        )
-                        if feedback_history
-                        else None,
-                        "file_path": str(result.get("file_path"))
-                        if result.get("file_path")
-                        else None,
-                    },
+                logger.info(
+                    f"🎯 Pipeline complete - Success after {iteration_count} iteration(s)"
                 )
 
             return cast(PipelineResult, cast(object, result))
 
         except Exception as e:
-            import traceback
-
             error_context = (
                 f"Pipeline failed at iteration {iteration_count}/{max_iterations}"
             )
@@ -540,10 +460,10 @@ class AnalysisPipeline:
                 error_context += f" (last file: {current_analysis_file})"
 
             if logger:
-                logger.log_error(
+                logger.error(
                     f"{type(e).__name__}: {str(e)}",
-                    "Pipeline",
-                    traceback=traceback.format_exc(),
+                    agent="Pipeline",
+                    exc_info=True,
                 )
 
             print(f"\n❌ {error_context}: {e}")

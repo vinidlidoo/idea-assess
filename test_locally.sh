@@ -125,13 +125,15 @@ run_test() {
         fi
     fi
     
-    # Create additional structured log files
+    # Create additional structured log files (optional - may not exist)
     python -c "
-from src.utils.test_logging import create_structured_logs
 import sys
 try:
+    from src.utils.test_logging import create_structured_logs
     create_structured_logs('$test_dir', '$log_file', '$scenario_name', '$idea')
     print('   📝 Created structured logs (summary.md, events.jsonl, metrics.json)')
+except ImportError:
+    print('   ℹ️  Structured logs module not available (this is normal)')
 except Exception as e:
     print('   ⚠️  Could not create structured logs')
     print(f'      Error: {e}')

@@ -189,56 +189,6 @@ class Logger:
             # Fallback for other exceptions
             self.error(f"Unexpected error: {error}", agent, exc_info=True)
 
-    # Compatibility methods for old logger interface
-    def log_event(self, event_type: str, agent: str, data: dict[str, object]) -> None:
-        """
-        Compatibility shim for existing log_event calls.
-        Will be phased out gradually.
-
-        Only logs the most essential events, ignores most others.
-        """
-        # Only handle essential event types
-        if event_type == "analysis_start":
-            idea = str(data.get("idea", "unknown"))[:100]
-            websearch = "enabled" if data.get("use_websearch") else "disabled"
-            self.info(f"Starting analysis: {idea} (WebSearch: {websearch})", agent)
-
-        elif event_type == "websearch_query":
-            query = data.get("query", "unknown")
-            num = data.get("search_number", "?")
-            self.info(f"WebSearch #{num}: {query}", agent)
-
-        # Silently ignore redundant events like analysis_complete, review_complete
-        # They add noise without value
-
-    def log_error(self, error: str, agent: str, traceback: str | None = None) -> None:
-        """
-        Compatibility method for old BaseStructuredLogger interface.
-
-        Args:
-            error: Error message
-            agent: Agent where error occurred
-            traceback: Optional traceback string
-        """
-        self.error(error, agent)
-        if traceback:
-            # Log the traceback at debug level
-            self.debug(f"Traceback:\n{traceback}", agent)
-
-    def log_milestone(self, title: str, description: str = "") -> None:
-        """
-        Compatibility method for old BaseStructuredLogger interface.
-        Converts milestones to simple INFO logs.
-
-        Args:
-            title: Milestone title
-            description: Optional description
-        """
-        msg = f"🎯 {title}"
-        if description:
-            msg += f" - {description}"
-        self.info(msg)
-
     def finalize(
         self, success: bool = True, result: dict[str, object] | None = None
     ) -> None:

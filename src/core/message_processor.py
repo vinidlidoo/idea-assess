@@ -79,14 +79,7 @@ class MessageProcessor:
         """
         self.message_count += 1
 
-        # Log message type first (lightweight tracking)
-        if self.logger:
-            message_type = type(message).__name__
-            self.logger.log_event(
-                f"sdk_message_{message_type.lower()}",
-                "MessageProcessor",
-                {},  # type: ignore[arg-type]
-            )
+        # Message type tracking (redundant with debug mode logging)
 
         # Log full message details when in debug mode (heavier operation)
         if self.debug_mode:
@@ -104,11 +97,7 @@ class MessageProcessor:
                 # Calculate starting search number (current count - number of queries found)
                 start_num = self.search_count - len(search_queries) + 1
                 for i, query in enumerate(search_queries):
-                    self.logger.log_event(
-                        "websearch_query",
-                        "MessageProcessor",
-                        {"query": query, "search_number": start_num + i},
-                    )
+                    self.logger.info(f"WebSearch #{start_num + i}: {query}")
 
     def extract_content(self, message: object) -> list[str]:
         """
@@ -167,13 +156,7 @@ class MessageProcessor:
 
         msg_dict = self._serialize_message(message)
 
-        # Use type: ignore since EventData is a TypedDict with specific fields
-        # but we're adding dynamic fields for message logging
-        self.logger.log_event(
-            event_type="sdk_message",
-            agent="MessageProcessor",
-            data={},  # type: ignore[arg-type]
-        )
+        # SDK message tracking (redundant - already logged to JSONL in debug mode)
 
         # Log the actual message data as a separate event for now
         # This avoids type conflicts with EventData
@@ -326,15 +309,7 @@ class MessageProcessor:
                             file=sys.stderr,
                             flush=True,
                         )
-                        if self.logger:
-                            self.logger.log_event(
-                                "websearch_query",
-                                "MessageProcessor",
-                                {
-                                    "search_number": self.search_count,
-                                    "query": str(query),
-                                },  # type: ignore[arg-type]
-                            )
+                        # WebSearch query already logged above in track_message()
 
                 # Extract text content
                 elif isinstance(block, TextBlock):

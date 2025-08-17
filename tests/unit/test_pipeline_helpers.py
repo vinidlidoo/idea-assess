@@ -58,10 +58,9 @@ class TestPipelineHelpers:
                 assert run_id[8] == "_"
 
                 # Verify logging calls
-                mock_logger.log_milestone.assert_called_once_with(
-                    "Pipeline started", "Max iterations: 3"
+                mock_logger.info.assert_called_with(
+                    "🎯 Pipeline started - Max iterations: 3"
                 )
-                mock_logger.log_event.assert_called_once()
 
     def test_initialize_logging_production_mode(self, pipeline):
         """Test _initialize_logging in production mode (no debug)."""
@@ -158,8 +157,8 @@ class TestPipelineHelpers:
 
         assert result == main_feedback
         # Verify warning was logged
-        mock_logger.log_event.assert_called_once()
-        assert "feedback_file_missing" in str(mock_logger.log_event.call_args)
+        mock_logger.warning.assert_called()
+        assert "Feedback file missing" in str(mock_logger.warning.call_args)
 
     def test_find_feedback_file_not_found(self, pipeline, temp_dir):
         """Test _find_feedback_file when no feedback file exists."""
@@ -177,7 +176,7 @@ class TestPipelineHelpers:
 
         assert result is None
         # Verify error was logged
-        mock_logger.log_error.assert_called_once()
+        mock_logger.error.assert_called_once()
 
     def test_save_analysis_files_creates_both_files(self, pipeline, temp_dir):
         """Test _save_analysis_files creates iteration and main files."""
@@ -208,11 +207,7 @@ class TestPipelineHelpers:
         assert main_file.read_text() == test_content
 
         # Verify logging
-        mock_logger.log_event.assert_called_once_with(
-            "analysis_saved",
-            "Pipeline",
-            {"iteration": 1, "file": str(iteration_file), "size": len(test_content)},
-        )
+        mock_logger.debug.assert_called_with(f"Analysis saved: {iteration_file}")
 
     def test_save_analysis_files_overwrites_main(self, pipeline, temp_dir):
         """Test _save_analysis_files overwrites the main analysis file."""

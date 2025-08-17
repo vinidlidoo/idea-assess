@@ -206,8 +206,8 @@ class TestSDKErrorHandling:
         assert "Unexpected error: Something went wrong" in log_content
 
 
-class TestCompatibilityMethods:
-    """Test compatibility methods for old logger interface."""
+class TestDirectLogging:
+    """Test direct logging methods that replaced compatibility methods."""
 
     @pytest.fixture
     def logger(self, tmp_path, monkeypatch):
@@ -217,49 +217,37 @@ class TestCompatibilityMethods:
         yield logger
         logger.finalize()
 
-    def test_log_event_analysis_start(self, logger):
-        """Test log_event with analysis_start."""
-        logger.log_event(
-            "analysis_start",
-            "Analyst",
-            {"idea": "AI fitness app", "use_websearch": True},
-        )
+    def test_info_with_analysis_start(self, logger):
+        """Test info logging for analysis start."""
+        logger.info("Starting analysis: AI fitness app (WebSearch: enabled)", "Analyst")
 
         log_content = logger.log_file.read_text()
         assert "Starting analysis: AI fitness app (WebSearch: enabled)" in log_content
 
-    def test_log_event_websearch(self, logger):
-        """Test log_event with websearch_query."""
-        logger.log_event(
-            "websearch_query",
-            "MessageProcessor",
-            {"query": "fitness market size", "search_number": 1},
-        )
+    def test_info_with_websearch(self, logger):
+        """Test info logging for websearch."""
+        logger.info("WebSearch #1: fitness market size", "MessageProcessor")
 
         log_content = logger.log_file.read_text()
         assert "WebSearch #1: fitness market size" in log_content
 
-    def test_log_event_ignored(self, logger):
-        """Test that redundant events are ignored."""
-        logger.log_event("analysis_complete", "Analyst", {})
-        logger.log_event("review_complete", "Reviewer", {})
+    def test_warning_for_validation(self, logger):
+        """Test warning logging."""
+        logger.warning("Feedback validation failed", "Reviewer")
 
         log_content = logger.log_file.read_text()
-        # These should not appear
-        assert "analysis_complete" not in log_content
-        assert "review_complete" not in log_content
+        assert "[REVIEWER] Feedback validation failed" in log_content
 
-    def test_log_error_compatibility(self, logger):
-        """Test log_error compatibility method."""
-        logger.log_error("Test error", "TestAgent", traceback="Line 1\nLine 2")
+    def test_error_with_agent(self, logger):
+        """Test error logging with agent."""
+        logger.error("Test error", agent="TestAgent")
 
         log_content = logger.log_file.read_text()
         assert "[TESTAGENT] Test error" in log_content
-        # Traceback is at debug level, won't appear with INFO level
 
-    def test_log_milestone(self, logger):
-        """Test log_milestone compatibility method."""
-        logger.log_milestone("Starting phase 2", "Processing data")
+    def test_info_with_milestone(self, logger):
+        """Test info logging with milestone emoji."""
+        logger.info("🎯 Starting phase 2 - Processing data")
 
         log_content = logger.log_file.read_text()
         assert "🎯 Starting phase 2 - Processing data" in log_content
