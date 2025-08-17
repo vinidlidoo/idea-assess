@@ -1,42 +1,18 @@
-"""Message processing utilities for Claude SDK interactions."""
+"""Message tracking and content extraction utilities for Claude SDK interactions."""
 
 import re
-from typing import TYPE_CHECKING, TypedDict
-from dataclasses import dataclass
+from typing import TYPE_CHECKING
 
+from claude_code_sdk.types import ContentBlock
 from ..core.constants import MAX_CONTENT_SIZE
-from .sdk_types import (
-    SystemMessageProtocol,
-    ContentBlock,
-    ContentBlockType,
-)
 
 if TYPE_CHECKING:
     from ..utils.improved_logging import StructuredLogger
     from ..utils.console_logger import ConsoleLogger
 
 
-class MessageMetadata(TypedDict, total=False):
-    """Metadata for processed messages."""
-
-    message_number: int
-    session_id: str
-    total_cost_usd: float
-    cost_usd: float
-
-
-@dataclass
-class ProcessedMessage:
-    """Container for processed message data."""
-
-    message_type: str
-    content: list[str]
-    search_queries: list[str]
-    metadata: MessageMetadata
-
-
 class MessageProcessor:
-    """Handles processing of Claude SDK messages."""
+    """Tracks message statistics and helps extract content from Claude SDK messages."""
 
     def __init__(
         self,
@@ -57,7 +33,7 @@ class MessageProcessor:
         self.max_buffer_size: int = max_buffer_size
         self._total_size: int = 0  # Track current buffer size
 
-    def extract_session_id(self, message: object) -> str | None:
+    def get_session_id(self, message: object) -> str | None:
         """
         Extract session ID from a SystemMessage.
 
@@ -67,68 +43,107 @@ class MessageProcessor:
         Returns:
             Session ID if found, None otherwise
         """
-        # Use protocol check instead of isinstance
-        if isinstance(message, SystemMessageProtocol):
-            if hasattr(message, "data") and message.data:
-                data_str = str(message.data)
-                match = re.search(r"'session_id':\s*'([^']+)'", data_str)
-                if match:
-                    return match.group(1)
+        from claude_code_sdk.types import SystemMessage
+
+        if isinstance(message, SystemMessage):
+            if message.data:
+                session_id = message.data.get("session_id")
+                if isinstance(session_id, str):
+                    return session_id
         return None
 
-    def process_message(self, message: object) -> ProcessedMessage:
+    def track_message(self, message: object) -> None:
         """
-        Process a single message from Claude SDK.
+        Track a message and update internal statistics.
 
         Args:
-            message: The message to process
-
-        Returns:
-            ProcessedMessage with extracted data
+            message: The SDK message to track
         """
         self.message_count += 1
 
-        # Get message type by class name
-        message_type = type(message).__name__
-
-        content = []
-        search_queries = []
-        metadata: MessageMetadata = {"message_number": self.message_count}
-
-        # Extract session ID if available
-        session_id = self.extract_session_id(message)
-        if session_id:
-            metadata["session_id"] = session_id
-
-        # Process different message types
-        if hasattr(message, "content"):
-            msg_content = getattr(message, "content", None)
-            content, search_queries = self._extract_content(msg_content)
-
-        # Handle ResultMessage specially using duck typing
-        if type(message).__name__ == "ResultMessage":
-            if hasattr(message, "result"):
-                result = getattr(message, "result", None)
-                if result:
-                    content = [str(result)]
-            if hasattr(message, "total_cost_usd"):
-                cost = getattr(message, "total_cost_usd", None)
-                if cost:
-                    metadata["cost_usd"] = cost
-
-        # Log if logger is available
-        if self.logger:
-            self._log_message(message_type, content, search_queries, metadata)
-
-        return ProcessedMessage(
-            message_type=message_type,
-            content=content,
-            search_queries=search_queries,
-            metadata=metadata,
+        from claude_code_sdk.types import (
+            UserMessage,
+            AssistantMessage,
+            ResultMessage,
         )
 
-    def _extract_content(
-        self, msg_content: list[ContentBlockType] | ContentBlockType | None
+        # Process content for messages that have it
+        if isinstance(message, (UserMessage, AssistantMessage)):
+            content, search_queries = self._extract_content_and_queries(message.content)
+
+            # Update buffer with text content
+            for text in content:
+                self._append_to_buffer(text)
+
+            # Log search queries
+            if self.logger and search_queries:
+                for query in search_queries:
+                    self.logger.log_event(
+                        "websearch_query",
+                        "MessageProcessor",
+                        {"query": query, "search_number": self.search_count},
+                    )
+
+        # Log message details if logger available
+        if self.logger:
+            message_type = type(message).__name__
+            metadata: dict[str, object] = {"message_number": self.message_count}
+
+            # Add cost info for ResultMessage
+            if isinstance(message, ResultMessage) and message.total_cost_usd:
+                metadata["cost_usd"] = message.total_cost_usd
+
+            self.logger.log_event(
+                f"sdk_message_{message_type.lower()}",
+                "MessageProcessor",
+                {},  # type: ignore[arg-type]
+            )
+
+    def extract_content(self, message: object) -> list[str]:
+        """
+        Extract text content from a message.
+
+        Args:
+            message: The SDK message to extract from
+
+        Returns:
+            List of text content strings
+        """
+        from claude_code_sdk.types import (
+            UserMessage,
+            AssistantMessage,
+            ResultMessage,
+        )
+
+        if isinstance(message, (UserMessage, AssistantMessage)):
+            content, _ = self._extract_content_and_queries(message.content)
+            return content
+        elif isinstance(message, ResultMessage):
+            if message.result:
+                return [str(message.result)]
+
+        return []
+
+    def extract_search_queries(self, message: object) -> list[str]:
+        """
+        Extract search queries from a message.
+
+        Args:
+            message: The SDK message to extract from
+
+        Returns:
+            List of search query strings
+        """
+        from claude_code_sdk.types import UserMessage, AssistantMessage
+
+        if isinstance(message, (UserMessage, AssistantMessage)):
+            _, queries = self._extract_content_and_queries(message.content)
+            return queries
+
+        return []
+
+    def _extract_content_and_queries(
+        self, msg_content: str | list[ContentBlock]
     ) -> tuple[list[str], list[str]]:
         """
         Extract text content and search queries from message content.
@@ -139,20 +154,26 @@ class MessageProcessor:
         Returns:
             Tuple of (text_content, search_queries)
         """
+        from claude_code_sdk.types import (
+            TextBlock,
+            ToolUseBlock,
+            ToolResultBlock,
+        )
+        import sys
+
         text_content: list[str] = []
         search_queries: list[str] = []
 
         if isinstance(msg_content, str):
             text_content.append(msg_content)
-        elif isinstance(msg_content, list):
+        else:  # msg_content is list[ContentBlock]
             for block in msg_content:
-                # Check for WebSearch tool usage using protocol
-                if isinstance(block, ContentBlock):
+                # Check for WebSearch tool usage
+                if isinstance(block, ToolUseBlock):
                     if block.name == "WebSearch" and block.input:
                         self.search_count += 1
-                        query = block.input.get("query", "unknown")
-                        search_queries.append(str(query))
-                        import sys
+                        query = str(block.input.get("query", "unknown"))
+                        search_queries.append(query)
 
                         print(
                             f"  🔍 Search #{self.search_count}: {query} (may take 30-120s)...",
@@ -169,51 +190,21 @@ class MessageProcessor:
                                 },  # type: ignore[arg-type]
                             )
 
-                    # Extract text content
-                    elif block.text:
-                        text = block.text
-                        text_content.append(text)
+                # Extract text content
+                elif isinstance(block, TextBlock):
+                    text_content.append(block.text)
 
-                        # Append to result buffer with proper size management
-                        self._append_to_buffer(text)
-
-                    # Handle tool result blocks
-                    elif block.content:
-                        block_content = block.content
-                        if isinstance(block_content, str):
-                            # Extract search query from result
-                            query_match = re.search(
-                                r'query:\s*["\']([^"\']+)["\']', block_content
-                            )
-                            if query_match:
-                                search_queries.append(f"Result: {query_match.group(1)}")
+                # Handle tool result blocks
+                elif isinstance(block, ToolResultBlock):  # pyright: ignore[reportUnnecessaryIsInstance]
+                    if block.content and isinstance(block.content, str):
+                        # Extract search query from result
+                        query_match = re.search(
+                            r'query:\s*["\']([^"\']+)["\']', block.content
+                        )
+                        if query_match:
+                            search_queries.append(f"Result: {query_match.group(1)}")
 
         return text_content, search_queries
-
-    def _log_message(
-        self,
-        message_type: str,
-        content: list[str],
-        search_queries: list[str],
-        metadata: MessageMetadata,
-    ) -> None:
-        """Log message details using StructuredLogger."""
-        msg_data = {"number": self.message_count, "type": message_type, **metadata}
-
-        if content:
-            # Add preview of first 200 chars
-            preview = content[0][:200] + "..." if len(content[0]) > 200 else content[0]
-            msg_data["content_preview"] = preview.replace("\n", " ")
-
-        if search_queries:
-            msg_data["search_queries"] = search_queries
-
-        if self.logger:
-            self.logger.log_event(
-                f"sdk_message_{message_type.lower()}",
-                "MessageProcessor",
-                {},  # type: ignore[arg-type]
-            )
 
     def _append_to_buffer(self, text: str) -> None:
         """
@@ -258,7 +249,7 @@ class MessageProcessor:
         self.result_text.clear()
         self._total_size = 0
         if self.logger:
-            self.logger.log_event("buffer_cleared", "MessageProcessor", {})
+            self.logger.log_event("buffer_cleared", "MessageProcessor", {})  # type: ignore[arg-type]
 
     def get_final_content(self) -> str:
         """
@@ -268,9 +259,6 @@ class MessageProcessor:
             Combined text content from all messages
         """
         return "".join(self.result_text)
-
-    # These helper methods are no longer needed with Protocol types
-    # The type checking is done directly with isinstance(message, Protocol)
 
     def get_statistics(self) -> dict[str, int]:
         """

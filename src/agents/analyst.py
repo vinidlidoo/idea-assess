@@ -265,8 +265,8 @@ class AnalystAgent(BaseAgent):
                             await client.interrupt()
                         raise AnalysisInterrupted("User interrupted analysis")
 
-                    # Process message
-                    processed = processor.process_message(message)
+                    # Track message
+                    processor.track_message(message)
 
                     # Show progress
                     stats = processor.get_statistics()
@@ -282,7 +282,9 @@ class AnalystAgent(BaseAgent):
                         )
 
                     # Check for completion
-                    if processed.message_type == "ResultMessage":
+                    from claude_code_sdk.types import ResultMessage
+
+                    if isinstance(message, ResultMessage):
                         if logger:
                             _ = logger.log_event(
                                 "analysis_complete",
@@ -291,9 +293,10 @@ class AnalystAgent(BaseAgent):
                             )
 
                         # Get content from ResultMessage or collected text
+                        extracted_content = processor.extract_content(message)
                         content = (
-                            processed.content[0]
-                            if processed.content
+                            extracted_content[0]
+                            if extracted_content
                             else processor.get_final_content()
                         )
 

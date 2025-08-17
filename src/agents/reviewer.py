@@ -213,7 +213,7 @@ class ReviewerAgent(BaseAgent):
                             },
                         )
 
-                    result = processor.process_message(message)
+                    processor.track_message(message)
 
                     # Show progress periodically
                     if logger and message_count % 2 == 0:
@@ -223,27 +223,32 @@ class ReviewerAgent(BaseAgent):
                             {"message_count": message_count},
                         )
 
+                    from claude_code_sdk.types import AssistantMessage, ResultMessage
+
                     if logger:
+                        message_type = type(message).__name__
+                        content = processor.extract_content(message)
                         logger.log_event(
-                            f"reviewer_message_{result.message_type}",
+                            f"reviewer_message_{message_type}",
                             "Reviewer",
                             {
-                                "has_content": bool(result.content),
-                                "content_preview": result.content[0][:100]
-                                if result.content
+                                "has_content": bool(content),
+                                "content_preview": content[0][:100]
+                                if content
                                 else None,
                             },
                         )
 
                     # Check if review is complete
-                    if result.message_type == "AssistantMessage" and result.content:
-                        if any(
-                            "REVIEW_COMPLETE" in content for content in result.content
+                    if isinstance(message, AssistantMessage):
+                        content = processor.extract_content(message)
+                        if content and any(
+                            "REVIEW_COMPLETE" in text for text in content
                         ):
                             review_complete = True
 
                     # Process when we hit ResultMessage (end of stream)
-                    if result.message_type == "ResultMessage":
+                    if isinstance(message, ResultMessage):
                         if logger:
                             logger.log_event(
                                 "review_stream_end",

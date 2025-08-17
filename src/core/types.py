@@ -7,10 +7,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Literal, TypedDict, TYPE_CHECKING
-
-if TYPE_CHECKING:
-    pass
+from typing import Literal, TypedDict
 
 # Import Claude SDK types we'll use
 from claude_code_sdk.types import (
@@ -38,7 +35,6 @@ __all__ = [
     # Project types
     "AnalysisResult",
     "FeedbackDict",
-    "ProcessedMessage",
     "ReviewerRecommendation",
     "PipelineResult",
     "AgentKwargs",
@@ -61,15 +57,6 @@ class AnalysisResult:
     message_count: int
     duration: float
     interrupted: bool = False
-
-
-@dataclass
-class ProcessedMessage:
-    """Result from processing a Claude SDK message."""
-
-    message_type: str
-    content: list[str]
-    metadata: dict[str, object]
 
 
 class FeedbackIssue(TypedDict):

@@ -1,0 +1,21 @@
+{
+  "iterations": [
+    {
+      "iteration": 1,
+      "analysis_file": "analyses/b2b-marketplace-for-recycled-materials/iterations/iteration_1.md",
+      "analysis_length": 7895,
+      "metadata": {
+        "idea": "B2B marketplace for recycled materials",
+        "slug": "b2b-marketplace-for-recycled-materials",
+        "timestamp": "2025-08-16T15:03:48.901181",
+        "search_count": 0,
+        "message_count": 3,
+        "duration": 58.862273931503296,
+        "interrupted": false
+      }
+    }
+  ],
+  "feedback": [],
+  "final_status": "accepted",
+  "idea": "B2B marketplace for recycled materials"
+}

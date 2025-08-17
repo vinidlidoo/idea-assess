@@ -19,15 +19,6 @@ class AgentResult:
     success: bool
     error: str | None = None
 
-    def to_dict(self) -> dict[str, object]:
-        """Convert to dictionary for serialization."""
-        return {
-            "content": self.content,
-            "metadata": self.metadata,
-            "success": self.success,
-            "error": self.error,
-        }
-
 
 class BaseAgent(ABC):
     """Base class for all agents in the system."""
