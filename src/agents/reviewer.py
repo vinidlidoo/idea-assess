@@ -1,6 +1,7 @@
 """Reviewer agent implementation that reads analysis from file."""
 
 import json
+import logging
 from typing import override
 from pathlib import Path
 
@@ -11,9 +12,11 @@ from ..core.types import FeedbackDict
 from ..core.config import AnalysisConfig
 from ..core.constants import MAX_REVIEW_ITERATIONS, REVIEWER_MAX_TURNS
 from ..core.message_processor import MessageProcessor
-from ..utils.logger import Logger
 from ..utils.file_operations import load_prompt
 from ..utils.json_validator import FeedbackValidator
+
+# Module-level logger
+logger = logging.getLogger(__name__)
 
 
 class ReviewerAgent(BaseAgent):
@@ -90,15 +93,12 @@ class ReviewerAgent(BaseAgent):
         Args:
             input_data: Path to the analysis file to review
             **kwargs: Additional options:
-                - debug: Enable debug logging
                 - iteration_count: Current iteration number (for context)
                 - idea_slug: The idea slug for file naming
 
         Returns:
             AgentResult containing path to feedback JSON file
         """
-        debug: bool = bool(kwargs.get("debug", False))
-
         # Handle iteration_count safely
         iteration_count_raw = kwargs.get("iteration_count", 1)
         if isinstance(iteration_count_raw, int):
@@ -112,24 +112,7 @@ class ReviewerAgent(BaseAgent):
         idea_slug_raw = kwargs.get("idea_slug", "unknown")
         idea_slug: str = str(idea_slug_raw) if idea_slug_raw is not None else "unknown"
 
-        # Setup debug logging if requested
-        import os
-
-        logger = None
-
-        # Use appropriate logger based on context
-        if os.environ.get("TEST_HARNESS_RUN") == "1":
-            # Use Logger for test visibility
-            from datetime import datetime
-
-            run_id = datetime.now().strftime("%Y%m%d_%H%M%S")
-            logger = Logger(run_id, idea_slug, "test", console_output=True)
-        elif debug:
-            from datetime import datetime
-
-            run_id = datetime.now().strftime("%Y%m%d_%H%M%S")
-            logger = Logger(run_id, idea_slug, "test", console_output=True)
-            logger.info(f"Starting review for {idea_slug}, iteration {iteration_count}")
+        logger.info(f"Starting review for {idea_slug}, iteration {iteration_count}")
 
         try:
             # Validate input path for security
@@ -171,12 +154,10 @@ class ReviewerAgent(BaseAgent):
                 permission_mode="default",  # Use default permission mode for automation
             )
 
-            # Initialize message processor with debug mode flag
-            processor = MessageProcessor(logger, debug_mode=debug)
+            # Initialize message processor
+            processor = MessageProcessor()
 
             # Query Claude for review
-            review_complete = False
-
             # Review start already logged above in debug mode
 
             async with ClaudeSDKClient(options=options) as client:
@@ -192,8 +173,8 @@ class ReviewerAgent(BaseAgent):
 
                     processor.track_message(message)
 
-                    # Progress tracking (converted to debug level)
-                    if logger and message_count % 5 == 0:
+                    # Progress tracking
+                    if message_count % 5 == 0:
                         logger.debug(
                             f"Review progress: {message_count} messages processed"
                         )
@@ -204,11 +185,9 @@ class ReviewerAgent(BaseAgent):
 
                     # Check if review is complete
                     if isinstance(message, AssistantMessage):
-                        content = processor.extract_content(message)
-                        if content and any(
-                            "REVIEW_COMPLETE" in text for text in content
-                        ):
-                            review_complete = True
+                        # Review completion marker detection removed
+                        # (was previously used for flow control)
+                        pass
 
                     # Process when we hit ResultMessage (end of stream)
                     if isinstance(message, ResultMessage):
@@ -227,10 +206,9 @@ class ReviewerAgent(BaseAgent):
 
                 if not is_valid:
                     # Try to fix common issues
-                    if logger:
-                        logger.warning(
-                            f"Feedback validation failed: {error_msg}, attempting fix"
-                        )
+                    logger.warning(
+                        f"Feedback validation failed: {error_msg}, attempting fix"
+                    )
 
                     feedback_json = validator.fix_common_issues(feedback_json)
                     is_valid, error_msg = validator.validate(feedback_json)
@@ -239,15 +217,10 @@ class ReviewerAgent(BaseAgent):
                         # Save the fixed feedback
                         with open(feedback_file, "w") as f:
                             json.dump(feedback_json, f, indent=2)
-                        if logger:
-                            logger.info(f"Feedback fixed and saved to {feedback_file}")
+                        logger.info(f"Feedback fixed and saved to {feedback_file}")
                     else:
                         # Still invalid after fix attempt
-                        if logger:
-                            logger.error(
-                                f"Invalid feedback structure: {error_msg}",
-                                agent="Reviewer",
-                            )
+                        logger.error(f"Invalid feedback structure: {error_msg}")
                         return AgentResult(
                             content="",
                             metadata={
@@ -267,16 +240,15 @@ class ReviewerAgent(BaseAgent):
                     len(critical_issues) if isinstance(critical_issues, list) else 0
                 )
 
-                if logger:
-                    improvements_count = (
-                        len(feedback_json.get("improvements", []))
-                        if isinstance(feedback_json.get("improvements", []), list)
-                        else 0
-                    )
-                    logger.info(
-                        f"Review complete: {recommendation} with {critical_count} critical issues, "
-                        f"{improvements_count} improvements suggested"
-                    )
+                improvements_count = (
+                    len(feedback_json.get("improvements", []))
+                    if isinstance(feedback_json.get("improvements", []), list)
+                    else 0
+                )
+                logger.info(
+                    f"Review complete: {recommendation} with {critical_count} critical issues, "
+                    f"{improvements_count} improvements suggested"
+                )
 
                 return AgentResult(
                     content=str(feedback_file),  # Return the path to the feedback file
@@ -312,8 +284,7 @@ class ReviewerAgent(BaseAgent):
                 )
 
         except Exception as e:
-            if logger:
-                logger.error(f"Review error: {str(e)}", agent="Reviewer", exc_info=True)
+            logger.error(f"Review error: {str(e)}", exc_info=True)
 
             return AgentResult(
                 content="",

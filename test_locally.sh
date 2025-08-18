@@ -75,8 +75,8 @@ run_test() {
     local flags="$3"
     local test_id="${scenario_name}_$(echo "$idea" | cut -d' ' -f1-3 | tr ' ' '_')"
     
-    # Set environment variable to prevent duplicate logging in logs/runs/
-    export TEST_HARNESS_RUN=1
+    # Note: We no longer need TEST_HARNESS_RUN since we use a single setup_logging()
+    # export TEST_HARNESS_RUN=1  # Removed - no longer needed with new logging
     
     echo ""
     echo "--------------------------------------"
@@ -100,7 +100,6 @@ run_test() {
     
     # Use tee to show output and save to log file simultaneously
     # Use --foreground with timeout to allow signal propagation
-    # TEST_HARNESS_RUN is already exported at function level
     if timeout --foreground $timeout_seconds python src/cli.py "$idea" $flags 2>&1 | tee "$log_file"; then
         # Check if analysis was successful (handles both regular and reviewer modes)
         if grep -q -E "(Analysis saved to:|Saved to:)" "$log_file"; then

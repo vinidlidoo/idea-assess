@@ -1,12 +1,13 @@
 """
 Simplified logging system for the idea-assess project.
 
-This module provides a unified Logger class that replaces the previous
-complex multi-file logging system with a single, simple approach:
-- One log file per run
-- Console mirroring (optional)
-- Standard Python logging module
-- SDK error awareness
+This module provides:
+1. A simple setup_logging() function for module-level logging configuration
+2. Legacy Logger class for backward compatibility (to be deprecated)
+3. Utility functions for SDK error detection
+
+The new approach uses Python's standard logging with module-level loggers
+instead of passing logger instances everywhere.
 """
 
 import logging
@@ -14,6 +15,112 @@ import sys
 from pathlib import Path
 from datetime import datetime
 from typing import Literal
+
+
+def setup_logging(
+    debug: bool = False,
+    idea_slug: str = "unnamed",
+    run_type: Literal["run", "test"] = "run",
+    console_output: bool = True,
+) -> Path:
+    """
+    Configure the root logger for the entire application.
+
+    This should be called once at application startup. After this,
+    any module can get its own logger with:
+        logger = logging.getLogger(__name__)
+
+    Args:
+        debug: If True, set level to DEBUG; otherwise INFO
+        idea_slug: Idea slug for the log filename
+        run_type: Whether this is a normal run or test
+        console_output: Whether to also print to stderr
+
+    Returns:
+        Path to the log file created
+    """
+    # Determine log level
+    level = logging.DEBUG if debug else logging.INFO
+
+    # Generate run ID
+    run_id = datetime.now().strftime("%Y%m%d_%H%M%S")
+
+    # Create log directory
+    log_dir = Path("logs") / f"{run_type}s"
+    log_dir.mkdir(parents=True, exist_ok=True)
+
+    # Create log file path
+    log_file = log_dir / f"{run_id}_{idea_slug}.log"
+
+    # Configure root logger
+    root_logger = logging.getLogger()
+    root_logger.setLevel(level)
+
+    # Clear any existing handlers
+    root_logger.handlers.clear()
+
+    # Create formatter
+    formatter = logging.Formatter(
+        "%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+        datefmt="%Y-%m-%d %H:%M:%S",
+    )
+
+    # File handler
+    file_handler = logging.FileHandler(log_file, mode="w", encoding="utf-8")
+    file_handler.setLevel(level)
+    file_handler.setFormatter(formatter)
+    root_logger.addHandler(file_handler)
+
+    # Console handler (optional)
+    if console_output:
+        console_handler = logging.StreamHandler(sys.stderr)
+        console_handler.setLevel(level)
+        console_handler.setFormatter(formatter)
+        root_logger.addHandler(console_handler)
+
+    # Log header
+    logger = logging.getLogger(__name__)
+    logger.info("=" * 60)
+    logger.info(f"Log started for: {idea_slug}")
+    logger.info(f"Run ID: {run_id}")
+    logger.info(f"Started: {datetime.now().isoformat()}")
+    logger.info(f"Log level: {'DEBUG' if debug else 'INFO'}")
+    logger.info("=" * 60)
+
+    return log_file
+
+
+def is_sdk_error(error: Exception) -> bool:
+    """
+    Check if an exception is a Claude SDK error.
+
+    This centralizes SDK error detection so we don't need to import
+    all SDK error types everywhere.
+
+    Args:
+        error: The exception to check
+
+    Returns:
+        True if it's an SDK error, False otherwise
+    """
+    from claude_code_sdk._errors import (
+        CLINotFoundError,
+        CLIConnectionError,
+        ProcessError,
+        CLIJSONDecodeError,
+        MessageParseError,
+    )
+
+    return isinstance(
+        error,
+        (
+            CLINotFoundError,
+            CLIConnectionError,
+            ProcessError,
+            CLIJSONDecodeError,
+            MessageParseError,
+        ),
+    )
 
 
 class Logger:

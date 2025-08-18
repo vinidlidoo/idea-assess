@@ -1,5 +1,6 @@
 """Message tracking and content extraction utilities for Claude SDK interactions."""
 
+import logging
 import re
 
 from claude_code_sdk.types import (
@@ -13,8 +14,8 @@ from claude_code_sdk.types import (
     ToolResultBlock,
 )
 
-from ..core.constants import MAX_CONTENT_SIZE
-from ..utils.logger import Logger
+# Module-level logger
+logger = logging.getLogger(__name__)
 
 
 class MessageProcessor:
@@ -29,25 +30,12 @@ class MessageProcessor:
 
     """
 
-    def __init__(
-        self,
-        logger: Logger | None = None,
-        max_buffer_size: int = MAX_CONTENT_SIZE,  # Deprecated parameter, ignored
-        debug_mode: bool = False,
-    ):
+    def __init__(self):
         """
         Initialize the message processor.
-
-        Args:
-            logger: Optional logger instance
-            max_buffer_size: Deprecated parameter, ignored (kept for backward compatibility)
-            debug_mode: Whether to log full message details for debugging
         """
-        self.logger: Logger | None = logger
-        self.debug_mode: bool = debug_mode
         self.message_count: int = 0
         self.search_count: int = 0
-        # Buffer system removed - content is now logged to disk when debug_mode=True
 
     def get_session_id(self, message: object) -> str | None:
         """
@@ -82,7 +70,7 @@ class MessageProcessor:
         # Message type tracking (redundant with debug mode logging)
 
         # Log full message details when in debug mode (heavier operation)
-        if self.debug_mode:
+        if logger.isEnabledFor(logging.DEBUG):
             self._log_message_details(message)
 
         # Extract and log search queries from user/assistant messages
@@ -93,11 +81,11 @@ class MessageProcessor:
             # Log each search query found
             # Note: search_count was already incremented for each query in _extract_content_and_queries
             # so we need to calculate the correct number for each query
-            if self.logger and search_queries:
+            if search_queries:
                 # Calculate starting search number (current count - number of queries found)
                 start_num = self.search_count - len(search_queries) + 1
                 for i, query in enumerate(search_queries):
-                    self.logger.info(f"WebSearch #{start_num + i}: {query}")
+                    logger.info(f"WebSearch #{start_num + i}: {query}")
 
     def extract_content(self, message: object) -> list[str]:
         """
@@ -145,7 +133,7 @@ class MessageProcessor:
         Args:
             message: The SDK message to log
         """
-        if not self.logger or not self.debug_mode:
+        if not logger.isEnabledFor(logging.DEBUG):
             return
 
         # Only log SDK message types
@@ -160,14 +148,27 @@ class MessageProcessor:
 
         # Log the actual message data as a separate event for now
         # This avoids type conflicts with EventData
-        if self.logger and self.debug_mode:
+        if logger.isEnabledFor(logging.DEBUG):
             import json
             from datetime import datetime
+            from pathlib import Path
 
             # Write directly to a debug messages JSONL file
-            # Create a separate file for SDK messages when in debug mode
-            log_dir = self.logger.log_file.parent
-            messages_file = log_dir / f"{self.logger.log_file.stem}_messages.jsonl"
+            # Get log directory from root logger's file handler
+            log_dir = None
+            log_file_stem = None
+            for handler in logging.getLogger().handlers:
+                if isinstance(handler, logging.FileHandler):
+                    log_dir = Path(handler.baseFilename).parent
+                    log_file_stem = Path(handler.baseFilename).stem
+                    break
+
+            if not log_dir or not log_file_stem:
+                # Fallback to default location
+                log_dir = Path("logs/runs")
+                log_file_stem = datetime.now().strftime("%Y%m%d_%H%M%S")
+
+            messages_file = log_dir / f"{log_file_stem}_messages.jsonl"
 
             event = {
                 "timestamp": datetime.now().isoformat(),

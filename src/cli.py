@@ -95,10 +95,19 @@ Examples:
     with_review = bool(getattr(args, "with_review", False))
     max_iterations = int(getattr(args, "max_iterations", 3))
 
+    # Setup logging ONCE at the start of the application
+    from src.utils.text_processing import create_slug
+    from src.utils.logger import setup_logging
+
+    idea_slug = create_slug(idea)
+    log_file = setup_logging(debug=debug, idea_slug=idea_slug, run_type="run")
+
     # Run the analysis
     print("\n" + "=" * 60)
     print("BUSINESS IDEA ANALYZER")
     print("=" * 60)
+    if debug:
+        print(f"Debug logging enabled: {log_file}")
 
     # Get configuration
     config = get_default_config()
@@ -114,7 +123,6 @@ Examples:
         result = await pipeline.run_analyst_reviewer_loop(
             idea=idea,
             max_iterations=max_iterations,
-            debug=debug,
             use_websearch=not no_websearch,
         )
 
@@ -169,7 +177,7 @@ Examples:
     else:
         # Use simple pipeline (analyst only)
         result = await SimplePipeline.run_analyst_only(
-            idea=idea, config=config, debug=debug, use_websearch=not no_websearch
+            idea=idea, config=config, use_websearch=not no_websearch
         )
 
         if result.get("success", False):
