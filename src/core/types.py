@@ -21,6 +21,7 @@ from claude_code_sdk.types import (
     ToolResultBlock,
 )
 
+# TODO: Don't think we need to export the SDK types as we don't import them from this module in most of the code
 # Re-export commonly used SDK types for convenience
 __all__ = [
     # SDK types
@@ -39,7 +40,6 @@ __all__ = [
     "PipelineResult",
     "AgentKwargs",
 ]
-
 
 # Type aliases
 ReviewerRecommendation = Literal["accept", "reject", "conditional"]

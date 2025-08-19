@@ -9,8 +9,12 @@ from claude_code_sdk import ClaudeSDKClient, ClaudeCodeOptions
 
 from ..core.agent_base import BaseAgent, AgentResult
 from ..core.types import FeedbackDict
-from ..core.config import AnalysisConfig
-from ..core.constants import MAX_REVIEW_ITERATIONS, REVIEWER_MAX_TURNS
+from ..core.config import (
+    ReviewerConfig,
+    ReviewerContext,
+    MAX_REVIEW_ITERATIONS,
+    REVIEWER_MAX_TURNS,
+)
 from ..core.message_processor import MessageProcessor
 from ..utils.file_operations import load_prompt
 from ..utils.json_validator import FeedbackValidator
@@ -19,19 +23,18 @@ from ..utils.json_validator import FeedbackValidator
 logger = logging.getLogger(__name__)
 
 
-class ReviewerAgent(BaseAgent):
+class ReviewerAgent(BaseAgent[ReviewerConfig, ReviewerContext]):
     """Agent responsible for reviewing analyses by reading from files."""
 
-    def __init__(self, config: AnalysisConfig, prompt_version: str = "v1"):
+    def __init__(self, config: ReviewerConfig):
         """
         Initialize the Reviewer agent.
 
         Args:
-            config: System configuration
-            prompt_version: Version of the reviewer prompt to use
+            config: Reviewer-specific configuration
         """
         super().__init__(config)
-        self.prompt_version: str = prompt_version
+        # Removed prompt_version - now comes from config
 
     @property
     @override
@@ -42,13 +45,10 @@ class ReviewerAgent(BaseAgent):
     @override
     def get_prompt_file(self) -> str:
         """Return the prompt file name for this agent."""
-        return f"reviewer_{self.prompt_version}.md"
+        return f"reviewer_{self.config.prompt_version}.md"
 
-    @override
-    def get_allowed_tools(self) -> list[str]:
-        """Return list of allowed tools for this agent."""
-        # Reviewer needs Read and Write tools to read analysis and write feedback
-        return ["Read", "Write"]
+    # Removed get_allowed_tools override - now uses BaseAgent implementation
+    # which checks context.tools_override or config.default_tools
 
     def _validate_analysis_path(self, file_path: str) -> Path:
         """Validate that path is within analyses directory.
@@ -86,40 +86,41 @@ class ReviewerAgent(BaseAgent):
         return path
 
     @override
-    async def process(self, input_data: str, **kwargs: object) -> AgentResult:
+    async def process(self, input_data: str, context: ReviewerContext) -> AgentResult:
         """
         Review a business analysis by reading from file and write feedback to JSON.
 
         Args:
-            input_data: Path to the analysis file to review
-            **kwargs: Additional options:
-                - iteration_count: Current iteration number (for context)
-                - idea_slug: The idea slug for file naming
+            input_data: Ignored (kept for interface compatibility)
+            context: Runtime context with analysis_path and other settings
 
         Returns:
             AgentResult containing path to feedback JSON file
         """
-        # Handle iteration_count safely
-        iteration_count_raw = kwargs.get("iteration_count", 1)
-        if isinstance(iteration_count_raw, int):
-            iteration_count = iteration_count_raw
-        elif isinstance(iteration_count_raw, str) and iteration_count_raw.isdigit():
-            iteration_count = int(iteration_count_raw)
-        else:
-            iteration_count = 1
+        # Get iteration count from revision context if available
+        iteration_count = 1
+        if context.revision_context:
+            iteration_count = context.revision_context.iteration
 
-        # Handle idea_slug safely
-        idea_slug_raw = kwargs.get("idea_slug", "unknown")
-        idea_slug: str = str(idea_slug_raw) if idea_slug_raw is not None else "unknown"
+        # Extract idea slug from analysis path
+        if context.analysis_path:
+            idea_slug = context.analysis_path.parent.name
+        else:
+            idea_slug = "unknown"
 
         logger.info(f"Starting review for {idea_slug}, iteration {iteration_count}")
 
         try:
             # Validate input path for security
-            analysis_path = self._validate_analysis_path(input_data)
+            if not context.analysis_path:
+                raise ValueError("analysis_path is required in ReviewerContext")
+            analysis_path = self._validate_analysis_path(str(context.analysis_path))
 
             # Load the reviewer prompt
-            prompt_content = load_prompt(self.get_prompt_file(), Path("config/prompts"))
+            prompt_content = load_prompt(
+                self.get_prompt_file(),
+                self.config.prompts_dir or Path("config/prompts"),
+            )
             # Save to both iterations directory and main directory
             iterations_dir = analysis_path.parent / "iterations"
             if iterations_dir.exists():
@@ -137,7 +138,8 @@ class ReviewerAgent(BaseAgent):
 
             # Load review instructions template and format it
             review_template = load_prompt(
-                "reviewer_instructions.md", Path("config/prompts")
+                "reviewer_instructions.md",
+                self.config.prompts_dir or Path("config/prompts"),
             )
             review_prompt = review_template.format(
                 iteration_count=iteration_count,
@@ -247,7 +249,7 @@ class ReviewerAgent(BaseAgent):
                 )
                 logger.info(
                     f"Review complete: {recommendation} with {critical_count} critical issues, "
-                    f"{improvements_count} improvements suggested"
+                    + f"{improvements_count} improvements suggested"
                 )
 
                 return AgentResult(

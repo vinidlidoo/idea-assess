@@ -38,7 +38,6 @@ class TestPipelineHelpers:
             run_id, slug = pipeline._initialize_logging(
                 "Test Business Idea",
                 max_iterations=3,
-                use_websearch=True,
             )
 
             # Verify slug creation

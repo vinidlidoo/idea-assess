@@ -3,11 +3,12 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Generic, TypeVar
 from dataclasses import dataclass
+import threading
 
 if TYPE_CHECKING:
-    from .config import AnalysisConfig
+    from .config import AnalystConfig, ReviewerConfig, BaseContext
 
 
 @dataclass
@@ -20,26 +21,35 @@ class AgentResult:
     error: str | None = None
 
 
-class BaseAgent(ABC):
-    """Base class for all agents in the system."""
+# Type variables for config and context generics
+TConfig = TypeVar("TConfig", bound="AnalystConfig | ReviewerConfig")
+TContext = TypeVar("TContext", bound="BaseContext")
 
-    def __init__(self, config: AnalysisConfig):
+
+class BaseAgent(ABC, Generic[TConfig, TContext]):
+    """Base class for all agents in the system.
+
+    Uses generics to ensure type safety between agent-specific configs and contexts.
+    """
+
+    def __init__(self, config: TConfig):
         """
         Initialize the agent with configuration.
 
         Args:
-            config: System configuration
+            config: Agent-specific configuration
         """
-        self.config: AnalysisConfig = config
+        self.config: TConfig = config
+        self.interrupt_event: threading.Event = threading.Event()
 
     @abstractmethod
-    async def process(self, input_data: str, **kwargs: object) -> AgentResult:
+    async def process(self, input_data: str, context: TContext) -> AgentResult:
         """
         Process input and return standardized result.
 
         Args:
             input_data: The input to process
-            **kwargs: Additional processing options
+            context: Runtime context with overrides and state
 
         Returns:
             AgentResult containing the processing outcome
@@ -56,15 +66,24 @@ class BaseAgent(ABC):
         """
         pass
 
-    @abstractmethod
-    def get_allowed_tools(self) -> list[str]:
+    def get_allowed_tools(self, context: TContext) -> list[str]:
         """
         Return list of allowed tools for this agent.
+
+        Uses context overrides if provided, otherwise agent's default tools.
+
+        Args:
+            context: Runtime context that may contain tool overrides
 
         Returns:
             List of tool names (e.g., ['WebSearch'])
         """
-        pass
+        # Default implementation - child classes can override if needed
+        if hasattr(context, "tools_override") and context.tools_override is not None:
+            return context.tools_override
+        if hasattr(self.config, "default_tools"):
+            return self.config.default_tools  # type: ignore[attr-defined]
+        return []
 
     @property
     @abstractmethod
@@ -82,6 +101,8 @@ class BaseAgent(ABC):
         Get the maximum number of conversation turns for this agent.
 
         Returns:
-            Maximum turns (default from config)
+            Maximum turns from agent's config
         """
-        return self.config.max_turns
+        if hasattr(self.config, "max_turns"):
+            return self.config.max_turns  # type: ignore[attr-defined]
+        return 30  # Fallback default

@@ -63,6 +63,14 @@ Examples:
     )
 
     _ = parser.add_argument(
+        "--tools",
+        "-t",
+        nargs="+",
+        choices=["WebSearch", "Read", "Write"],
+        help="Override tools available to agents (default: agent-specific)",
+    )
+
+    _ = parser.add_argument(
         "--prompt-version",
         "-p",
         choices=["v1", "v2", "v3"],
@@ -94,6 +102,7 @@ Examples:
     no_websearch = bool(getattr(args, "no_websearch", False))
     with_review = bool(getattr(args, "with_review", False))
     max_iterations = int(getattr(args, "max_iterations", 3))
+    tools_override = getattr(args, "tools", None)  # None means use defaults
 
     # Setup logging ONCE at the start of the application
     from src.utils.text_processing import create_slug
@@ -109,8 +118,23 @@ Examples:
     if debug:
         print(f"Debug logging enabled: {log_file}")
 
-    # Get configuration
+    # Get configuration and apply CLI overrides
     config = get_default_config()
+
+    # Apply prompt version override to analyst config
+    prompt_version = str(getattr(args, "prompt_version", "v3"))
+    if prompt_version != config.analyst.prompt_version:
+        config.analyst.prompt_version = prompt_version
+
+    # Determine tool configuration
+    # Priority: explicit --tools > --no-websearch flag > defaults
+    if tools_override is not None:
+        # User explicitly specified tools
+        # Pipeline will use tools_override directly
+        pass
+    elif no_websearch:
+        # If websearch is disabled, set tools_override to empty list
+        tools_override = []
 
     if with_review:
         # Use the pipeline with reviewer feedback
@@ -124,6 +148,7 @@ Examples:
             idea=idea,
             max_iterations=max_iterations,
             use_websearch=not no_websearch,
+            tools_override=tools_override,
         )
 
         if result.get("success", False):
@@ -177,7 +202,10 @@ Examples:
     else:
         # Use simple pipeline (analyst only)
         result = await SimplePipeline.run_analyst_only(
-            idea=idea, config=config, use_websearch=not no_websearch
+            idea=idea,
+            config=config,
+            use_websearch=not no_websearch,
+            tools_override=tools_override,
         )
 
         if result.get("success", False):

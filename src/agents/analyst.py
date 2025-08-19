@@ -3,7 +3,6 @@
 import logging
 import signal
 import sys
-import threading
 import time
 import traceback
 from datetime import datetime
@@ -13,7 +12,7 @@ import types
 from claude_code_sdk import ClaudeSDKClient, ClaudeCodeOptions
 
 from ..core.agent_base import BaseAgent, AgentResult
-from ..core.config import AnalysisConfig
+from ..core.config import AnalystConfig, AnalystContext
 from ..core.message_processor import MessageProcessor
 from ..utils.text_processing import create_slug
 from ..utils.file_operations import load_prompt, AnalysisResult
@@ -28,21 +27,19 @@ class AnalysisInterrupted(Exception):
     pass
 
 
-class AnalystAgent(BaseAgent):
+class AnalystAgent(BaseAgent[AnalystConfig, AnalystContext]):
     """Agent responsible for analyzing business ideas."""
 
-    def __init__(self, config: AnalysisConfig, prompt_version: str = "v3"):
+    def __init__(self, config: AnalystConfig):
         """
         Initialize the Analyst agent.
 
         Args:
-            config: System configuration
-            prompt_version: Version of the analyst prompt to use
+            config: Analyst-specific configuration
         """
         super().__init__(config)
-        # TODO: make prompt information part of config.py file instead of this
-        self.prompt_version: str = prompt_version
-        self.interrupt_event: threading.Event = threading.Event()
+        # Removed prompt_version parameter - now comes from config
+        # Removed interrupt_event - now in BaseAgent
 
     @property
     @override
@@ -50,42 +47,51 @@ class AnalystAgent(BaseAgent):
         """Return the name of this agent."""
         return "Analyst"
 
+    @override
     def get_prompt_file(self) -> str:
         """Return the prompt file name for this agent."""
-        return f"analyst_{self.prompt_version}.md"
+        return f"analyst_{self.config.prompt_version}.md"
+
+    # Removed get_allowed_tools override - now uses BaseAgent implementation
+    # which checks context.tools_override or config.default_tools
 
     @override
-    def get_allowed_tools(self) -> list[str]:
-        """Return list of allowed tools for this agent."""
-        return ["WebSearch"]  # Can be configured per analysis
-
-    @override
-    async def process(self, input_data: str, **kwargs: object) -> AgentResult:
+    async def process(self, input_data: str, context: AnalystContext) -> AgentResult:
         """
         Analyze a business idea.
 
         Args:
             input_data: The business idea to analyze
-            **kwargs: Additional options:
-                - use_websearch: Enable WebSearch tool
-                - revision_context: Dict with previous_analysis_file and feedback_file paths
+            context: Runtime context with tools, revision info, etc.
 
         Returns:
             AgentResult containing the analysis
         """
 
-        use_websearch: bool = bool(kwargs.get("use_websearch", True))
-        revision_context_raw = kwargs.get("revision_context", None)
+        # Get tools from context
+        allowed_tools = self.get_allowed_tools(context)
+        use_websearch = "WebSearch" in allowed_tools
+
+        # Get revision context if present
         revision_context: dict[str, str] | None = None
-        if isinstance(revision_context_raw, dict):
-            # Validate it has string keys and values
-            revision_context = {str(k): str(v) for k, v in revision_context_raw.items()}  # type: ignore[misc]
+        if context.revision_context:
+            revision_context = {
+                "previous_analysis_file": str(
+                    context.revision_context.previous_analysis_path
+                )
+                if context.revision_context.previous_analysis_path
+                else "",
+                "feedback_file": str(context.revision_context.feedback_path)
+                if context.revision_context.feedback_path
+                else "",
+            }
 
         try:
             result = await self._analyze_idea(
                 idea=input_data,
                 use_websearch=use_websearch,
                 revision_context=revision_context,
+                allowed_tools=allowed_tools,
             )
 
             if result:
@@ -120,6 +126,7 @@ class AnalystAgent(BaseAgent):
         idea: str,
         use_websearch: bool = True,
         revision_context: dict[str, str] | None = None,
+        allowed_tools: list[str] | None = None,
     ) -> AnalysisResult | None:
         """
         Internal method to analyze a business idea.
@@ -128,6 +135,7 @@ class AnalystAgent(BaseAgent):
             idea: One-liner business idea to analyze
             use_websearch: If True, allow WebSearch tool usage
             revision_context: Optional dict with previous_analysis_file and feedback_file paths
+            allowed_tools: List of allowed tools for this analysis
 
         Returns:
             AnalysisResult containing the analysis and metadata, or None if error
@@ -207,11 +215,12 @@ class AnalystAgent(BaseAgent):
                 )
 
             # Configure options
-            allowed_tools = self.get_allowed_tools() if use_websearch else []
+            # Use the allowed_tools parameter passed from process method
+            tools_to_use = allowed_tools if (use_websearch and allowed_tools) else []
             options = ClaudeCodeOptions(
                 system_prompt=system_prompt,
                 max_turns=self.config.max_turns,
-                allowed_tools=allowed_tools,
+                allowed_tools=tools_to_use,
             )
 
             logger.info(
@@ -319,7 +328,7 @@ class AnalystAgent(BaseAgent):
             stats = processor.get_statistics()
             logger.info(
                 f"Analysis session complete - Messages: {stats['message_count']}, "
-                f"Searches: {stats['search_count']}, "
-                f"Duration: {time.time() - start_time:.1f}s, "
-                f"Interrupted: {self.interrupt_event.is_set()}"
+                + f"Searches: {stats['search_count']}, "
+                + f"Duration: {time.time() - start_time:.1f}s, "
+                + f"Interrupted: {self.interrupt_event.is_set()}"
             )

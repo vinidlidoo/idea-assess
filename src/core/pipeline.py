@@ -9,7 +9,12 @@ from typing import cast
 # PipelineResult imported from types.py
 from ..agents import AnalystAgent
 from ..agents.reviewer import ReviewerAgent, FeedbackProcessor
-from ..core.config import AnalysisConfig
+from ..core.config import (
+    AnalysisConfig,
+    AnalystContext,
+    ReviewerContext,
+    RevisionContext,
+)
 from ..core.types import PipelineResult
 from ..core.agent_protocol import AgentProtocol
 from ..utils.text_processing import create_slug
@@ -54,7 +59,6 @@ class AnalysisPipeline:
         self,
         idea: str,
         max_iterations: int = 3,
-        use_websearch: bool = True,
     ) -> tuple[str, str]:
         """
         Initialize logging for the pipeline run.
@@ -179,6 +183,7 @@ class AnalysisPipeline:
         idea: str,
         max_iterations: int = 3,
         use_websearch: bool = True,
+        tools_override: list[str] | None = None,
     ) -> PipelineResult:
         """
         Run the analyst-reviewer feedback loop using file-based communication.
@@ -192,11 +197,11 @@ class AnalysisPipeline:
             Dictionary containing final analysis and metadata
         """
         # Initialize logging
-        _, slug = self._initialize_logging(idea, max_iterations, use_websearch)
+        _, slug = self._initialize_logging(idea, max_iterations)
 
-        # Initialize agents
-        analyst = AnalystAgent(self.config)
-        reviewer = ReviewerAgent(self.config)
+        # Initialize agents with their specific configs
+        analyst = AnalystAgent(self.config.analyst)
+        reviewer = ReviewerAgent(self.config.reviewer)
 
         # Setup directories
         analysis_dir, iterations_dir = self._setup_directories(
@@ -247,14 +252,37 @@ class AnalysisPipeline:
                         "feedback_file": str(latest_feedback_file),
                     }
 
-                # Run analyst
+                # Create analyst context
+                analyst_context = AnalystContext(
+                    idea_slug=slug,
+                    output_dir=analysis_dir,
+                )
+
+                # Set tools based on override or websearch flag and iteration
+                if tools_override is not None:
+                    # Use explicit override from CLI
+                    analyst_context.tools_override = (
+                        tools_override if iteration_count == 1 else []
+                    )
+                elif use_websearch and iteration_count == 1:
+                    analyst_context.tools_override = ["WebSearch"]
+                else:
+                    analyst_context.tools_override = []  # No tools after first iteration
+
+                # Add revision context if this is a revision
+                if revision_context:
+                    analyst_context.revision_context = RevisionContext(
+                        iteration=iteration_count,
+                        previous_analysis_path=Path(
+                            revision_context["previous_analysis_file"]
+                        ),
+                        feedback_path=Path(revision_context["feedback_file"]),
+                    )
+
+                # Run analyst with context
                 analyst_result = await analyst.process(
                     analyst_input,  # Always the original idea
-                    use_websearch=use_websearch
-                    and iteration_count == 1,  # Only search on first iteration
-                    iteration=iteration_count,
-                    analysis_dir=str(analysis_dir),
-                    revision_context=revision_context,  # Pass revision info separately
+                    analyst_context,
                 )
 
                 if not analyst_result.success:
@@ -290,11 +318,19 @@ class AnalysisPipeline:
                     }
                 )
 
-                # Step 2: Get reviewer feedback (pass filename, not content)
+                # Step 2: Get reviewer feedback
+                # Create reviewer context
+                reviewer_context = ReviewerContext(
+                    analysis_path=iteration_file,
+                )
+
+                # Add revision context if available
+                if revision_context:
+                    reviewer_context.revision_context = analyst_context.revision_context
+
                 reviewer_result = await reviewer.process(
-                    str(iteration_file),  # Pass the filename instead of content
-                    iteration_count=iteration_count,
-                    idea_slug=slug,
+                    "",  # Input data not used by reviewer
+                    reviewer_context,
                 )
 
                 if not reviewer_result.success:
@@ -325,7 +361,7 @@ class AnalysisPipeline:
                 )
                 logger.info(
                     f"🎯 Iteration {iteration_count} complete - "
-                    f"Recommendation: {recommendation}, Critical issues: {issues}"
+                    + f"Recommendation: {recommendation}, Critical issues: {issues}"
                 )
 
                 # Check if we should continue (reviewer rejected the analysis)
@@ -348,7 +384,7 @@ class AnalysisPipeline:
                     )
                     logger.info(
                         f"Analysis rejected - {critical_count} critical issues, "
-                        f"{improvements_count} improvements needed"
+                        + f"{improvements_count} improvements needed"
                     )
 
             # Prepare final result
@@ -463,6 +499,7 @@ class SimplePipeline:
         idea: str,
         config: AnalysisConfig,
         use_websearch: bool = True,
+        tools_override: list[str] | None = None,
     ) -> PipelineResult:
         """
         Run analyst without reviewer feedback.
@@ -478,11 +515,23 @@ class SimplePipeline:
         # Initialize archive manager
         archive_manager = ArchiveManager(max_archives=5)
 
-        analyst = AnalystAgent(config)
-        result = await analyst.process(idea, use_websearch=use_websearch)
+        # Initialize analyst with its config
+        analyst = AnalystAgent(config.analyst)
+
+        # Create analyst context
+        slug = create_slug(idea)
+        analyst_context = AnalystContext(
+            idea_slug=slug,
+            tools_override=tools_override
+            if tools_override is not None
+            else (["WebSearch"] if use_websearch else []),
+        )
+
+        # Run analyst with context
+        result = await analyst.process(idea, analyst_context)
 
         if result.success:
-            slug = create_slug(idea)
+            # slug already created above
 
             # Setup file paths
             analysis_dir = Path("analyses") / slug

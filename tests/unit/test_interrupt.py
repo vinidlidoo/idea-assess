@@ -7,7 +7,7 @@ import threading
 from unittest.mock import Mock, AsyncMock, patch
 
 from src.agents.analyst import AnalystAgent
-from src.core.config import AnalysisConfig
+from src.core.config import AnalystConfig, AnalystContext
 
 
 class TestInterruptHandling:
@@ -18,7 +18,7 @@ class TestInterruptHandling:
         """Create a mock configuration."""
         from pathlib import Path
 
-        config = Mock(spec=AnalysisConfig)
+        config = Mock(spec=AnalystConfig)
         config.prompts_dir = Path("config/prompts")
         config.analyses_dir = Path("analyses")
         config.logs_dir = Path("logs")
@@ -56,9 +56,11 @@ class TestInterruptHandling:
             "src.agents.analyst.ClaudeSDKClient", return_value=mock_client_instance
         ):
             # Start processing in background
-            task = asyncio.create_task(
-                analyst.process("Test business idea", use_websearch=False)
+            # Start processing in background with context
+            context = AnalystContext(
+                tools_override=[]  # No websearch
             )
+            task = asyncio.create_task(analyst.process("Test business idea", context))
 
             # Wait a moment then simulate interrupt
             await asyncio.sleep(0.05)
@@ -78,8 +80,8 @@ class TestInterruptHandling:
         """Test that signal handlers are properly registered and cleaned up."""
         analyst = AnalystAgent(config)
 
-        # Store original handler
-        original_handler = signal.getsignal(signal.SIGINT)
+        # Store original handler (unused but shows we're not breaking signal chain)
+        _ = signal.getsignal(signal.SIGINT)
 
         # Mock the ClaudeSDKClient to avoid actual API calls
         mock_client = AsyncMock()
@@ -89,8 +91,9 @@ class TestInterruptHandling:
         # Mock process method to verify handler setup
         with patch("src.agents.analyst.ClaudeSDKClient", return_value=mock_client):
             with patch("src.agents.analyst.signal.signal") as mock_signal:
-                # Run a simple process
-                asyncio.run(analyst.process("Test idea", use_websearch=False))
+                # Run a simple process with context
+                context = AnalystContext(tools_override=[])
+                asyncio.run(analyst.process("Test idea", context))
 
                 # Verify signal handler was set
                 mock_signal.assert_called()
@@ -110,7 +113,7 @@ class TestInterruptHandling:
 
         # Test that multiple threads can safely set the flag
         def set_interrupt():
-            analyst._interrupted = True
+            analyst.interrupt_event.set()
 
         threads = []
         for _ in range(10):
@@ -122,7 +125,7 @@ class TestInterruptHandling:
             thread.join()
 
         # Verify flag is set
-        assert analyst._interrupted is True
+        assert analyst.interrupt_event.is_set() is True
 
     @pytest.mark.asyncio
     async def test_cleanup_after_interrupt(self, config):
@@ -149,7 +152,8 @@ class TestInterruptHandling:
         ):
             # Simulate interrupted processing
             analyst.interrupt_event.set()
-            result = await analyst.process("Test idea", use_websearch=False)
+            context = AnalystContext(tools_override=[])
+            result = await analyst.process("Test idea", context)
 
             # Verify result indicates interruption
             assert result.success is False
