@@ -198,9 +198,13 @@ Found 6 architectural TODOs in the codebase requiring decisions:
 
 ## Next Session Priority
 
-1. **Must Do:** Continue Q&A exploration of codebase per user preference
-2. **Should Do:** Consider Phase 3 Judge implementation when ready
-3. **Could Do:** Further architectural improvements as discovered
+1. **Must Do:** Refactor module constants into appropriate config tiers:
+   - Move analyst-specific constants to AnalystConfig (max_turns, word_limits, section_limits)
+   - Move reviewer-specific constants to ReviewerConfig (max_turns, iteration_limits)
+   - Move system-wide settings to AnalysisConfig (progress_interval, max_idea_length)
+   - Keep only true system limits as module constants (file size limits, retry constants)
+2. **Should Do:** Continue Q&A exploration of codebase per user preference
+3. **Could Do:** Consider Phase 3 Judge implementation when ready
 
 ## Open Questions
 
