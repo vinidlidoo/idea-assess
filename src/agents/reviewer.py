@@ -12,8 +12,6 @@ from ..core.types import FeedbackDict
 from ..core.config import (
     ReviewerConfig,
     ReviewerContext,
-    MAX_REVIEW_ITERATIONS,
-    REVIEWER_MAX_TURNS,
 )
 from ..core.message_processor import MessageProcessor
 from ..utils.file_operations import load_prompt
@@ -42,10 +40,7 @@ class ReviewerAgent(BaseAgent[ReviewerConfig, ReviewerContext]):
         """Return the name of this agent."""
         return "Reviewer"
 
-    @override
-    def get_prompt_file(self) -> str:
-        """Return the prompt file name for this agent."""
-        return f"reviewer_{self.config.prompt_version}.md"
+    # get_prompt_path() inherited from BaseAgent - uses dynamic path resolution
 
     # Removed get_allowed_tools override - now uses BaseAgent implementation
     # which checks context.tools_override or config.default_tools
@@ -118,7 +113,7 @@ class ReviewerAgent(BaseAgent[ReviewerConfig, ReviewerContext]):
 
             # Load the reviewer prompt
             prompt_content = load_prompt(
-                self.get_prompt_file(),
+                self.get_prompt_path(),
                 self.config.prompts_dir or Path("config/prompts"),
             )
             # Save to both iterations directory and main directory
@@ -143,7 +138,7 @@ class ReviewerAgent(BaseAgent[ReviewerConfig, ReviewerContext]):
             )
             review_prompt = review_template.format(
                 iteration_count=iteration_count,
-                max_iterations=MAX_REVIEW_ITERATIONS,
+                max_iterations=self.config.max_review_iterations,
                 analysis_path=analysis_path,
                 feedback_file=feedback_file,
             )
@@ -151,7 +146,7 @@ class ReviewerAgent(BaseAgent[ReviewerConfig, ReviewerContext]):
             # Setup Claude SDK options with tools enabled
             options = ClaudeCodeOptions(
                 system_prompt=prompt_content,
-                max_turns=REVIEWER_MAX_TURNS,  # Allow multiple turns for reading, analyzing, writing
+                max_turns=self.config.max_turns,  # Allow multiple turns for reading, analyzing, writing
                 allowed_tools=["Read", "Write"],  # Enable file operations
                 permission_mode="default",  # Use default permission mode for automation
             )
@@ -176,7 +171,7 @@ class ReviewerAgent(BaseAgent[ReviewerConfig, ReviewerContext]):
                     processor.track_message(message)
 
                     # Progress tracking
-                    if message_count % 5 == 0:
+                    if message_count % self.config.message_log_interval == 0:
                         logger.debug(
                             f"Review progress: {message_count} messages processed"
                         )

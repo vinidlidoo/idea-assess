@@ -289,7 +289,6 @@ class MessageProcessor:
         Returns:
             Tuple of (text_content, search_queries)
         """
-        import sys
 
         text_content: list[str] = []
         search_queries: list[str] = []
@@ -298,24 +297,15 @@ class MessageProcessor:
             text_content.append(msg_content)
         else:  # msg_content is list[ContentBlock]
             for block in msg_content:
-                # Check for WebSearch tool usage
-                if isinstance(block, ToolUseBlock):
+                # Extract text content
+                if isinstance(block, TextBlock):
+                    text_content.append(block.text)
+                # Extract tool use content
+                elif isinstance(block, ToolUseBlock):
                     if block.name == "WebSearch" and block.input:
                         self.search_count += 1
                         query = str(block.input.get("query", "unknown"))
                         search_queries.append(query)
-
-                        print(
-                            f"  🔍 Search #{self.search_count}: {query} (may take 30-120s)...",
-                            file=sys.stderr,
-                            flush=True,
-                        )
-                        # WebSearch query already logged above in track_message()
-
-                # Extract text content
-                elif isinstance(block, TextBlock):
-                    text_content.append(block.text)
-
                 # Handle tool result blocks
                 elif isinstance(block, ToolResultBlock):  # pyright: ignore[reportUnnecessaryIsInstance]
                     if block.content and isinstance(block.content, str):

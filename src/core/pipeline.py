@@ -16,7 +16,6 @@ from ..core.config import (
     RevisionContext,
 )
 from ..core.types import PipelineResult
-from ..core.agent_protocol import AgentProtocol
 from ..utils.text_processing import create_slug
 from ..utils.archive_manager import ArchiveManager
 
@@ -28,7 +27,6 @@ class AnalysisPipeline:
     """Orchestrates the flow of data between agents using file-based communication."""
 
     config: AnalysisConfig
-    agents: dict[str, AgentProtocol]
     feedback_processor: FeedbackProcessor
     archive_manager: ArchiveManager
 
@@ -40,19 +38,8 @@ class AnalysisPipeline:
             config: System configuration
         """
         self.config = config
-        self.agents = {}
         self.feedback_processor = FeedbackProcessor()
         self.archive_manager = ArchiveManager(max_archives=5)
-
-    def register_agent(self, name: str, agent: AgentProtocol) -> None:
-        """
-        Register an agent in the pipeline.
-
-        Args:
-            name: Name to register the agent under
-            agent: Agent instance that implements AgentProtocol
-        """
-        self.agents[name] = agent
 
     # Helper methods for pipeline refactoring
     def _initialize_logging(

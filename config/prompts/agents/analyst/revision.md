@@ -1,18 +1,33 @@
-# Analyst Revision Prompt
+# Revision Request
 
-Please revise your analysis based on the reviewer feedback.
+You previously analyzed this business idea, and a reviewer has provided feedback. Please revise your analysis to address the feedback while maintaining the strengths identified.
 
-ORIGINAL IDEA: {idea}
+## Business Idea
 
-PREVIOUS ANALYSIS FILE: {current_analysis_file}
-REVIEWER FEEDBACK FILE: {latest_feedback_file}
+{idea}
 
-INSTRUCTIONS:
+## Previous Work
 
-1. Use the Read tool to read your previous analysis from the file above
-2. Use the Read tool to read the reviewer feedback JSON from the file above
-3. Revise your analysis to address all critical issues and important improvements
-4. Maintain all the strong points identified in the feedback
-5. Write your revised analysis using the Write tool
+- Your previous analysis is saved at: {previous_analysis_file}
+- The reviewer's feedback is saved at: {feedback_file}
 
-Please provide an improved analysis that addresses the feedback.
+## Instructions
+
+Please create an improved analysis that:
+
+1. Addresses all critical issues identified by the reviewer
+2. Incorporates the important improvements suggested
+3. Maintains all the strong points that were identified
+4. Stays focused on the original business idea: "{idea}"
+
+Generate the complete revised analysis directly in markdown format, following the same structure as before.
+
+## Resource Constraints
+
+{resource_note}
+
+## Research Guidance
+
+{websearch_instruction}
+
+Remember: Generate the full analysis text directly - do not use any file tools (Read/Write/Edit).

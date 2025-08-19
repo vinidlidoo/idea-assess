@@ -71,11 +71,11 @@ Examples:
     )
 
     _ = parser.add_argument(
-        "--prompt-version",
+        "--prompt-variant",
         "-p",
-        choices=["v1", "v2", "v3"],
-        default="v3",
-        help="Analyst prompt version to use (default: v3)",
+        choices=["main", "v1", "v2", "v3", "revision"],
+        default="main",
+        help="Prompt variant to use (default: main)",
     )
 
     _ = parser.add_argument(
@@ -121,10 +121,10 @@ Examples:
     # Get configuration and apply CLI overrides
     config = get_default_config()
 
-    # Apply prompt version override to analyst config
-    prompt_version = str(getattr(args, "prompt_version", "v3"))
-    if prompt_version != config.analyst.prompt_version:
-        config.analyst.prompt_version = prompt_version
+    # Apply prompt variant override to analyst config
+    prompt_variant = str(getattr(args, "prompt_variant", "main"))
+    if prompt_variant != config.analyst.prompt_variant:
+        config.analyst.prompt_variant = prompt_variant
 
     # Determine tool configuration
     # Priority: explicit --tools > --no-websearch flag > defaults

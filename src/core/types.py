@@ -1,62 +1,22 @@
 """Type definitions for the idea assessment system.
 
-This module leverages Claude SDK types and defines project-specific types.
+This module defines project-specific types used across the codebase.
 """
 
 from __future__ import annotations
 
-from dataclasses import dataclass
-from datetime import datetime
 from typing import Literal, TypedDict
 
-# Import Claude SDK types we'll use
-from claude_code_sdk.types import (
-    Message,
-    AssistantMessage,
-    UserMessage,
-    ResultMessage,
-    ContentBlock,
-    TextBlock,
-    ToolUseBlock,
-    ToolResultBlock,
-)
-
-# TODO: Don't think we need to export the SDK types as we don't import them from this module in most of the code
-# Re-export commonly used SDK types for convenience
 __all__ = [
-    # SDK types
-    "Message",
-    "AssistantMessage",
-    "UserMessage",
-    "ResultMessage",
-    "ContentBlock",
-    "TextBlock",
-    "ToolUseBlock",
-    "ToolResultBlock",
     # Project types
-    "AnalysisResult",
     "FeedbackDict",
+    "FeedbackIssue",
     "ReviewerRecommendation",
     "PipelineResult",
-    "AgentKwargs",
 ]
 
 # Type aliases
 ReviewerRecommendation = Literal["accept", "reject", "conditional"]
-
-
-@dataclass
-class AnalysisResult:
-    """Result from analyzing a business idea."""
-
-    content: str
-    idea: str
-    slug: str
-    timestamp: datetime
-    search_count: int
-    message_count: int
-    duration: float
-    interrupted: bool = False
 
 
 class FeedbackIssue(TypedDict):
@@ -106,26 +66,3 @@ class PipelineResult(TypedDict, total=False):
     error_context: str
     iterations: list[dict[str, object]]
     timestamp: str
-
-
-class AgentKwargs(TypedDict, total=False):
-    """Common kwargs passed to agent process methods."""
-
-    debug: bool
-    use_websearch: bool
-    iteration_count: int
-    idea_slug: str
-    revision_context: dict[str, str] | None
-    logger: object  # Logger | None
-
-
-class AnalysisConfigDict(TypedDict):
-    """Configuration dictionary for analysis system."""
-
-    max_turns: int
-    max_websearches: int
-    max_review_iterations: int
-    progress_interval: int
-    prompts_dir: str
-    analyses_dir: str
-    logs_dir: str

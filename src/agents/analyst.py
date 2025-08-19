@@ -48,14 +48,6 @@ class AnalystAgent(BaseAgent[AnalystConfig, AnalystContext]):
         return "Analyst"
 
     @override
-    def get_prompt_file(self) -> str:
-        """Return the prompt file name for this agent."""
-        return f"analyst_{self.config.prompt_version}.md"
-
-    # Removed get_allowed_tools override - now uses BaseAgent implementation
-    # which checks context.tools_override or config.default_tools
-
-    @override
     async def process(self, input_data: str, context: AnalystContext) -> AgentResult:
         """
         Analyze a business idea.
@@ -172,7 +164,7 @@ class AnalystAgent(BaseAgent[AnalystConfig, AnalystContext]):
 
         try:
             # Load the analyst prompt
-            system_prompt = load_prompt(self.get_prompt_file(), self.config.prompts_dir)
+            system_prompt = load_prompt(self.get_prompt_path(), self.config.prompts_dir)
             # Prompt loaded (redundant logging removed)
 
             # Craft the user prompt with resource constraints
@@ -185,7 +177,8 @@ class AnalystAgent(BaseAgent[AnalystConfig, AnalystContext]):
 
             # Load and format resource constraints template
             resource_template = load_prompt(
-                "analyst_resources.md", self.config.prompts_dir
+                "agents/analyst/partials/resource_constraints.md",
+                self.config.prompts_dir,
             )
             resource_note = resource_template.format(
                 max_turns=self.config.max_turns,
@@ -196,7 +189,7 @@ class AnalystAgent(BaseAgent[AnalystConfig, AnalystContext]):
             if revision_context:
                 # Load revision-specific user prompt
                 revision_template = load_prompt(
-                    "analyst_user_revision.md", self.config.prompts_dir
+                    "agents/analyst/revision.md", self.config.prompts_dir
                 )
                 user_prompt = revision_template.format(
                     idea=idea,
@@ -207,7 +200,10 @@ class AnalystAgent(BaseAgent[AnalystConfig, AnalystContext]):
                 )
             else:
                 # Load and format standard user prompt template
-                user_template = load_prompt("analyst_user.md", self.config.prompts_dir)
+                user_template = load_prompt(
+                    "agents/analyst/partials/user_instruction.md",
+                    self.config.prompts_dir,
+                )
                 user_prompt = user_template.format(
                     idea=idea,
                     resource_note=resource_note,
@@ -251,7 +247,7 @@ class AnalystAgent(BaseAgent[AnalystConfig, AnalystContext]):
                     # Show progress
                     stats = processor.get_statistics()
 
-                    if stats["message_count"] % self.config.progress_interval == 0:
+                    if stats["message_count"] % self.config.message_log_interval == 0:
                         logger.debug(
                             f"Analysis progress: {stats['message_count']} messages processed"
                         )

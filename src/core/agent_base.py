@@ -56,15 +56,28 @@ class BaseAgent(ABC, Generic[TConfig, TContext]):
         """
         pass
 
-    @abstractmethod
-    def get_prompt_file(self) -> str:
+    def get_prompt_path(self) -> str:
         """
-        Return the prompt file name for this agent.
+        Dynamically resolve the prompt file path based on prompt variant.
 
         Returns:
-            Name of the prompt file (e.g., 'analyst_v3.md')
+            Path relative to prompts directory (e.g., 'agents/analyst/main.md')
         """
-        pass
+        from pathlib import Path
+
+        agent_type = self.agent_name.lower()
+        variant = getattr(self.config, "prompt_variant", "main")
+
+        if variant == "main":
+            # Active prompt: agents/{agent_type}/main.md
+            return str(Path("agents") / agent_type / "main.md")
+        elif variant.startswith("v"):
+            # Historical version: versions/{agent_type}/{agent_type}_{variant}.md
+            # e.g., versions/analyst/analyst_v3.md
+            return str(Path("versions") / agent_type / f"{agent_type}_{variant}.md")
+        else:
+            # Special workflows: agents/{agent_type}/{variant}.md
+            return str(Path("agents") / agent_type / f"{variant}.md")
 
     def get_allowed_tools(self, context: TContext) -> list[str]:
         """

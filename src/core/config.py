@@ -17,41 +17,15 @@ from pathlib import Path
 
 
 # ==============================================================================
-# MODULE-LEVEL CONSTANTS (from constants.py)
+# MODULE-LEVEL CONSTANTS
 # ==============================================================================
+# Only true system limits that never change should be here.
+# Agent-specific settings belong in their respective config classes.
 
-# Review iteration limits
-MAX_REVIEW_ITERATIONS = 3  # Maximum number of review-revision cycles
-MIN_REVIEW_ITERATIONS = 1  # Minimum iterations before accepting
-
-# Content size limits
-PREVIEW_CHAR_LIMIT = 200  # Characters to show in content preview
+# Hard system limits (unchangeable boundaries)
 MAX_CONTENT_SIZE = 10_000_000  # Maximum content size in bytes (10MB)
-MAX_IDEA_LENGTH = 500  # Maximum length for idea input
-
-# Timing constants
-PROGRESS_UPDATE_INTERVAL = 2  # Update progress every N messages
-
-# File operation constants
 MAX_FILE_READ_RETRIES = 3  # Maximum retries for file read operations
 FILE_RETRY_DELAY = 1.0  # Initial delay for file operation retries (seconds)
-
-# Agent configuration
-DEFAULT_MAX_TURNS = 30  # Default maximum turns for agent interactions
-REVIEWER_MAX_TURNS = 3  # Maximum turns for reviewer agent
-ANALYST_MAX_TURNS = 30  # Maximum turns for analyst agent
-
-# Analysis word limits
-MIN_ANALYSIS_WORDS = 900  # Minimum words for analysis
-MAX_ANALYSIS_WORDS = 1200  # Maximum words for analysis
-SECTION_WORD_LIMITS = {
-    "executive_summary": 150,
-    "market_opportunity": 250,
-    "competition_analysis": 200,
-    "business_model": 200,
-    "risks_challenges": 200,
-    "next_steps": 100,
-}
 
 
 # ==============================================================================
@@ -75,16 +49,16 @@ class AnalysisConfig:
     analyses_dir: Path
     logs_dir: Path
 
-    # System limits (from constants.py - immutable boundaries)
-    max_content_size: int = 10_000_000  # 10MB
-    max_idea_length: int = 500
-    max_file_read_retries: int = 3
-    file_retry_delay: float = 1.0
+    # System limits (references to module constants - true immutable boundaries)
+    max_content_size: int = MAX_CONTENT_SIZE
+    max_file_read_retries: int = MAX_FILE_READ_RETRIES
+    file_retry_delay: float = FILE_RETRY_DELAY
 
-    # Global defaults
-    slug_max_length: int = 50
-    preview_lines: int = 20
-    progress_interval: int = 2
+    # System-wide configurable settings (may vary by deployment)
+    max_idea_length: int = 500  # Maximum length for idea input
+    slug_max_length: int = 50  # Maximum length for generated slugs
+    preview_lines: int = 20  # Lines to show in file previews
+    preview_char_limit: int = 200  # Characters to show in content preview
 
     # Agent configurations
     analyst: AnalystConfig = field(default_factory=lambda: AnalystConfig())
@@ -106,9 +80,8 @@ class AnalysisConfig:
             logs_dir=root / "logs",
         )
 
-        # Pass prompts_dir to agent configs
+        # Pass system paths to agent configs
         config.analyst.prompts_dir = config.prompts_dir
-        config.analyst.progress_interval = config.progress_interval
         config.reviewer.prompts_dir = config.prompts_dir
 
         return config
@@ -134,12 +107,12 @@ class AnalystConfig:
     max_analysis_words: int = 1200
 
     # Default settings
-    prompt_version: str = "v3"
+    prompt_variant: str = "main"  # Can be: "main" (active), "v1"/"v2"/"v3" (historical), "revision" (workflow)
     default_tools: list[str] = field(default_factory=lambda: ["WebSearch"])
+    message_log_interval: int = 2  # Log progress every N messages (e.g., "2 messages processed", "4 messages processed")
 
     # System paths (from parent config)
     prompts_dir: Path | None = None
-    progress_interval: int = 2
 
     # Section word limits
     section_word_limits: dict[str, int] = field(
@@ -167,9 +140,12 @@ class ReviewerConfig:
     min_review_iterations: int = 1
 
     # Default settings
-    prompt_version: str = "v1"
+    prompt_variant: str = "main"  # Can be: "main" (active), "v1" (historical), etc.
     default_tools: list[str] = field(default_factory=list)  # No tools by default
     default_strictness: str = "normal"  # "lenient", "normal", "strict"
+    message_log_interval: int = (
+        5  # Log progress every N messages (reviewer typically has fewer messages)
+    )
 
     # System paths (from parent config)
     prompts_dir: Path | None = None
