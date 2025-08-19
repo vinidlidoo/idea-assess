@@ -14,6 +14,10 @@ Design Principles:
 from __future__ import annotations
 from dataclasses import dataclass, field
 from pathlib import Path
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from .run_analytics import RunAnalytics
 
 
 # ==============================================================================
@@ -184,6 +188,10 @@ class BaseContext:
 
     prompt_version_override: str | None = None
     """Custom prompt version for this operation (None = use agent's prompt_version)"""
+
+    # Analytics tracking (injected by pipeline)
+    run_analytics: RunAnalytics | None = None
+    """Analytics engine for tracking messages and artifacts"""
 
 
 @dataclass

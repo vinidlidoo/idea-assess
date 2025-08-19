@@ -17,10 +17,8 @@ class AnalysisResult(NamedTuple):
     idea: str
     slug: str
     timestamp: datetime
-    search_count: int = 0
-    message_count: int = 0
-    duration: float = 0.0
     interrupted: bool = False
+    # Note: search_count, message_count, duration removed - now tracked by RunAnalytics
 
 
 def create_or_update_symlink(link_path: Path, target: Path | str) -> None:
@@ -72,18 +70,13 @@ def save_analysis(result: AnalysisResult, analyses_dir: Path) -> Path:
     interrupted_note = (
         "\nNote: Analysis was interrupted by user" if result.interrupted else ""
     )
-    websearch_note = (
-        f"\nWebSearches: {result.search_count}"
-        if result.search_count > 0
-        else "\nWebSearch: Disabled"
-    )
+    # Note: search_count, message_count, duration now tracked by RunAnalytics
+    # These metrics are available in the run_summary.json file
 
     header = f"""<!-- 
 Original Idea: {result.idea}
 Generated: {result.timestamp.isoformat()}
-Agent: Analyst (Phase 1)
-Duration: {result.duration:.1f}s
-Messages: {result.message_count}{websearch_note}{interrupted_note}
+Agent: Analyst (Phase 1){interrupted_note}
 -->
 
 """

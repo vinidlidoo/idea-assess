@@ -1,0 +1,21 @@
+{
+  "iterations": [
+    {
+      "iteration": 1,
+      "analysis_file": "analyses/ai-powered-code-review-tool/iterations/iteration_1.md",
+      "analysis_length": 6259,
+      "metadata": {
+        "idea": "AI-powered code review tool",
+        "slug": "ai-powered-code-review-tool",
+        "timestamp": "2025-08-19T12:02:04.297034",
+        "search_count": 0,
+        "message_count": 3,
+        "duration": 47.652673959732056,
+        "interrupted": false
+      }
+    }
+  ],
+  "feedback": [],
+  "final_status": "accepted",
+  "idea": "AI-powered code review tool"
+}

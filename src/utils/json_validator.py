@@ -57,17 +57,31 @@ REVIEWER_FEEDBACK_SCHEMA = {
             "type": "array",
             "items": {
                 "type": "object",
-                "required": ["area", "suggestion"],
+                "required": ["suggestion"],
                 "properties": {
+                    "section": {
+                        "type": "string",
+                        "minLength": 3,
+                        "description": "Section needing improvement",
+                    },
                     "area": {
                         "type": "string",
                         "minLength": 3,
-                        "description": "Area needing improvement",
+                        "description": "Area needing improvement (deprecated, use section)",
+                    },
+                    "issue": {
+                        "type": "string",
+                        "description": "Issue identified",
                     },
                     "suggestion": {
                         "type": "string",
                         "minLength": 5,
                         "description": "Specific improvement suggestion",
+                    },
+                    "priority": {
+                        "type": "string",
+                        "enum": ["important", "medium", "high"],
+                        "description": "Priority level",
                     },
                 },
             },
@@ -75,7 +89,35 @@ REVIEWER_FEEDBACK_SCHEMA = {
         },
         "minor_suggestions": {
             "type": "array",
-            "items": {"type": "string", "minLength": 5},
+            "items": {
+                "oneOf": [
+                    {"type": "string", "minLength": 5},  # Backward compatibility
+                    {
+                        "type": "object",
+                        "required": ["suggestion"],
+                        "properties": {
+                            "section": {
+                                "type": "string",
+                                "description": "Section of the analysis",
+                            },
+                            "issue": {
+                                "type": "string",
+                                "description": "Issue identified",
+                            },
+                            "suggestion": {
+                                "type": "string",
+                                "minLength": 5,
+                                "description": "Specific suggestion",
+                            },
+                            "priority": {
+                                "type": "string",
+                                "enum": ["minor", "low"],
+                                "description": "Priority level",
+                            },
+                        },
+                    },
+                ]
+            },
             "description": "List of minor suggestions for polish",
         },
         "strengths": {
@@ -202,13 +244,36 @@ class FeedbackValidator:
                 if isinstance(improvement, str):
                     # Convert string to proper structure
                     fixed_improvements.append(
-                        {"area": "General", "suggestion": improvement}
+                        {"section": "General", "suggestion": improvement}
                     )
                 elif isinstance(improvement, dict):
-                    # Ensure required fields
-                    if "area" not in improvement:
-                        improvement["area"] = "General"
+                    # Handle section/area field (section is preferred, area is deprecated)
+                    if "section" not in improvement and "area" in improvement:
+                        improvement["section"] = improvement["area"]
+                    elif "section" not in improvement and "area" not in improvement:
+                        improvement["section"] = "General"
+                    # Ensure suggestion field exists
+                    if "suggestion" not in improvement and "issue" in improvement:
+                        improvement["suggestion"] = improvement["issue"]
+                    elif "suggestion" not in improvement:
+                        improvement["suggestion"] = "Address this improvement"
                     fixed_improvements.append(improvement)
             feedback["improvements"] = fixed_improvements
+
+        # Fix minor_suggestions structure - can be either strings or objects
+        if isinstance(feedback.get("minor_suggestions"), list):
+            fixed_suggestions = []
+            for suggestion in feedback["minor_suggestions"]:
+                if isinstance(suggestion, str):
+                    # String format is already valid
+                    fixed_suggestions.append(suggestion)
+                elif isinstance(suggestion, dict):
+                    # Object format is also valid now, just ensure it has suggestion field
+                    if "suggestion" not in suggestion and "issue" in suggestion:
+                        suggestion["suggestion"] = suggestion["issue"]
+                    elif "suggestion" not in suggestion:
+                        suggestion["suggestion"] = "Consider this minor enhancement"
+                    fixed_suggestions.append(suggestion)
+            feedback["minor_suggestions"] = fixed_suggestions
 
         return feedback

@@ -15,6 +15,7 @@ from ..core.config import (
     ReviewerContext,
     RevisionContext,
 )
+from ..core.run_analytics import RunAnalytics
 from ..core.types import PipelineResult
 from ..utils.text_processing import create_slug
 from ..utils.archive_manager import ArchiveManager
@@ -186,6 +187,20 @@ class AnalysisPipeline:
         # Initialize logging
         _, slug = self._initialize_logging(idea, max_iterations)
 
+        # Create RunAnalytics instance for this pipeline run
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        run_id = f"{timestamp}_{slug}"
+
+        # Get log directory from logger handlers
+        log_dir = Path("logs/runs")  # Default
+        for handler in logging.getLogger().handlers:
+            if isinstance(handler, logging.FileHandler):
+                log_dir = Path(handler.baseFilename).parent
+                break
+
+        run_analytics = RunAnalytics(run_id=run_id, output_dir=log_dir)
+        logger.info(f"RunAnalytics initialized for run: {run_id}")
+
         # Initialize agents with their specific configs
         analyst = AnalystAgent(self.config.analyst)
         reviewer = ReviewerAgent(self.config.reviewer)
@@ -239,10 +254,11 @@ class AnalysisPipeline:
                         "feedback_file": str(latest_feedback_file),
                     }
 
-                # Create analyst context
+                # Create analyst context with RunAnalytics
                 analyst_context = AnalystContext(
                     idea_slug=slug,
                     output_dir=analysis_dir,
+                    run_analytics=run_analytics,
                 )
 
                 # Set tools based on override or websearch flag and iteration
@@ -306,9 +322,10 @@ class AnalysisPipeline:
                 )
 
                 # Step 2: Get reviewer feedback
-                # Create reviewer context
+                # Create reviewer context with RunAnalytics
                 reviewer_context = ReviewerContext(
                     analysis_path=iteration_file,
+                    run_analytics=run_analytics,
                 )
 
                 # Add revision context if available
@@ -466,6 +483,13 @@ class AnalysisPipeline:
             )
 
         finally:
+            # Finalize RunAnalytics to write summary
+            try:
+                run_analytics.finalize()
+                logger.info(f"RunAnalytics finalized for run: {run_id}")
+            except Exception as e:
+                logger.error(f"Failed to finalize RunAnalytics: {e}", exc_info=True)
+
             # Log final status
             final_result = locals().get("result", None)
             if final_result is not None:
@@ -505,70 +529,95 @@ class SimplePipeline:
         # Initialize analyst with its config
         analyst = AnalystAgent(config.analyst)
 
-        # Create analyst context
+        # Create RunAnalytics instance for this single-agent run
         slug = create_slug(idea)
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        run_id = f"{timestamp}_{slug}"
+
+        # Get log directory from logger handlers
+        log_dir = Path("logs/runs")  # Default
+        for handler in logging.getLogger().handlers:
+            if isinstance(handler, logging.FileHandler):
+                log_dir = Path(handler.baseFilename).parent
+                break
+
+        run_analytics = RunAnalytics(run_id=run_id, output_dir=log_dir)
+        logger.info(f"RunAnalytics initialized for run: {run_id}")
+
+        # Create analyst context with RunAnalytics
         analyst_context = AnalystContext(
             idea_slug=slug,
             tools_override=tools_override
             if tools_override is not None
             else (["WebSearch"] if use_websearch else []),
+            run_analytics=run_analytics,
         )
 
-        # Run analyst with context
-        result = await analyst.process(idea, analyst_context)
+        try:
+            # Run analyst with context
+            result = await analyst.process(idea, analyst_context)
 
-        if result.success:
-            # slug already created above
+            if result.success:
+                # slug already created above
 
-            # Setup file paths
-            analysis_dir = Path("analyses") / slug
-            analysis_dir.mkdir(parents=True, exist_ok=True)
+                # Setup file paths
+                analysis_dir = Path("analyses") / slug
+                analysis_dir.mkdir(parents=True, exist_ok=True)
 
-            # Archive existing files before saving new one
-            run_type = "test" if logger.isEnabledFor(logging.DEBUG) else "production"
-            _ = archive_manager.archive_current_analysis(
-                analysis_dir, run_type=run_type
-            )
+                # Archive existing files before saving new one
+                run_type = (
+                    "test" if logger.isEnabledFor(logging.DEBUG) else "production"
+                )
+                _ = archive_manager.archive_current_analysis(
+                    analysis_dir, run_type=run_type
+                )
 
-            # Save to clean file structure (no timestamp)
-            analysis_path = analysis_dir / "analysis.md"
-            with open(analysis_path, "w") as f:
-                _ = f.write(result.content)
+                # Save to clean file structure (no timestamp)
+                analysis_path = analysis_dir / "analysis.md"
+                with open(analysis_path, "w") as f:
+                    _ = f.write(result.content)
 
-            # Create metadata
-            analysis_result: dict[str, object] = {
-                "final_status": "completed",
-                "word_count": len(result.content.split()),
-                "character_count": len(result.content),
-            }
-            metadata = archive_manager.create_metadata(analysis_result)
-            metadata_path = analysis_dir / "metadata.json"
-            with open(metadata_path, "w") as f:
-                json.dump(metadata, f, indent=2)
+                # Create metadata
+                analysis_result: dict[str, object] = {
+                    "final_status": "completed",
+                    "word_count": len(result.content.split()),
+                    "character_count": len(result.content),
+                }
+                metadata = archive_manager.create_metadata(analysis_result)
+                metadata_path = analysis_dir / "metadata.json"
+                with open(metadata_path, "w") as f:
+                    json.dump(metadata, f, indent=2)
 
-            return cast(
-                PipelineResult,
-                cast(
-                    object,
-                    {
-                        "success": True,
-                        "idea": idea,
-                        "slug": slug,
-                        "analysis": result.content,
-                        "file_path": str(analysis_path),
-                        "metadata": result.metadata,
-                    },
-                ),
-            )
-        else:
-            return cast(
-                PipelineResult,
-                cast(
-                    object,
-                    {
-                        "success": False,
-                        "idea": idea,
-                        "error": result.error or "Unknown error",
-                    },
-                ),
-            )
+                return cast(
+                    PipelineResult,
+                    cast(
+                        object,
+                        {
+                            "success": True,
+                            "idea": idea,
+                            "slug": slug,
+                            "analysis": result.content,
+                            "file_path": str(analysis_path),
+                            "metadata": result.metadata,
+                        },
+                    ),
+                )
+            else:
+                return cast(
+                    PipelineResult,
+                    cast(
+                        object,
+                        {
+                            "success": False,
+                            "idea": idea,
+                            "error": result.error or "Unknown error",
+                        },
+                    ),
+                )
+        finally:
+            # Finalize RunAnalytics to write summary
+            try:
+                run_analytics.finalize()
+                logger.info(f"RunAnalytics finalized for run: {run_id}")
+            except Exception as e:
+                logger.error(f"Failed to finalize RunAnalytics: {e}", exc_info=True)

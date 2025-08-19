@@ -13,7 +13,6 @@ from claude_code_sdk import ClaudeSDKClient, ClaudeCodeOptions
 
 from ..core.agent_base import BaseAgent, AgentResult
 from ..core.config import AnalystConfig, AnalystContext
-from ..core.message_processor import MessageProcessor
 from ..utils.text_processing import create_slug
 from ..utils.file_operations import load_prompt, AnalysisResult
 
@@ -84,6 +83,7 @@ class AnalystAgent(BaseAgent[AnalystConfig, AnalystContext]):
                 use_websearch=use_websearch,
                 revision_context=revision_context,
                 allowed_tools=allowed_tools,
+                context=context,
             )
 
             if result:
@@ -93,10 +93,8 @@ class AnalystAgent(BaseAgent[AnalystConfig, AnalystContext]):
                         "idea": result.idea,
                         "slug": result.slug,
                         "timestamp": result.timestamp.isoformat(),
-                        "search_count": result.search_count,
-                        "message_count": result.message_count,
-                        "duration": result.duration,
                         "interrupted": result.interrupted,
+                        # Note: search_count, message_count, duration now tracked by RunAnalytics
                     },
                     success=True,
                 )
@@ -119,6 +117,7 @@ class AnalystAgent(BaseAgent[AnalystConfig, AnalystContext]):
         use_websearch: bool = True,
         revision_context: dict[str, str] | None = None,
         allowed_tools: list[str] | None = None,
+        context: AnalystContext | None = None,
     ) -> AnalysisResult | None:
         """
         Internal method to analyze a business idea.
@@ -140,8 +139,13 @@ class AnalystAgent(BaseAgent[AnalystConfig, AnalystContext]):
         # Reset interrupt state
         self.interrupt_event.clear()
 
-        # Message processor
-        processor = MessageProcessor()
+        # Track with RunAnalytics if available
+        run_analytics = context.run_analytics if context else None
+        iteration = (
+            context.revision_context.iteration
+            if context and context.revision_context
+            else 0
+        )
 
         # Signal handler for interrupts (thread-safe)
         def handle_interrupt(signum: int, frame: types.FrameType | None) -> None:
@@ -241,15 +245,21 @@ class AnalystAgent(BaseAgent[AnalystConfig, AnalystContext]):
                             await client.interrupt()
                         raise AnalysisInterrupted("User interrupted analysis")
 
-                    # Track message
-                    processor.track_message(message)
+                    # Track message with RunAnalytics if available
+                    if run_analytics:
+                        run_analytics.track_message(message, "analyst", iteration)
 
-                    # Show progress
-                    stats = processor.get_statistics()
+                    # Show progress (simplified without MessageProcessor)
+                    message_count = (
+                        run_analytics.global_message_count if run_analytics else 0
+                    )
+                    search_count = (
+                        run_analytics.global_search_count if run_analytics else 0
+                    )
 
-                    if stats["message_count"] % self.config.message_log_interval == 0:
+                    if message_count % self.config.message_log_interval == 0:
                         logger.debug(
-                            f"Analysis progress: {stats['message_count']} messages processed"
+                            f"Analysis progress: {message_count} messages processed"
                         )
 
                     # Check for completion
@@ -258,13 +268,12 @@ class AnalystAgent(BaseAgent[AnalystConfig, AnalystContext]):
                     if isinstance(message, ResultMessage):
                         # Analysis complete (logged after content check)
 
-                        # Get content from ResultMessage
-                        extracted_content = processor.extract_content(message)
-                        content = extracted_content[0] if extracted_content else ""
+                        # Get content from ResultMessage directly
+                        content = message.result if message.result else ""
 
                         if content:
                             logger.info(
-                                f"Analysis complete: {stats['message_count']} messages, {stats['search_count']} searches"
+                                f"Analysis complete: {message_count} messages, {search_count} searches"
                             )
 
                         if content:
@@ -273,9 +282,6 @@ class AnalystAgent(BaseAgent[AnalystConfig, AnalystContext]):
                                 idea=idea,
                                 slug=create_slug(idea),
                                 timestamp=datetime.now(),
-                                search_count=stats["search_count"],
-                                message_count=stats["message_count"],
-                                duration=time.time() - start_time,
                                 interrupted=self.interrupt_event.is_set(),
                             )
                         break
@@ -321,10 +327,17 @@ class AnalystAgent(BaseAgent[AnalystConfig, AnalystContext]):
             _ = signal.signal(signal.SIGINT, original_handler)
 
             # Log final statistics
-            stats = processor.get_statistics()
-            logger.info(
-                f"Analysis session complete - Messages: {stats['message_count']}, "
-                + f"Searches: {stats['search_count']}, "
-                + f"Duration: {time.time() - start_time:.1f}s, "
-                + f"Interrupted: {self.interrupt_event.is_set()}"
-            )
+            if run_analytics:
+                final_message_count = run_analytics.global_message_count
+                final_search_count = run_analytics.global_search_count
+                logger.info(
+                    f"Analysis session complete - Messages: {final_message_count}, "
+                    + f"Searches: {final_search_count}, "
+                    + f"Duration: {time.time() - start_time:.1f}s, "
+                    + f"Interrupted: {self.interrupt_event.is_set()}"
+                )
+            else:
+                logger.info(
+                    f"Analysis session complete - Duration: {time.time() - start_time:.1f}s, "
+                    + f"Interrupted: {self.interrupt_event.is_set()}"
+                )

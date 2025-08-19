@@ -13,7 +13,6 @@ from ..core.config import (
     ReviewerConfig,
     ReviewerContext,
 )
-from ..core.message_processor import MessageProcessor
 from ..utils.file_operations import load_prompt
 from ..utils.json_validator import FeedbackValidator
 
@@ -133,7 +132,7 @@ class ReviewerAgent(BaseAgent[ReviewerConfig, ReviewerContext]):
 
             # Load review instructions template and format it
             review_template = load_prompt(
-                "reviewer_instructions.md",
+                "agents/reviewer/instructions.md",
                 self.config.prompts_dir or Path("config/prompts"),
             )
             review_prompt = review_template.format(
@@ -151,8 +150,8 @@ class ReviewerAgent(BaseAgent[ReviewerConfig, ReviewerContext]):
                 permission_mode="default",  # Use default permission mode for automation
             )
 
-            # Initialize message processor
-            processor = MessageProcessor()
+            # Track with RunAnalytics if available
+            run_analytics = context.run_analytics if context else None
 
             # Query Claude for review
             # Review start already logged above in debug mode
@@ -168,7 +167,9 @@ class ReviewerAgent(BaseAgent[ReviewerConfig, ReviewerContext]):
                     message_count += 1
                     # Raw message tracking (redundant debug logging removed)
 
-                    processor.track_message(message)
+                    # Track message with RunAnalytics if available
+                    if run_analytics:
+                        run_analytics.track_message(message, "reviewer", 0)
 
                     # Progress tracking
                     if message_count % self.config.message_log_interval == 0:
@@ -389,8 +390,12 @@ class FeedbackProcessor:
             instructions.append("IMPORTANT IMPROVEMENTS:")
             for improvement in improvements:
                 if isinstance(improvement, dict):
+                    # Handle both 'section' and deprecated 'area' field
+                    section = improvement.get("section") or improvement.get(
+                        "area", "N/A"
+                    )
                     instructions.append(
-                        f"- {improvement.get('section', 'N/A')}: {improvement.get('issue', 'N/A')}"
+                        f"- {section}: {improvement.get('issue', 'N/A')}"
                     )
                     instructions.append(
                         f"  Suggestion: {improvement.get('suggestion', 'N/A')}"

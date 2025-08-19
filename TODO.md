@@ -22,10 +22,29 @@
 - [x] ~~Implement and integrate the improved logging system~~ ✅ COMPLETED 2025-08-15
 - [x] **Achieve type safety** - ✅ COMPLETED 2025-08-16 - 0 errors, 77 acceptable warnings, A+ grade
 - [x] **Fix the awkward prompt registry file mapping** - ✅ COMPLETED 2025-08-18 - Replaced with dynamic path resolution
+- [x] **Implement RunAnalytics** - ✅ COMPLETED 2025-08-19 - Comprehensive message tracking and analytics
 - [ ] Implement batch processing mode for multiple ideas
 - [ ] Add progress indicators for long operations
 - [ ] Add utility to feed a list of ideas from a text file into the system
 - [ ] Consider adding timeout handling for virtual interior design tests (consistently timeout)
+
+## RunAnalytics Future Enhancements
+
+- [x] **Remove MessageProcessor** - ✅ COMPLETED 2025-08-19 - Archived and removed after all tests passing
+- [x] **Clean up AgentResult.metadata** - ✅ COMPLETED 2025-08-19 - Removed redundant fields (search_count, message_count, duration)
+- [ ] **Add RunAnalytics tests** - Comprehensive unit tests for all message types and artifact extraction
+- [ ] **Add cost tracking dashboard** - Visualize token usage and costs across runs
+- [ ] **Export analytics to CSV/Excel** - For business analysis and reporting
+- [ ] **Add real-time monitoring** - WebSocket or SSE for live progress tracking
+- [ ] **Implement analytics retention policy** - Auto-cleanup old analytics files
+
+## Schema & Prompt Alignment
+
+- [ ] **Synchronize all prompts with schemas** - Ensure examples match validation rules
+- [ ] **Create prompt validation tests** - Verify prompt examples pass schema validation
+- [ ] **Document schema evolution strategy** - How to handle breaking changes
+- [ ] **Add schema versioning** - Track schema changes over time
+- [ ] **Create migration tools** - Convert old feedback formats to new
 
 ## Papercuts & Minor Issues
 
