@@ -202,15 +202,46 @@ None - session tasks completed
 
 ## Next Session Priority
 
-1. **Must Do:** Deep-dive Q&A on analyst.py, reviewer.py, and pipeline.py
-2. **Should Do:** Continue exploring architecture patterns and design decisions
-3. **Could Do:** Start planning Phase 3 Judge implementation (after Q&A)
+1. **Must Do:** Fix ToolResultBlock processing in MessageProcessor
+   - Currently only extracts search queries from results
+   - Need to extract and store the actual search result links
+   - See lines 310-317 in message_processor.py
+2. **Should Do:** Deep-dive Q&A on analyst.py, reviewer.py, and pipeline.py
+3. **Could Do:** Continue exploring architecture patterns and design decisions
 
 ## Open Questions
 
 Questions that arose during this session:
 
 - None - resolved all issues that came up
+
+## Analysis: ToolResultBlock Processing Issue
+
+**Current Implementation (lines 310-317):**
+
+- Only extracts the search query from ToolResultBlock content using regex
+- Appends as "Result: {query}" to search_queries list
+- Ignores the actual search result links embedded in the content
+
+**Issue:**
+The ToolResultBlock content contains valuable data:
+
+```json
+"content": "Web search results for query: \"...\"\n\nLinks: [{\"title\":\"...\",\"url\":\"...\"}, ...]"
+```
+
+**Proposed Solution:**
+
+1. Parse the JSON-like Links array from the content
+2. Return both queries AND results from `extract_content()`
+3. Store search results with titles and URLs for analysis tracking
+4. Update return type from `tuple[list[str], list[str]]` to include results
+
+**Benefits:**
+
+- Complete tracking of what searches found
+- Better debugging and analysis of search effectiveness
+- Ability to correlate search queries with actual results used
 
 ## Handoff Notes
 
