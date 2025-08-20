@@ -1,0 +1,18 @@
+{
+  "iterations": [
+    {
+      "iteration": 1,
+      "analysis_file": "analyses/ai-powered-fitness-app-for-seniors/iterations/iteration_1.md",
+      "analysis_length": 8065,
+      "metadata": {
+        "idea": "AI-powered fitness app for seniors",
+        "slug": "ai-powered-fitness-app-for-seniors",
+        "timestamp": "2025-08-19T17:16:00.489453",
+        "interrupted": false
+      }
+    }
+  ],
+  "feedback": [],
+  "final_status": "accepted",
+  "idea": "AI-powered fitness app for seniors"
+}

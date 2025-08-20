@@ -46,6 +46,14 @@
 - [ ] **Add schema versioning** - Track schema changes over time
 - [ ] **Create migration tools** - Convert old feedback formats to new
 
+## Code Review Process Improvements
+
+- [ ] **Be more proactive in finding issues** - Don't wait for user to point out each inconsistency
+- [ ] **Use systematic comparison methods** - Side-by-side diff when aligning files
+- [ ] **Create comprehensive issue lists** - Find ALL problems first, then fix systematically
+- [ ] **Check for dead code proactively** - Remove unused functions/classes without prompting
+- [ ] **Verify pattern consistency** - Variable naming, error handling, file organization
+
 ## Papercuts & Minor Issues
 
 - [ ] Consider making iteration limit configurable (currently hardcoded to 3)

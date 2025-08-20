@@ -2,7 +2,7 @@
 
 Please review the business analysis document and provide structured feedback.
 
-Current iteration: {iteration_count} of maximum {max_iterations}
+Current iteration: {iteration} of maximum {max_iterations}
 
 ANALYSIS FILE TO REVIEW: {analysis_path}
 

@@ -90,7 +90,7 @@ class TestInterruptHandling:
 
         # Mock process method to verify handler setup
         with patch("src.agents.analyst.ClaudeSDKClient", return_value=mock_client):
-            with patch("src.agents.analyst.signal.signal") as mock_signal:
+            with patch("signal.signal") as mock_signal:
                 # Run a simple process with context
                 context = AnalystContext(tools_override=[])
                 asyncio.run(analyst.process("Test idea", context))

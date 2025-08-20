@@ -2,13 +2,18 @@
 
 from __future__ import annotations
 
-from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Generic, TypeVar
-from dataclasses import dataclass
+import logging
 import threading
+from abc import ABC, abstractmethod
+from dataclasses import dataclass
+from typing import TYPE_CHECKING, Generic, TypeVar
+import signal
 
 if TYPE_CHECKING:
     from .config import AnalystConfig, ReviewerConfig, BaseContext
+
+# Module-level logger
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -119,3 +124,35 @@ class BaseAgent(ABC, Generic[TConfig, TContext]):
         if hasattr(self.config, "max_turns"):
             return self.config.max_turns  # type: ignore[attr-defined]
         return 30  # Fallback default
+
+    def setup_interrupt_handler(self) -> object:
+        """
+        Setup interrupt handling for graceful shutdown.
+
+        Returns:
+            Original signal handler to restore later
+        """
+        import types
+
+        def handle_interrupt(_signum: int, _frame: types.FrameType | None) -> None:
+            """Handle SIGINT by setting interrupt event."""
+            self.interrupt_event.set()
+            logger.warning(
+                f"{self.agent_name}: Interrupt received, attempting graceful shutdown..."
+            )
+
+        # Store and replace the signal handler
+        original_handler = signal.getsignal(signal.SIGINT)
+        _ = signal.signal(signal.SIGINT, handle_interrupt)
+        return original_handler
+
+    def restore_interrupt_handler(self, original_handler: object) -> None:
+        """
+        Restore the original interrupt handler.
+
+        Args:
+            original_handler: The handler to restore (from setup_interrupt_handler)
+        """
+        from typing import cast, Any
+
+        _ = signal.signal(signal.SIGINT, cast(Any, original_handler))  # pyright: ignore[reportAny, reportExplicitAny]

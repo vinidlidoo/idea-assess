@@ -8,7 +8,7 @@ from typing import cast
 
 # PipelineResult imported from types.py
 from ..agents import AnalystAgent
-from ..agents.reviewer import ReviewerAgent, FeedbackProcessor
+from ..agents.reviewer import ReviewerAgent
 from ..core.config import (
     AnalysisConfig,
     AnalystContext,
@@ -28,7 +28,6 @@ class AnalysisPipeline:
     """Orchestrates the flow of data between agents using file-based communication."""
 
     config: AnalysisConfig
-    feedback_processor: FeedbackProcessor
     archive_manager: ArchiveManager
 
     def __init__(self, config: AnalysisConfig):
@@ -39,7 +38,6 @@ class AnalysisPipeline:
             config: System configuration
         """
         self.config = config
-        self.feedback_processor = FeedbackProcessor()
         self.archive_manager = ArchiveManager(max_archives=5)
 
     # Helper methods for pipeline refactoring
@@ -343,11 +341,14 @@ class AnalysisPipeline:
                     break
 
                 # Load feedback from file
-                feedback_file = (
-                    reviewer_result.content
-                )  # This should be the path to feedback file
-                feedback = self.feedback_processor.load_feedback(feedback_file)
-                feedback_history.append(cast(dict[str, object], feedback))
+                feedback_file = Path(reviewer_result.content)
+                if feedback_file.exists():
+                    with open(feedback_file, "r") as f:
+                        feedback = json.load(f)
+                    feedback_history.append(cast(dict[str, object], feedback))
+                else:
+                    logger.error(f"Feedback file not found: {feedback_file}")
+                    break
 
                 # Also save/update main reviewer_feedback.json for easy access
                 main_feedback = analysis_dir / "reviewer_feedback.json"
@@ -369,9 +370,11 @@ class AnalysisPipeline:
                 )
 
                 # Check if we should continue (reviewer rejected the analysis)
-                if not self.feedback_processor.should_continue_iteration(
-                    feedback, iteration_count
-                ):
+                recommendation = feedback.get("iteration_recommendation", "accept")
+                should_continue = (
+                    recommendation == "reject" and iteration_count < max_iterations
+                )
+                if not should_continue:
                     # Analysis accepted (logged with milestone below)
                     logger.info(
                         f"🎯 Analysis accepted after {iteration_count} iteration(s)"
