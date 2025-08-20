@@ -37,7 +37,9 @@ class AnalystAgent(BaseAgent[AnalystConfig, AnalystContext]):
         return "Analyst"
 
     @override
-    async def process(self, input_data: str, context: AnalystContext) -> AgentResult:
+    async def process(
+        self, input_data: str = "", context: AnalystContext | None = None
+    ) -> AgentResult:
         """
         Analyze a business idea.
 
@@ -48,6 +50,12 @@ class AnalystAgent(BaseAgent[AnalystConfig, AnalystContext]):
         Returns:
             AgentResult containing the analysis
         """
+        # Analyst requires both input_data and context
+        if not input_data:
+            raise ValueError("Analyst requires input_data (the business idea)")
+        if context is None:
+            raise ValueError("Analyst requires context")
+
         # Setup
         start_time = time.time()
 

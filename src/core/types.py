@@ -5,6 +5,7 @@ This module defines project-specific types used across the codebase.
 
 from __future__ import annotations
 
+from enum import Enum
 from typing import Literal, TypedDict
 
 __all__ = [
@@ -13,7 +14,19 @@ __all__ = [
     "FeedbackIssue",
     "ReviewerRecommendation",
     "PipelineResult",
+    "PipelineMode",
 ]
+
+
+# Pipeline execution modes
+class PipelineMode(Enum):
+    """Pipeline execution modes using verb-based naming."""
+
+    ANALYZE = "analyze"  # Analyst only
+    ANALYZE_AND_REVIEW = "analyze_and_review"  # Analyst + Reviewer loop
+    ANALYZE_REVIEW_AND_JUDGE = "analyze_review_and_judge"  # + Judge
+    FULL_EVALUATION = "full_evaluation"  # All agents
+
 
 # Type aliases
 ReviewerRecommendation = Literal["accept", "reject", "conditional"]

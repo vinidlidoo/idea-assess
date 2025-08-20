@@ -40,17 +40,22 @@ class ReviewerAgent(BaseAgent[ReviewerConfig, ReviewerContext]):
         return "Reviewer"
 
     @override
-    async def process(self, input_data: str, context: ReviewerContext) -> AgentResult:
+    async def process(
+        self, input_data: str = "", context: ReviewerContext | None = None
+    ) -> AgentResult:
         """
         Review a business analysis by reading from file and write feedback to JSON.
 
         Args:
-            input_data: Ignored (kept for interface compatibility)
+            input_data: Not used by reviewer (defaults to empty string)
             context: Runtime context with analysis_path and other settings
 
         Returns:
             AgentResult containing path to feedback JSON file
         """
+        # Reviewer requires context but not input_data
+        if context is None:
+            raise ValueError("Reviewer requires context with analysis_path")
         # Setup
         start_time = time.time()
 
@@ -95,15 +100,10 @@ class ReviewerAgent(BaseAgent[ReviewerConfig, ReviewerContext]):
                 iterations_dir / f"reviewer_feedback_iteration_{iteration}.json"
             )
 
-            # Verify template file exists
+            # Create feedback file with empty JSON for reviewer to populate
             if not feedback_file.exists():
-                logger.error(f"Template feedback file not found: {feedback_file}")
-                return AgentResult(
-                    content="",
-                    metadata={"iteration": iteration},
-                    success=False,
-                    error=f"Template feedback file not found: {feedback_file}",
-                )
+                _ = feedback_file.write_text("{}")
+                logger.debug(f"Created feedback template file: {feedback_file}")
 
             # Load and format review instructions template
             review_template = load_prompt(

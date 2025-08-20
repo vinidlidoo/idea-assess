@@ -16,6 +16,8 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import TYPE_CHECKING
 
+from .types import PipelineMode
+
 if TYPE_CHECKING:
     from .run_analytics import RunAnalytics
 
@@ -30,6 +32,25 @@ if TYPE_CHECKING:
 MAX_CONTENT_SIZE = 10_000_000  # Maximum content size in bytes (10MB)
 MAX_FILE_READ_RETRIES = 3  # Maximum retries for file read operations
 FILE_RETRY_DELAY = 1.0  # Initial delay for file operation retries (seconds)
+
+
+# ==============================================================================
+# PIPELINE CONFIGURATION
+# ==============================================================================
+
+
+@dataclass
+class PipelineConfig:
+    """Configuration for pipeline execution modes."""
+
+    max_iterations_by_mode: dict[PipelineMode, int] = field(
+        default_factory=lambda: {
+            PipelineMode.ANALYZE: 1,
+            PipelineMode.ANALYZE_AND_REVIEW: 3,
+            PipelineMode.ANALYZE_REVIEW_AND_JUDGE: 3,
+            PipelineMode.FULL_EVALUATION: 3,
+        }
+    )
 
 
 # ==============================================================================
@@ -63,6 +84,10 @@ class AnalysisConfig:
     slug_max_length: int = 50  # Maximum length for generated slugs
     preview_lines: int = 20  # Lines to show in file previews
     preview_char_limit: int = 200  # Characters to show in content preview
+
+    # Pipeline configuration
+    default_pipeline_mode: PipelineMode = PipelineMode.ANALYZE_AND_REVIEW
+    pipeline: PipelineConfig = field(default_factory=PipelineConfig)
 
     # Agent configurations
     analyst: AnalystConfig = field(default_factory=lambda: AnalystConfig())

@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# pyright: reportAny=false
 """
 Business Idea Analyzer CLI - Modern implementation using agent architecture.
 
@@ -7,31 +8,15 @@ agent system with the Claude SDK.
 """
 
 import sys
-import os
-import traceback
+import argparse
+import asyncio
+import logging
 
-try:
-    import argparse
-    import asyncio
-    from pathlib import Path
-except Exception as e:
-    print(f"Import failure: {e}", file=sys.stderr)
-    raise
-
-# Add parent directory to path for imports
-sys.path.insert(0, str(Path(__file__).parent.parent))
-
-try:
-    from dotenv import load_dotenv
-
-    from src.core import get_default_config
-    from src.core.pipeline import AnalysisPipeline
-
-    # Load environment variables
-    _ = load_dotenv()
-except Exception as e:
-    print(f"Module import failure: {e}", file=sys.stderr)
-    raise
+from src.core import get_default_config
+from src.core.pipeline import AnalysisPipeline
+from src.core.types import PipelineMode
+from src.utils.text_processing import create_slug
+from src.utils.logger import setup_logging
 
 
 async def main():
@@ -48,28 +33,20 @@ Examples:
         """,
     )
 
-    _ = parser.add_argument("idea", help="One-liner business idea to analyze")
+    parser.add_argument("idea", help="One-liner business idea to analyze")  # pyright: ignore[reportUnusedCallResult]
 
-    _ = parser.add_argument(
+    parser.add_argument(  # pyright: ignore[reportUnusedCallResult]
         "--debug", action="store_true", help="Enable debug logging to logs/ directory"
     )
 
-    _ = parser.add_argument(
+    parser.add_argument(  # pyright: ignore[reportUnusedCallResult]
         "--no-websearch",
         "-n",
         action="store_true",
         help="Disable WebSearch tool for faster analysis (uses existing knowledge only)",
     )
 
-    _ = parser.add_argument(
-        "--tools",
-        "-t",
-        nargs="+",
-        choices=["WebSearch", "Read", "Write"],
-        help="Override tools available to agents (default: agent-specific)",
-    )
-
-    _ = parser.add_argument(
+    parser.add_argument(  # pyright: ignore[reportUnusedCallResult]
         "--prompt-variant",
         "-p",
         choices=["main", "v1", "v2", "v3", "revision"],
@@ -77,14 +54,14 @@ Examples:
         help="Prompt variant to use (default: main)",
     )
 
-    _ = parser.add_argument(
+    parser.add_argument(  # pyright: ignore[reportUnusedCallResult]
         "--with-review",
         "-r",
         action="store_true",
         help="Enable reviewer feedback loop for quality improvement",
     )
 
-    _ = parser.add_argument(
+    parser.add_argument(  # pyright: ignore[reportUnusedCallResult]
         "--max-iterations",
         "-m",
         type=int,
@@ -95,20 +72,14 @@ Examples:
 
     args = parser.parse_args()
 
-    # Extract typed values from args with explicit casting
-    idea = str(getattr(args, "idea", ""))
-    debug = bool(getattr(args, "debug", False))
-    no_websearch = bool(getattr(args, "no_websearch", False))
-    with_review = bool(getattr(args, "with_review", False))
-    max_iterations = int(getattr(args, "max_iterations", 3))
-    tools_override: list[str] | None = getattr(
-        args, "tools", None
-    )  # None means use defaults
+    # Extract values from args with proper typing
+    idea: str = args.idea
+    debug: bool = args.debug
+    no_websearch: bool = args.no_websearch
+    with_review: bool = args.with_review
+    max_iterations: int = args.max_iterations
 
-    # Setup logging ONCE at the start of the application
-    from src.utils.text_processing import create_slug
-    from src.utils.logger import setup_logging
-
+    # Setup logging
     idea_slug = create_slug(idea)
     log_file = setup_logging(debug=debug, idea_slug=idea_slug, run_type="run")
 
@@ -123,38 +94,32 @@ Examples:
     config = get_default_config()
 
     # Apply prompt variant override to analyst config
-    prompt_variant = str(getattr(args, "prompt_variant", "main"))
+    prompt_variant: str = args.prompt_variant
     if prompt_variant != config.analyst.prompt_variant:
         config.analyst.prompt_variant = prompt_variant
-
-    # Determine tool configuration
-    # Priority: explicit --tools > --no-websearch flag > defaults
-    if tools_override is not None:
-        # User explicitly specified tools
-        # Pipeline will use tools_override directly
-        pass
-    elif no_websearch:
-        # If websearch is disabled, set tools_override to empty list
-        tools_override = []
 
     # Always use the main pipeline
     pipeline = AnalysisPipeline(config)
 
-    # Determine actual max_iterations
+    # Determine pipeline mode based on CLI flags
     if not with_review:
-        # No review means single iteration
-        max_iterations = 1
+        mode = PipelineMode.ANALYZE
         print("\n🚀 Running analysis...")
     else:
+        mode = PipelineMode.ANALYZE_AND_REVIEW
         print(
             f"\n🔄 Running analysis with reviewer feedback (max {max_iterations} iterations)..."
         )
 
-    result = await pipeline.run_analyst_reviewer_loop(
+    # Apply websearch preference to config
+    if no_websearch:
+        config.analyst.default_tools = []
+
+    # Run the pipeline with the new interface
+    result = await pipeline.process(
         idea=idea,
-        max_iterations=max_iterations,
-        use_websearch=not no_websearch,
-        tools_override=tools_override,
+        mode=mode,
+        max_iterations_override=max_iterations if with_review else None,
     )
 
     if result.get("success", False):
@@ -204,13 +169,12 @@ Examples:
 
 
 if __name__ == "__main__":
+    logger = logging.getLogger(__name__)
     try:
         asyncio.run(main())
     except KeyboardInterrupt:
-        print("\n[INFO] Operation cancelled by user", file=sys.stderr)
+        logger.info("Operation cancelled by user")
         sys.exit(130)
     except Exception as e:
-        print(f"\n[FATAL] Unhandled error: {e}", file=sys.stderr)
-        if os.environ.get("DEBUG"):
-            print(f"[FATAL] Traceback: {traceback.format_exc()}", file=sys.stderr)
+        logger.error(f"Unhandled error: {e}", exc_info=True)
         sys.exit(1)

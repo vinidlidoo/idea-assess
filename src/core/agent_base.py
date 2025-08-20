@@ -48,12 +48,14 @@ class BaseAgent(ABC, Generic[TConfig, TContext]):
         self.interrupt_event: threading.Event = threading.Event()
 
     @abstractmethod
-    async def process(self, input_data: str, context: TContext) -> AgentResult:
+    async def process(
+        self, input_data: str = "", context: TContext | None = None
+    ) -> AgentResult:
         """
         Process input and return standardized result.
 
         Args:
-            input_data: The input to process
+            input_data: The input to process (optional, defaults to empty string)
             context: Runtime context with overrides and state
 
         Returns:

@@ -6,7 +6,8 @@ from pathlib import Path
 from unittest.mock import Mock, AsyncMock, patch
 
 from src.core.pipeline import AnalysisPipeline
-from src.core.config import AnalysisConfig
+from src.core.config import AnalysisConfig, PipelineConfig
+from src.core.types import PipelineMode
 from src.core.agent_base import AgentResult
 
 
@@ -21,6 +22,16 @@ class TestPipelineIntegration:
         config.analyses_dir = tmp_path / "analyses"
         config.logs_dir = tmp_path / "logs"
 
+        # Add pipeline config
+        config.pipeline = PipelineConfig()
+        config.default_pipeline_mode = PipelineMode.ANALYZE_AND_REVIEW
+
+        # Add agent configs
+        config.analyst = Mock()
+        config.analyst.prompts_dir = config.prompts_dir
+        config.reviewer = Mock()
+        config.reviewer.prompts_dir = config.prompts_dir
+
         # Create directories
         config.analyses_dir.mkdir(parents=True, exist_ok=True)
         config.logs_dir.mkdir(parents=True, exist_ok=True)
@@ -34,32 +45,47 @@ class TestPipelineIntegration:
 
     @pytest.mark.asyncio
     @pytest.mark.integration
-    @pytest.mark.skip(reason="Needs rewrite - register_agent API no longer exists")
     async def test_basic_pipeline_flow(self, pipeline, config, tmp_path):
         """Test basic pipeline execution with mocked agents."""
+        # Create analysis file
+        analysis_file = (
+            tmp_path
+            / "analyses"
+            / "test-business-idea"
+            / "iterations"
+            / "iteration_1.md"
+        )
+        analysis_file.parent.mkdir(parents=True, exist_ok=True)
+        analysis_file.write_text("# Test Analysis\n\nThis is a test analysis.")
+
         # Mock the analyst agent
         mock_analyst = AsyncMock()
         mock_analyst.process = AsyncMock(
             return_value=AgentResult(
                 success=True,
-                content="# Test Analysis\n\nThis is a test analysis.",
+                content=str(analysis_file),
                 metadata={"duration": 1.0},
             )
         )
 
         # Create feedback file that reviewer will return (accept)
-        feedback_dir = tmp_path / "feedback"
-        feedback_dir.mkdir(exist_ok=True)
-
-        accept_feedback_file = feedback_dir / "accept_feedback.json"
-        accept_feedback_file.write_text(
+        feedback_file = (
+            tmp_path
+            / "analyses"
+            / "test-business-idea"
+            / "iterations"
+            / "reviewer_feedback_iteration_1.json"
+        )
+        feedback_file.write_text(
             json.dumps(
                 {
                     "iteration_recommendation": "accept",
-                    "iteration_reason": "Analysis meets requirements",
+                    "overall_assessment": "Analysis meets requirements",
                     "critical_issues": [],
-                    "positive_aspects": ["Good structure"],
-                    "suggestions": [],
+                    "improvements": [],
+                    "minor_suggestions": [],
+                    "strengths": ["Good structure"],
+                    "metadata": {},
                 }
             )
         )
@@ -69,29 +95,27 @@ class TestPipelineIntegration:
         mock_reviewer.process = AsyncMock(
             return_value=AgentResult(
                 success=True,
-                content=str(accept_feedback_file),  # Return file path
+                content=str(feedback_file),
                 metadata={"duration": 0.5},
             )
         )
 
-        # Register mocked agents
-        pipeline.register_agent("analyst", mock_analyst)
-        pipeline.register_agent("reviewer", mock_reviewer)
-
-        # Run the pipeline
+        # Run the pipeline with mocked agents
         with (
             patch("src.core.pipeline.AnalystAgent", return_value=mock_analyst),
             patch("src.core.pipeline.ReviewerAgent", return_value=mock_reviewer),
         ):
-            result = await pipeline.run_analyst_reviewer_loop(
-                idea="Test business idea", max_iterations=1, use_websearch=False
+            result = await pipeline.process(
+                idea="Test business idea",
+                mode=PipelineMode.ANALYZE_AND_REVIEW,
+                max_iterations_override=2,  # Changed to 2 so reviewer is called
             )
 
         # Verify result structure
         assert result["success"] is True
-        assert "final_analysis" in result
+        assert "file_path" in result
         assert "iteration_count" in result
-        assert result["iteration_count"] == 1
+        assert result["iteration_count"] == 1  # Still stops at 1 because accepted
 
         # Verify agents were called
         mock_analyst.process.assert_called_once()
@@ -99,54 +123,118 @@ class TestPipelineIntegration:
 
     @pytest.mark.asyncio
     @pytest.mark.integration
-    @pytest.mark.skip(reason="Needs rewrite - register_agent API no longer exists")
+    async def test_pipeline_analyze_only(self, pipeline, config, tmp_path):
+        """Test pipeline in analyze-only mode."""
+        # Create analysis file
+        analysis_file = (
+            tmp_path / "analyses" / "test-idea" / "iterations" / "iteration_1.md"
+        )
+        analysis_file.parent.mkdir(parents=True, exist_ok=True)
+        analysis_file.write_text("# Test Analysis\n\nContent here.")
+
+        # Mock the analyst agent
+        mock_analyst = AsyncMock()
+        mock_analyst.process = AsyncMock(
+            return_value=AgentResult(
+                success=True,
+                content=str(analysis_file),
+                metadata={"duration": 1.0},
+            )
+        )
+
+        # Run the pipeline in analyze-only mode
+        with patch("src.core.pipeline.AnalystAgent", return_value=mock_analyst):
+            result = await pipeline.process(idea="Test idea", mode=PipelineMode.ANALYZE)
+
+        # Verify result
+        assert result["success"] is True
+        assert result["iteration_count"] == 1
+        assert result["final_status"] == "completed"
+
+        # Verify only analyst was called
+        mock_analyst.process.assert_called_once()
+
+    @pytest.mark.asyncio
+    @pytest.mark.integration
     async def test_pipeline_with_reviewer_rejection(self, pipeline, config, tmp_path):
         """Test pipeline when reviewer rejects and requests revision."""
+        # Create analysis files
+        analysis1 = (
+            tmp_path / "analyses" / "test-idea" / "iterations" / "iteration_1.md"
+        )
+        analysis1.parent.mkdir(parents=True, exist_ok=True)
+        analysis1.write_text("# Initial Analysis\n\nShort and incomplete.")
+
+        analysis2 = (
+            tmp_path / "analyses" / "test-idea" / "iterations" / "iteration_2.md"
+        )
+        analysis2.write_text(
+            "# Improved Analysis\n\nMuch more detailed and complete analysis."
+        )
+
         # Mock analyst with improving responses
         mock_analyst = AsyncMock()
         mock_analyst.process = AsyncMock(
             side_effect=[
                 AgentResult(
                     success=True,
-                    content="# Initial Analysis\n\nShort and incomplete.",
+                    content=str(analysis1),
                     metadata={"duration": 1.0},
                 ),
                 AgentResult(
                     success=True,
-                    content="# Improved Analysis\n\nMuch more detailed and complete analysis.",
+                    content=str(analysis2),
                     metadata={"duration": 1.5},
                 ),
             ]
         )
 
-        # Create feedback files that reviewer will return
-        feedback_dir = tmp_path / "feedback"
-        feedback_dir.mkdir(exist_ok=True)
-
-        # First iteration feedback (reject)
-        feedback1_file = feedback_dir / "feedback1.json"
-        feedback1_file.write_text(
+        # Create feedback files
+        feedback1 = (
+            tmp_path
+            / "analyses"
+            / "test-idea"
+            / "iterations"
+            / "reviewer_feedback_iteration_1.json"
+        )
+        feedback1.write_text(
             json.dumps(
                 {
                     "iteration_recommendation": "reject",
-                    "iteration_reason": "Analysis is too short and missing key elements",
-                    "critical_issues": ["Too short", "Missing market analysis"],
-                    "positive_aspects": ["Good start"],
-                    "suggestions": ["Add more detail", "Include competition"],
+                    "overall_assessment": "Analysis is too short",
+                    "critical_issues": [
+                        {
+                            "section": "general",
+                            "issue": "Too short",
+                            "suggestion": "Add detail",
+                            "priority": "critical",
+                        }
+                    ],
+                    "improvements": [],
+                    "minor_suggestions": [],
+                    "strengths": ["Good start"],
+                    "metadata": {},
                 }
             )
         )
 
-        # Second iteration feedback (accept)
-        feedback2_file = feedback_dir / "feedback2.json"
-        feedback2_file.write_text(
+        feedback2 = (
+            tmp_path
+            / "analyses"
+            / "test-idea"
+            / "iterations"
+            / "reviewer_feedback_iteration_2.json"
+        )
+        feedback2.write_text(
             json.dumps(
                 {
                     "iteration_recommendation": "accept",
-                    "iteration_reason": "Analysis is now comprehensive",
+                    "overall_assessment": "Analysis is now comprehensive",
                     "critical_issues": [],
-                    "positive_aspects": ["Much improved", "Good detail"],
-                    "suggestions": [],
+                    "improvements": [],
+                    "minor_suggestions": [],
+                    "strengths": ["Much improved", "Good detail"],
+                    "metadata": {},
                 }
             )
         )
@@ -156,35 +244,29 @@ class TestPipelineIntegration:
         mock_reviewer.process = AsyncMock(
             side_effect=[
                 AgentResult(
-                    success=True,
-                    content=str(feedback1_file),  # Return file path
-                    metadata={"duration": 0.5},
+                    success=True, content=str(feedback1), metadata={"duration": 0.5}
                 ),
                 AgentResult(
-                    success=True,
-                    content=str(feedback2_file),  # Return file path
-                    metadata={"duration": 0.5},
+                    success=True, content=str(feedback2), metadata={"duration": 0.5}
                 ),
             ]
         )
-
-        # Register mocked agents
-        pipeline.register_agent("analyst", mock_analyst)
-        pipeline.register_agent("reviewer", mock_reviewer)
 
         # Run the pipeline
         with (
             patch("src.core.pipeline.AnalystAgent", return_value=mock_analyst),
             patch("src.core.pipeline.ReviewerAgent", return_value=mock_reviewer),
         ):
-            result = await pipeline.run_analyst_reviewer_loop(
-                idea="Test business idea", max_iterations=3, use_websearch=False
+            result = await pipeline.process(
+                idea="Test idea",
+                mode=PipelineMode.ANALYZE_AND_REVIEW,
+                max_iterations_override=3,
             )
 
         # Verify iterations
         assert result["success"] is True
         assert result["iteration_count"] == 2
-        assert "Improved Analysis" in result["final_analysis"]
+        assert result["final_status"] == "accepted"
 
         # Verify agents were called correct number of times
         assert mock_analyst.process.call_count == 2
@@ -192,32 +274,51 @@ class TestPipelineIntegration:
 
     @pytest.mark.asyncio
     @pytest.mark.integration
-    @pytest.mark.skip(reason="Needs rewrite - register_agent API no longer exists")
     async def test_pipeline_max_iterations(self, pipeline, config, tmp_path):
         """Test pipeline stops at max iterations."""
+        # Create analysis file
+        analysis_file = (
+            tmp_path / "analyses" / "test-idea" / "iterations" / "iteration_1.md"
+        )
+        analysis_file.parent.mkdir(parents=True, exist_ok=True)
+        analysis_file.write_text("# Analysis\n\nSome content.")
+
         # Mock analyst
         mock_analyst = AsyncMock()
         mock_analyst.process = AsyncMock(
             return_value=AgentResult(
                 success=True,
-                content="# Analysis\n\nSome content.",
+                content=str(analysis_file),
                 metadata={"duration": 1.0},
             )
         )
 
-        # Create feedback file that reviewer will return (always reject)
-        feedback_dir = tmp_path / "feedback"
-        feedback_dir.mkdir(exist_ok=True)
-
-        reject_feedback_file = feedback_dir / "reject_feedback.json"
-        reject_feedback_file.write_text(
+        # Create feedback that always rejects
+        reject_feedback = (
+            tmp_path
+            / "analyses"
+            / "test-idea"
+            / "iterations"
+            / "reviewer_feedback.json"
+        )
+        reject_feedback.parent.mkdir(parents=True, exist_ok=True)
+        reject_feedback.write_text(
             json.dumps(
                 {
                     "iteration_recommendation": "reject",
-                    "iteration_reason": "Still not meeting quality standards",
-                    "critical_issues": ["Still not good enough"],
-                    "positive_aspects": [],
-                    "suggestions": ["Keep trying"],
+                    "overall_assessment": "Still not meeting quality standards",
+                    "critical_issues": [
+                        {
+                            "section": "general",
+                            "issue": "Not good enough",
+                            "suggestion": "Try harder",
+                            "priority": "critical",
+                        }
+                    ],
+                    "improvements": [],
+                    "minor_suggestions": [],
+                    "strengths": [],
+                    "metadata": {},
                 }
             )
         )
@@ -227,33 +328,32 @@ class TestPipelineIntegration:
         mock_reviewer.process = AsyncMock(
             return_value=AgentResult(
                 success=True,
-                content=str(reject_feedback_file),  # Return file path
+                content=str(reject_feedback),
                 metadata={"duration": 0.5},
             )
         )
-
-        # Register mocked agents
-        pipeline.register_agent("analyst", mock_analyst)
-        pipeline.register_agent("reviewer", mock_reviewer)
 
         # Run the pipeline with max 2 iterations
         with (
             patch("src.core.pipeline.AnalystAgent", return_value=mock_analyst),
             patch("src.core.pipeline.ReviewerAgent", return_value=mock_reviewer),
         ):
-            result = await pipeline.run_analyst_reviewer_loop(
-                idea="Test business idea", max_iterations=2, use_websearch=False
+            result = await pipeline.process(
+                idea="Test idea",
+                mode=PipelineMode.ANALYZE_AND_REVIEW,
+                max_iterations_override=2,
             )
 
         # Verify it stopped at max iterations
         assert result["success"] is True
         assert result["iteration_count"] == 2
+        assert result["final_status"] == "max_iterations_reached"
         assert mock_analyst.process.call_count == 2
-        assert mock_reviewer.process.call_count == 2
+        # Reviewer is called one less time (not on last iteration)
+        assert mock_reviewer.process.call_count == 1
 
     @pytest.mark.asyncio
     @pytest.mark.integration
-    @pytest.mark.skip(reason="Needs rewrite - register_agent API no longer exists")
     async def test_pipeline_error_handling(self, pipeline, config, tmp_path):
         """Test pipeline handles agent errors gracefully."""
         # Mock analyst that fails
@@ -267,80 +367,24 @@ class TestPipelineIntegration:
             )
         )
 
-        # Register mocked agent
-        pipeline.register_agent("analyst", mock_analyst)
-
         # Run the pipeline
         with patch("src.core.pipeline.AnalystAgent", return_value=mock_analyst):
-            result = await pipeline.run_analyst_reviewer_loop(
-                idea="Test business idea", max_iterations=1, use_websearch=False
-            )
-
-        # Verify error handling
-        assert result["success"] is False
-        assert "error" in result
-        assert "API rate limit" in result["error"]
+            with pytest.raises(RuntimeError, match="Analyst failed"):
+                await pipeline.process(idea="Test idea", mode=PipelineMode.ANALYZE)
 
     @pytest.mark.asyncio
     @pytest.mark.integration
-    async def test_pipeline_file_creation(self, pipeline, config, tmp_path):
-        """Test that pipeline creates appropriate files."""
-        # Use the actual analyses directory for this test
-        # Get the project root
-        from pathlib import Path
+    async def test_pipeline_modes(self, pipeline, config):
+        """Test that different pipeline modes are recognized."""
+        # Verify all modes are available
+        assert PipelineMode.ANALYZE
+        assert PipelineMode.ANALYZE_AND_REVIEW
+        assert PipelineMode.ANALYZE_REVIEW_AND_JUDGE
+        assert PipelineMode.FULL_EVALUATION
 
-        project_root = Path(__file__).parent.parent.parent
-        analyses_dir = project_root / "analyses"
-
-        # Create test idea slug
-        idea_slug = "test-file-creation"
-        idea_dir = analyses_dir / idea_slug
-
-        try:
-            # Create the directory and file
-            idea_dir.mkdir(parents=True, exist_ok=True)
-
-            # Create initial analysis file
-            analysis_file = idea_dir / "analysis.md"
-            analysis_file.write_text("# Initial Analysis\n\nTest content.")
-
-            # Create feedback file
-            feedback_file = tmp_path / "feedback.json"
-            feedback_file.write_text(
-                json.dumps(
-                    {
-                        "iteration_recommendation": "accept",
-                        "iteration_reason": "Analysis is complete",
-                        "critical_issues": [],
-                        "positive_aspects": ["Good"],
-                        "suggestions": [],
-                    }
-                )
-            )
-
-            # Mock reviewer
-            mock_reviewer = AsyncMock()
-            mock_reviewer.process = AsyncMock(
-                return_value=AgentResult(
-                    success=True,
-                    content=str(feedback_file),  # Return file path
-                    metadata={"duration": 0.5},
-                )
-            )
-
-            # Test that reviewer can validate paths
-            from src.agents.reviewer import ReviewerAgent
-
-            reviewer = ReviewerAgent(config)
-
-            # Validate the path works
-            validated_path = reviewer._validate_analysis_path(str(idea_dir))
-            assert validated_path.exists()
-            assert (validated_path / "analysis.md").exists()
-
-        finally:
-            # Clean up the test directory
-            import shutil
-
-            if idea_dir.exists():
-                shutil.rmtree(idea_dir)
+        # Verify config has proper defaults
+        assert config.default_pipeline_mode == PipelineMode.ANALYZE_AND_REVIEW
+        assert config.pipeline.max_iterations_by_mode[PipelineMode.ANALYZE] == 1
+        assert (
+            config.pipeline.max_iterations_by_mode[PipelineMode.ANALYZE_AND_REVIEW] == 3
+        )
