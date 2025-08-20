@@ -88,8 +88,8 @@ class ReviewerAgent(BaseAgent[ReviewerConfig, ReviewerContext]):
             # Validate that path is within analyses directory for security
             analysis_path = self._validate_analysis_path(str(context.analysis_path))
 
-            # Load the reviewer prompt with includes
-            system_prompt = self.load_system_prompt()
+            # Load the reviewer prompt with includes (with context for overrides)
+            system_prompt = self.load_system_prompt(context)
             # Feedback file should already exist (created by pipeline)
             # analysis_path is already in the iterations directory
             iterations_dir = analysis_path.parent

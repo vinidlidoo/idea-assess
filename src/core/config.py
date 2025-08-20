@@ -136,7 +136,6 @@ class AnalystConfig:
     max_analysis_words: int = 1200
 
     # Default settings
-    prompt_variant: str = "main"  # Can be: "main" (active), "v1"/"v2"/"v3" (historical), "revision" (workflow)
     default_tools: list[str] = field(default_factory=lambda: ["WebSearch"])
     message_log_interval: int = 2  # Log progress every N messages (e.g., "2 messages processed", "4 messages processed")
 
@@ -169,7 +168,6 @@ class ReviewerConfig:
     min_review_iterations: int = 1
 
     # Default settings
-    prompt_variant: str = "main"  # Can be: "main" (active), "v1" (historical), etc.
     default_tools: list[str] = field(default_factory=list)  # No tools by default
     default_strictness: str = "normal"  # "lenient", "normal", "strict"
     message_log_interval: int = (
@@ -211,8 +209,8 @@ class BaseContext:
     tools_override: list[str] | None = None
     """Custom tool list for this operation (None = use agent's default_tools)"""
 
-    prompt_version_override: str | None = None
-    """Custom prompt version for this operation (None = use agent's prompt_version)"""
+    system_prompt_override: str | None = None
+    """Custom system prompt for this operation (None = use agent's default system.md)"""
 
     # Analytics tracking (injected by pipeline)
     run_analytics: RunAnalytics | None = None

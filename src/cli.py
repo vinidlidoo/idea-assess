@@ -48,11 +48,13 @@ Examples:
     )
 
     parser.add_argument(  # pyright: ignore[reportUnusedCallResult]
-        "--prompt-variant",
-        "-p",
-        choices=["main", "v1", "v2", "v3", "revision"],
-        default="main",
-        help="Prompt variant to use (default: main)",
+        "--analyst-prompt",
+        help="Override analyst system prompt (e.g., 'experimental/yc_style')",
+    )
+
+    parser.add_argument(  # pyright: ignore[reportUnusedCallResult]
+        "--reviewer-prompt",
+        help="Override reviewer system prompt (e.g., 'experimental/strict')",
     )
 
     parser.add_argument(  # pyright: ignore[reportUnusedCallResult]
@@ -67,7 +69,7 @@ Examples:
         "-m",
         type=int,
         default=3,
-        choices=[1, 2, 3],
+        choices=[1, 2, 3, 4, 5],
         help="Maximum iterations for reviewer feedback (default: 3)",
     )
 
@@ -79,6 +81,8 @@ Examples:
     no_websearch: bool = args.no_websearch
     with_review: bool = args.with_review
     max_iterations: int = args.max_iterations
+    analyst_prompt: str | None = getattr(args, "analyst_prompt", None)
+    reviewer_prompt: str | None = getattr(args, "reviewer_prompt", None)
 
     # Setup logging
     idea_slug = create_slug(idea)
@@ -95,11 +99,9 @@ Examples:
     config = get_default_config()
 
     # Store context overrides (don't modify config!)
-    prompt_variant: str = args.prompt_variant
-    analyst_prompt_override = (
-        prompt_variant if prompt_variant != config.analyst.prompt_variant else None
-    )
-    analyst_tools_override = (
+    analyst_system_prompt_override = analyst_prompt  # From CLI args
+    reviewer_system_prompt_override = reviewer_prompt  # From CLI args
+    analyst_tools_override: list[str] | None = (
         [] if no_websearch else None
     )  # Explicit empty list if no websearch
 
@@ -119,7 +121,8 @@ Examples:
         config=config,
         mode=mode,
         max_iterations=max_iterations if with_review else None,
-        analyst_prompt_override=analyst_prompt_override,
+        analyst_system_prompt_override=analyst_system_prompt_override,
+        reviewer_system_prompt_override=reviewer_system_prompt_override,
         analyst_tools_override=analyst_tools_override,
     )
 

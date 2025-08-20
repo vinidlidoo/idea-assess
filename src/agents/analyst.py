@@ -79,8 +79,8 @@ class AnalystAgent(BaseAgent[AnalystConfig, AnalystContext]):
         logger.info(f"Starting analysis for {idea_slug}, iteration {iteration}")
 
         try:
-            # Load the analyst prompt with includes
-            system_prompt = self.load_system_prompt()
+            # Load the analyst prompt with includes (with context for overrides)
+            system_prompt = self.load_system_prompt(context)
 
             # Load and format websearch instruction template
             if use_websearch:

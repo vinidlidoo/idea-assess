@@ -63,15 +63,12 @@ class BaseAgent(ABC, Generic[TConfig, TContext]):
         """
         pass
 
-    def get_prompt_path(self) -> str:
+    def get_system_prompt_path(self, context: TContext | None = None) -> str:
         """
-        Dynamically resolve the prompt file path based on prompt variant.
+        Get system prompt path with context override support.
 
-        Supports variants for A/B testing:
-        - "system" (default): agents/{agent}/system.md
-        - "system_v1", "system_v2": agents/{agent}/system_v1.md
-        - "experiment_foo": agents/{agent}/experiment_foo.md
-        - "main": agents/{agent}/main.md (legacy compatibility)
+        Args:
+            context: Runtime context that may contain system_prompt_override
 
         Returns:
             Path relative to prompts directory (e.g., 'agents/analyst/system.md')
@@ -79,37 +76,36 @@ class BaseAgent(ABC, Generic[TConfig, TContext]):
         from pathlib import Path
 
         agent_type = self.agent_name.lower()
-        variant = getattr(self.config, "prompt_variant", "main")
 
-        # Map legacy "main" to "system" for new structure
-        if variant == "main":
-            # Check if new system.md exists, otherwise use main.md for compatibility
-            if hasattr(self.config, "prompts_dir") and self.config.prompts_dir:
-                system_path = (
-                    self.config.prompts_dir / "agents" / agent_type / "system.md"
-                )
-                if system_path.exists():
-                    return str(Path("agents") / agent_type / "system.md")
-            # Fallback to main.md for backwards compatibility
-            return str(Path("agents") / agent_type / "main.md")
-        elif variant == "system":
-            # New default: agents/{agent}/system.md
-            return str(Path("agents") / agent_type / "system.md")
-        elif variant.startswith("v"):
-            # Historical version: versions/{agent_type}/{agent_type}_{variant}.md
-            # e.g., versions/analyst/analyst_v3.md
-            return str(Path("versions") / agent_type / f"{agent_type}_{variant}.md")
-        else:
-            # A/B testing variants: agents/{agent}/{variant}.md
-            # e.g., system_v1.md, experiment_refactor.md
-            return str(Path("agents") / agent_type / f"{variant}.md")
+        # Check context override first
+        if (
+            context
+            and hasattr(context, "system_prompt_override")
+            and context.system_prompt_override
+        ):
+            override = context.system_prompt_override
+            if override.startswith("experimental/"):
+                # Experimental prompt: experimental/analyst/yc_style
+                return f"{override}.md"
+            elif "/" in override:
+                # Full path provided
+                return override
+            else:
+                # Relative to agent folder
+                return str(Path("agents") / agent_type / f"{override}.md")
 
-    def load_system_prompt(self) -> str:
+        # Default: use standard system prompt
+        return str(Path("agents") / agent_type / "system.md")
+
+    def load_system_prompt(self, context: TContext | None = None) -> str:
         """
         Load the complete system prompt with includes processed.
 
         This method handles {{include:path}} directives in prompts,
         allowing shared components to be included.
+
+        Args:
+            context: Runtime context that may contain system_prompt_override
 
         Returns:
             The complete system prompt with all includes processed
@@ -123,7 +119,7 @@ class BaseAgent(ABC, Generic[TConfig, TContext]):
             raise ValueError(f"prompts_dir not configured for {self.agent_name}")
 
         return load_prompt_with_includes(
-            self.get_prompt_path(), self.config.prompts_dir
+            self.get_system_prompt_path(context), self.config.prompts_dir
         )
 
     def get_allowed_tools(self, context: TContext) -> list[str]:

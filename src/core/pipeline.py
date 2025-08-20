@@ -26,7 +26,8 @@ class AnalysisPipeline:
         config: AnalysisConfig,
         mode: PipelineMode = PipelineMode.ANALYZE,
         max_iterations: int | None = None,
-        analyst_prompt_override: str | None = None,
+        analyst_system_prompt_override: str | None = None,
+        reviewer_system_prompt_override: str | None = None,
         analyst_tools_override: list[str] | None = None,
     ) -> None:
         """
@@ -37,7 +38,8 @@ class AnalysisPipeline:
             config: Analysis configuration object
             mode: Pipeline execution mode
             max_iterations: Optional override for max iterations
-            analyst_prompt_override: Optional prompt version override for analyst
+            analyst_system_prompt_override: Optional system prompt override for analyst
+            reviewer_system_prompt_override: Optional system prompt override for reviewer
             analyst_tools_override: Optional tools override for analyst
         """
         # Core configuration
@@ -47,7 +49,10 @@ class AnalysisPipeline:
         self.mode: PipelineMode = mode
 
         # Context overrides (passed to agents)
-        self.analyst_prompt_override: str | None = analyst_prompt_override
+        self.analyst_system_prompt_override: str | None = analyst_system_prompt_override
+        self.reviewer_system_prompt_override: str | None = (
+            reviewer_system_prompt_override
+        )
         self.analyst_tools_override: list[str] | None = analyst_tools_override
 
         # Setup output directories
@@ -173,6 +178,8 @@ class AnalysisPipeline:
             idea_slug=self.slug,
             output_dir=self.output_dir,
             iteration=self.iteration_count,
+            system_prompt_override=self.analyst_system_prompt_override,
+            tools_override=self.analyst_tools_override,
         )
         analyst_context.run_analytics = self.analytics
 
@@ -204,6 +211,7 @@ class AnalysisPipeline:
         reviewer_context = ReviewerContext(
             analysis_path=self.current_analysis_file,
             output_dir=self.output_dir,
+            system_prompt_override=self.reviewer_system_prompt_override,
         )
         reviewer_context.run_analytics = self.analytics
 
