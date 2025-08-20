@@ -1,0 +1,19 @@
+{
+  "iterations": [
+    {
+      "iteration": 1,
+      "analysis_file": "analyses/smart-home-automation-platform/iterations/iteration_1.md",
+      "analysis_length": 65,
+      "metadata": {
+        "idea": "Smart home automation platform",
+        "slug": "smart-home-automation-platform",
+        "timestamp": "2025-08-19T21:16:07.763455",
+        "interrupted": false,
+        "output_file": "analyses/smart-home-automation-platform/iterations/iteration_1.md"
+      }
+    }
+  ],
+  "feedback": [],
+  "final_status": "accepted",
+  "idea": "Smart home automation platform"
+}

@@ -3,6 +3,7 @@
 import logging
 import time
 from datetime import datetime
+from pathlib import Path
 from typing import override
 
 from claude_code_sdk import ClaudeSDKClient, ClaudeCodeOptions
@@ -59,11 +60,8 @@ class AnalystAgent(BaseAgent[AnalystConfig, AnalystContext]):
 
         # Track with RunAnalytics if available
         run_analytics = context.run_analytics if context else None
-        iteration = (
-            context.revision_context.iteration
-            if context and context.revision_context
-            else 0
-        )
+        # Get iteration number from context (1-based: 1 = first iteration)
+        iteration = context.iteration if context else 1
 
         # Setup interrupt handling
         original_handler = self.setup_interrupt_handler()  # type: ignore[reportAny]
@@ -77,22 +75,28 @@ class AnalystAgent(BaseAgent[AnalystConfig, AnalystContext]):
         logger.info(f"Starting analysis for {idea_slug}, iteration {iteration}")
 
         try:
-            # Load the analyst prompt
-            system_prompt = load_prompt(self.get_prompt_path(), self.config.prompts_dir)
+            # Load the analyst prompt with includes
+            system_prompt = self.load_system_prompt()
 
-            # Build websearch note based on whether websearch is enabled
+            # Load and format websearch instruction template
             if use_websearch:
-                websearch_note = (
-                    f"Use WebSearch efficiently (maximum {self.config.max_websearches} searches) "
-                    f"to gather the most critical data: recent market size, key competitor metrics, "
-                    f"and major trends."
+                websearch_template = load_prompt(
+                    "agents/analyst/user/websearch_instruction.md",
+                    self.config.prompts_dir,
+                )
+                websearch_note = websearch_template.format(
+                    max_websearches=self.config.max_websearches,
                 )
             else:
-                websearch_note = "Note: WebSearch is disabled for this analysis. Use your existing knowledge."
+                websearch_template = load_prompt(
+                    "agents/analyst/user/websearch_disabled.md",
+                    self.config.prompts_dir,
+                )
+                websearch_note = websearch_template
 
             # Load and format resource constraints template
             resource_template = load_prompt(
-                "agents/analyst/partials/resource_constraints.md",
+                "agents/analyst/user/constraints.md",
                 self.config.prompts_dir,
             )
             resource_note = resource_template.format(
@@ -100,11 +104,23 @@ class AnalystAgent(BaseAgent[AnalystConfig, AnalystContext]):
                 max_websearches=self.config.max_websearches if use_websearch else 0,
             )
 
+            # Determine output file path
+            # Iteration is now 1-based throughout (1 = first iteration)
+            if context.output_dir:
+                iterations_dir = context.output_dir / "iterations"
+                iterations_dir.mkdir(parents=True, exist_ok=True)
+                output_file = iterations_dir / f"iteration_{iteration}.md"
+            else:
+                # Fallback if no output_dir specified
+                iterations_dir = Path(f"analyses/{idea_slug}/iterations")
+                iterations_dir.mkdir(parents=True, exist_ok=True)
+                output_file = iterations_dir / f"iteration_{iteration}.md"
+
             # Build user prompt based on whether this is a revision
             if context.revision_context:
                 # Load revision-specific user prompt
                 revision_template = load_prompt(
-                    "agents/analyst/revision.md", self.config.prompts_dir
+                    "agents/analyst/user/revision.md", self.config.prompts_dir
                 )
                 user_prompt = revision_template.format(
                     idea=input_data,
@@ -114,17 +130,19 @@ class AnalystAgent(BaseAgent[AnalystConfig, AnalystContext]):
                     feedback_file=str(context.revision_context.feedback_path or ""),
                     resource_note=resource_note,
                     websearch_instruction=websearch_note,
+                    output_file=str(output_file),
                 )
             else:
                 # Load and format standard user prompt template
                 user_template = load_prompt(
-                    "agents/analyst/partials/user_instruction.md",
+                    "agents/analyst/user/initial.md",
                     self.config.prompts_dir,
                 )
                 user_prompt = user_template.format(
                     idea=input_data,
                     resource_note=resource_note,
                     websearch_instruction=websearch_note,
+                    output_file=str(output_file),
                 )
 
             # Configure options
@@ -132,6 +150,7 @@ class AnalystAgent(BaseAgent[AnalystConfig, AnalystContext]):
                 system_prompt=system_prompt,
                 max_turns=self.config.max_turns,
                 allowed_tools=allowed_tools,
+                permission_mode="acceptEdits",  # Allow agent to edit files directly
             )
 
             # Create client and analyze
@@ -191,23 +210,41 @@ class AnalystAgent(BaseAgent[AnalystConfig, AnalystContext]):
 
                     # Check for completion
                     if isinstance(message, ResultMessage):
-                        # Get content from ResultMessage directly
-                        content = message.result if message.result else ""
-
-                        if content:
+                        # Check if the output file was created
+                        if output_file.exists():
                             logger.info(
                                 f"Analysis complete: {message_count} messages, {search_count} searches"
                             )
+                            logger.info(f"Analysis written to: {output_file}")
 
                             return AgentResult(
-                                content=content,
+                                content=str(
+                                    output_file
+                                ),  # Return file path, not content
                                 metadata={
                                     "idea": input_data,
                                     "slug": create_slug(input_data),
                                     "timestamp": datetime.now().isoformat(),
                                     "interrupted": self.interrupt_event.is_set(),
+                                    "output_file": str(output_file),
                                 },
                                 success=True,
+                            )
+                        else:
+                            # Agent didn't create the file - this is an error
+                            logger.error(
+                                f"Agent failed to write analysis to {output_file}"
+                            )
+                            return AgentResult(
+                                content="",
+                                metadata={
+                                    "idea": input_data,
+                                    "slug": create_slug(input_data),
+                                    "timestamp": datetime.now().isoformat(),
+                                    "expected_file": str(output_file),
+                                },
+                                success=False,
+                                error=f"Agent failed to write analysis to {output_file}",
                             )
                         break
 

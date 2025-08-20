@@ -1,0 +1,19 @@
+{
+  "iterations": [
+    {
+      "iteration": 1,
+      "analysis_file": "analyses/ai-powered-bug-tracker/iterations/iteration_1.md",
+      "analysis_length": 9481,
+      "metadata": {
+        "idea": "AI-powered bug tracker",
+        "slug": "ai-powered-bug-tracker",
+        "timestamp": "2025-08-19T19:01:00.735748",
+        "interrupted": false,
+        "output_file": "analyses/ai-powered-bug-tracker/iterations/iteration_0.md"
+      }
+    }
+  ],
+  "feedback": [],
+  "final_status": "accepted",
+  "idea": "AI-powered bug tracker"
+}

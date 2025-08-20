@@ -11,7 +11,7 @@ class TestPromptExtraction:
 
     def test_analyst_revision_prompt_loads(self):
         """Test that analyst revision prompt loads and formats correctly."""
-        prompt = load_prompt("agents/analyst/revision.md", Path("config/prompts"))
+        prompt = load_prompt("agents/analyst/user/revision.md", Path("config/prompts"))
 
         # Check that the prompt contains expected placeholders
         assert "{idea}" in prompt
@@ -26,6 +26,7 @@ class TestPromptExtraction:
             feedback_file="/path/to/feedback.json",
             resource_note="Max turns: 10",
             websearch_instruction="Use WebSearch",
+            output_file="/path/to/output.md",
         )
         assert "Test business idea" in formatted
         assert "/path/to/analysis.md" in formatted
@@ -46,9 +47,7 @@ class TestPromptExtraction:
 
     def test_analyst_user_prompt_loads(self):
         """Test that analyst user prompt loads and formats correctly."""
-        prompt = load_prompt(
-            "agents/analyst/partials/user_instruction.md", Path("config/prompts")
-        )
+        prompt = load_prompt("agents/analyst/user/initial.md", Path("config/prompts"))
 
         # Check placeholders
         assert "{idea}" in prompt
@@ -60,6 +59,7 @@ class TestPromptExtraction:
             idea="AI fitness app",
             resource_note="Max turns: 10",
             websearch_instruction="Use WebSearch efficiently",
+            output_file="/path/to/output.md",
         )
         assert "AI fitness app" in formatted
         assert "Max turns: 10" in formatted
@@ -68,7 +68,7 @@ class TestPromptExtraction:
     def test_analyst_resources_prompt_loads(self):
         """Test that analyst resources prompt loads and formats correctly."""
         prompt = load_prompt(
-            "agents/analyst/partials/resource_constraints.md", Path("config/prompts")
+            "agents/analyst/user/constraints.md", Path("config/prompts")
         )
 
         # Check placeholders

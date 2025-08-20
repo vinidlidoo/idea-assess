@@ -30,4 +30,4 @@ Generate the complete revised analysis directly in markdown format, following th
 
 {websearch_instruction}
 
-Remember: Generate the full analysis text directly - do not use any file tools (Read/Write/Edit).
+Write your complete revised analysis to the file: {output_file}

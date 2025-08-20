@@ -139,7 +139,7 @@ class ReviewerConfig:
     """
 
     # Agent-specific limits
-    max_turns: int = 3
+    max_turns: int = 10  # Increased from 3 to allow Read→Edit workflow
     max_review_iterations: int = 3
     min_review_iterations: int = 1
 
@@ -231,6 +231,9 @@ class AnalystContext(BaseContext):
     # Analyst-specific runtime state
     idea_slug: str | None = None
     """Pre-computed slug for the idea"""
+
+    iteration: int = 1
+    """Current iteration number (1-based, 1 = first iteration)"""
 
 
 @dataclass

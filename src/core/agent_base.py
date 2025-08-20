@@ -65,24 +65,64 @@ class BaseAgent(ABC, Generic[TConfig, TContext]):
         """
         Dynamically resolve the prompt file path based on prompt variant.
 
+        Supports variants for A/B testing:
+        - "system" (default): agents/{agent}/system.md
+        - "system_v1", "system_v2": agents/{agent}/system_v1.md
+        - "experiment_foo": agents/{agent}/experiment_foo.md
+        - "main": agents/{agent}/main.md (legacy compatibility)
+
         Returns:
-            Path relative to prompts directory (e.g., 'agents/analyst/main.md')
+            Path relative to prompts directory (e.g., 'agents/analyst/system.md')
         """
         from pathlib import Path
 
         agent_type = self.agent_name.lower()
         variant = getattr(self.config, "prompt_variant", "main")
 
+        # Map legacy "main" to "system" for new structure
         if variant == "main":
-            # Active prompt: agents/{agent_type}/main.md
+            # Check if new system.md exists, otherwise use main.md for compatibility
+            if hasattr(self.config, "prompts_dir") and self.config.prompts_dir:
+                system_path = (
+                    self.config.prompts_dir / "agents" / agent_type / "system.md"
+                )
+                if system_path.exists():
+                    return str(Path("agents") / agent_type / "system.md")
+            # Fallback to main.md for backwards compatibility
             return str(Path("agents") / agent_type / "main.md")
+        elif variant == "system":
+            # New default: agents/{agent}/system.md
+            return str(Path("agents") / agent_type / "system.md")
         elif variant.startswith("v"):
             # Historical version: versions/{agent_type}/{agent_type}_{variant}.md
             # e.g., versions/analyst/analyst_v3.md
             return str(Path("versions") / agent_type / f"{agent_type}_{variant}.md")
         else:
-            # Special workflows: agents/{agent_type}/{variant}.md
+            # A/B testing variants: agents/{agent}/{variant}.md
+            # e.g., system_v1.md, experiment_refactor.md
             return str(Path("agents") / agent_type / f"{variant}.md")
+
+    def load_system_prompt(self) -> str:
+        """
+        Load the complete system prompt with includes processed.
+
+        This method handles {{include:path}} directives in prompts,
+        allowing shared components to be included.
+
+        Returns:
+            The complete system prompt with all includes processed
+
+        Raises:
+            ValueError: If prompts_dir is not configured
+        """
+        from ..utils.file_operations import load_prompt_with_includes
+
+        if not hasattr(self.config, "prompts_dir") or not self.config.prompts_dir:
+            raise ValueError(f"prompts_dir not configured for {self.agent_name}")
+
+        return load_prompt_with_includes(
+            self.get_prompt_path(), self.config.prompts_dir
+        )
 
     def get_allowed_tools(self, context: TContext) -> list[str]:
         """

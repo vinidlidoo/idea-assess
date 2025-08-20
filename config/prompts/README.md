@@ -6,14 +6,23 @@ This directory contains all prompt templates for the Business Idea Evaluator age
 
 ```text
 config/prompts/
-├── agents/               # Active agent prompts
+├── shared/              # Shared components (NEW)
+│   └── file_edit_rules.md  # Common Read-before-Edit rules
+├── agents/              # Active agent prompts
 │   ├── analyst/
-│   │   ├── main.md      # Primary analyst prompt
-│   │   ├── revision.md  # Revision workflow prompt
-│   │   └── partials/    # Reusable components
+│   │   ├── system.md    # Primary system prompt (with includes)
+│   │   ├── main.md      # Legacy, kept for compatibility
+│   │   └── user/        # User prompts (renamed from partials/)
+│   │       ├── initial.md       # Initial analysis
+│   │       ├── revision.md      # Revision workflow
+│   │       ├── constraints.md   # Resource constraints
+│   │       ├── websearch_instruction.md
+│   │       └── websearch_disabled.md
 │   ├── reviewer/
-│   │   ├── main.md      # Primary reviewer prompt
-│   │   └── instructions.md
+│   │   ├── system.md    # Primary system prompt (with includes)
+│   │   ├── main.md      # Legacy, kept for compatibility
+│   │   └── user/
+│   │       └── review.md        # Review instructions
 │   ├── judge/
 │   │   └── main.md
 │   └── synthesizer/
@@ -31,8 +40,8 @@ config/prompts/
 
 ## Current Active Prompts
 
-- **Analyst**: `agents/analyst/main.md` (v3)
-- **Reviewer**: `agents/reviewer/main.md` (v1)
+- **Analyst**: `agents/analyst/system.md` (v3 with includes)
+- **Reviewer**: `agents/reviewer/system.md` (v1 with includes)
 - **Judge**: `agents/judge/main.md` (Phase 3)
 - **Synthesizer**: `agents/synthesizer/main.md` (Phase 4)
 

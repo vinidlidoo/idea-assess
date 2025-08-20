@@ -10,11 +10,11 @@ Building an AI-powered business idea evaluation system using Claude SDK and MCP 
 
 ## Current Phase & Focus
 
-**Phase:** Phase 2 - Complete with agents aligned  
-**Latest Session:** `session-logs/2025-08-19-agent-deep-dive-qa.md`  
-**Immediate Focus:** Add permission_mode="acceptEdits" to all agents, then pipeline.py refactoring
-**Status:** Analyst/reviewer aligned, websearch bug fixed, all tests passing
-**Note:** Be MORE METHODICAL - proactively find ALL issues, don't wait for user to point them out
+**Phase:** Phase 2 - Complete with critical fixes applied  
+**Latest Session:** `session-logs/2025-08-20-prompt-refactor-iteration-fixes.md`  
+**Immediate Focus:** Fix reviewer template errors and pipeline success logic
+**Status:** Iteration numbering fixed, prompt includes working, 100% success rate
+**Note:** System functional but has non-critical errors that need cleanup
 
 ## Key Documents
 
@@ -25,8 +25,9 @@ Building an AI-powered business idea evaluation system using Claude SDK and MCP 
 ### Session History
 
 - **session-logs/** - Detailed work logs per session
-- Latest: `2025-08-19-agent-deep-dive-qa.md`
+- Latest: `2025-08-20-prompt-refactor-iteration-fixes.md`
 - Key sessions:
+  - `2025-08-20-prompt-refactor-iteration-fixes.md` - Fixed iteration numbering, implemented prompt includes
   - `2025-08-19-agent-deep-dive-qa.md` - Aligned agents, fixed websearch bug, removed dead code
   - `2025-08-19-runanalytics-complete.md` - Completed RunAnalytics implementation
   - `2025-08-19-reviewer-schema-fix.md` - Fixed reviewer feedback schema mismatch

@@ -110,10 +110,10 @@ class AnalysisPipeline:
         Returns:
             Path to feedback file if found, None otherwise
         """
-        # Look for the previous iteration's feedback
+        # Look for the current iteration's feedback
         # The reviewer creates files named reviewer_feedback_iteration_{n}.json
         latest_feedback_file = (
-            iterations_dir / f"reviewer_feedback_iteration_{iteration_count - 1}.json"
+            iterations_dir / f"reviewer_feedback_iteration_{iteration_count}.json"
         )
 
         if not latest_feedback_file.exists():
@@ -210,7 +210,6 @@ class AnalysisPipeline:
 
         # Track iterations
         iteration_count = 0
-        current_analysis = None
         current_analysis_file = None
         feedback_history: list[dict[str, object]] = []
         iteration_results: list[dict[str, object]] = []
@@ -257,6 +256,7 @@ class AnalysisPipeline:
                     idea_slug=slug,
                     output_dir=analysis_dir,
                     run_analytics=run_analytics,
+                    iteration=iteration_count,  # Pass 1-based iteration number
                 )
 
                 # Set tools based on override or websearch flag and iteration
@@ -298,31 +298,38 @@ class AnalysisPipeline:
                         "timestamp": datetime.now().isoformat(),
                     }
 
-                current_analysis = analyst_result.content
+                # Analyst returns the file path, not the content
+                analysis_file_path = Path(analyst_result.content)
 
-                # Save analysis to files
-                iteration_file = self._save_analysis_files(
-                    current_analysis,
-                    iteration_count,
-                    analysis_dir,
-                    iterations_dir,
-                )
-                current_analysis_file = str(iteration_file)
+                # Track the file path for later use
+                current_analysis_file = str(analysis_file_path)
+
+                # Create symlink from analysis.md to latest iteration file
+                main_analysis_link = analysis_dir / "analysis.md"
+                if main_analysis_link.exists() or main_analysis_link.is_symlink():
+                    main_analysis_link.unlink()
+                # Create relative symlink to iteration file
+                relative_path = analysis_file_path.relative_to(analysis_dir)
+                main_analysis_link.symlink_to(relative_path)
 
                 # Save iteration result
                 iteration_results.append(
                     {
                         "iteration": iteration_count,
-                        "analysis_file": str(iteration_file),
-                        "analysis_length": len(current_analysis),
+                        "analysis_file": str(analysis_file_path),
                         "metadata": analyst_result.metadata,
                     }
                 )
 
+                # Skip reviewer on last iteration (no opportunity to revise)
+                if iteration_count >= max_iterations:
+                    logger.info(f"Skipping review on final iteration {iteration_count}")
+                    break
+
                 # Step 2: Get reviewer feedback
                 # Create reviewer context with RunAnalytics
                 reviewer_context = ReviewerContext(
-                    analysis_path=iteration_file,
+                    analysis_path=analysis_file_path,
                     run_analytics=run_analytics,
                 )
 
@@ -412,7 +419,6 @@ class AnalysisPipeline:
                 "idea": idea,
                 "slug": slug,
                 "final_analysis_file": current_analysis_file,
-                "final_analysis": current_analysis,
                 "iteration_count": iteration_count,
                 "final_status": final_status,
                 "iterations": iteration_results,
@@ -420,8 +426,8 @@ class AnalysisPipeline:
                 "timestamp": datetime.now().isoformat(),
             }
 
-            # Files are already saved in clean structure (analysis.md, reviewer_feedback.json)
-            if current_analysis:
+            # Files are already saved in clean structure (analysis.md is a symlink)
+            if current_analysis_file:
                 result["file_path"] = str(analysis_dir / "analysis.md")
 
                 # Save consolidated metadata

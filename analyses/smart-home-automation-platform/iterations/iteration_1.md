@@ -1,0 +1,1 @@
+analyses/smart-home-automation-platform/iterations/iteration_1.md

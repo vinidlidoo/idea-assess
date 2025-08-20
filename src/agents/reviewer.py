@@ -86,18 +86,28 @@ class ReviewerAgent(BaseAgent[ReviewerConfig, ReviewerContext]):
             # Validate that path is within analyses directory for security
             analysis_path = self._validate_analysis_path(str(context.analysis_path))
 
-            # Load the reviewer prompt
-            system_prompt = load_prompt(self.get_prompt_path(), self.config.prompts_dir)
-            # Ensure iterations directory exists and save feedback there
-            iterations_dir = analysis_path.parent / "iterations"
-            iterations_dir.mkdir(exist_ok=True)
+            # Load the reviewer prompt with includes
+            system_prompt = self.load_system_prompt()
+            # Feedback file should already exist (created by pipeline)
+            # analysis_path is already in the iterations directory
+            iterations_dir = analysis_path.parent
             feedback_file = (
                 iterations_dir / f"reviewer_feedback_iteration_{iteration}.json"
             )
 
+            # Verify template file exists
+            if not feedback_file.exists():
+                logger.error(f"Template feedback file not found: {feedback_file}")
+                return AgentResult(
+                    content="",
+                    metadata={"iteration": iteration},
+                    success=False,
+                    error=f"Template feedback file not found: {feedback_file}",
+                )
+
             # Load and format review instructions template
             review_template = load_prompt(
-                "agents/reviewer/instructions.md",
+                "agents/reviewer/user/review.md",
                 self.config.prompts_dir,
             )
             user_prompt = review_template.format(
@@ -112,6 +122,7 @@ class ReviewerAgent(BaseAgent[ReviewerConfig, ReviewerContext]):
                 system_prompt=system_prompt,
                 max_turns=self.config.max_turns,
                 allowed_tools=allowed_tools,
+                permission_mode="acceptEdits",  # Allow agent to edit files directly
             )
 
             # Create client and review
@@ -160,8 +171,8 @@ class ReviewerAgent(BaseAgent[ReviewerConfig, ReviewerContext]):
                     if isinstance(message, ResultMessage):
                         break
 
-            # Check if the feedback file was created
-            if feedback_file.exists():
+            # Check if the feedback file has content (not just empty template)
+            if feedback_file.exists() and feedback_file.stat().st_size > 2:
                 # Read and validate the feedback
                 feedback_json = self._validate_and_fix_feedback(feedback_file)
                 if feedback_json is None:
@@ -191,12 +202,12 @@ class ReviewerAgent(BaseAgent[ReviewerConfig, ReviewerContext]):
                     success=True,
                 )
             else:
-                # Reviewer failed to create feedback file
+                # Reviewer failed to edit feedback file
                 return AgentResult(
                     content="",
                     metadata={"iteration": iteration},
                     success=False,
-                    error="Reviewer did not create the expected feedback file",
+                    error=f"Reviewer failed to edit feedback file: {feedback_file}",
                 )
 
         except Exception as e:

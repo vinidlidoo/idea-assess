@@ -62,6 +62,11 @@
 - [ ] Deprecate logger compatibility methods (see session-logs/2025-08-17-logger-deprecation-plan.md)
 - [ ] Consider adding log rotation for large log files
 - [ ] Optimize logging verbosity - remove redundant log events
+- [ ] Fix reviewer template file not found error but pipeline marks as success
+- [ ] Fix WebSearch JSON parsing warnings in RunAnalytics
+- [ ] Make pipeline fail properly when any component fails (stricter success logic)
+- [ ] Add retry logic for file operations
+- [ ] Consider using TypedDicts for feedback structure
 
 ## Remaining Items from Code Review Assessment
 
