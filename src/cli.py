@@ -25,8 +25,7 @@ try:
     from dotenv import load_dotenv
 
     from src.core import get_default_config
-    from src.core.pipeline import AnalysisPipeline, SimplePipeline
-    from src.utils.text_processing import show_preview
+    from src.core.pipeline import AnalysisPipeline
 
     # Load environment variables
     _ = load_dotenv()
@@ -102,7 +101,9 @@ Examples:
     no_websearch = bool(getattr(args, "no_websearch", False))
     with_review = bool(getattr(args, "with_review", False))
     max_iterations = int(getattr(args, "max_iterations", 3))
-    tools_override = getattr(args, "tools", None)  # None means use defaults
+    tools_override: list[str] | None = getattr(
+        args, "tools", None
+    )  # None means use defaults
 
     # Setup logging ONCE at the start of the application
     from src.utils.text_processing import create_slug
@@ -136,22 +137,29 @@ Examples:
         # If websearch is disabled, set tools_override to empty list
         tools_override = []
 
-    if with_review:
-        # Use the pipeline with reviewer feedback
+    # Always use the main pipeline
+    pipeline = AnalysisPipeline(config)
+
+    # Determine actual max_iterations
+    if not with_review:
+        # No review means single iteration
+        max_iterations = 1
+        print("\n🚀 Running analysis...")
+    else:
         print(
             f"\n🔄 Running analysis with reviewer feedback (max {max_iterations} iterations)..."
         )
 
-        pipeline = AnalysisPipeline(config)
+    result = await pipeline.run_analyst_reviewer_loop(
+        idea=idea,
+        max_iterations=max_iterations,
+        use_websearch=not no_websearch,
+        tools_override=tools_override,
+    )
 
-        result = await pipeline.run_analyst_reviewer_loop(
-            idea=idea,
-            max_iterations=max_iterations,
-            use_websearch=not no_websearch,
-            tools_override=tools_override,
-        )
-
-        if result.get("success", False):
+    if result.get("success", False):
+        if with_review:
+            # Review mode - show detailed feedback
             status_emoji = "✅" if result.get("final_status") == "accepted" else "⚠️"
             status_text = (
                 "ACCEPTED"
@@ -185,55 +193,14 @@ Examples:
                 )
                 if last_feedback.get("iteration_reason"):
                     print(f"   • Reason: {last_feedback.get('iteration_reason')}")
-
-            # Show preview of final analysis
-            if result.get("final_analysis"):
-                word_count = len(result.get("final_analysis", "").split())
-                print("\n📊 Final Statistics:")
-                print(
-                    f"   • Size: {len(result.get('final_analysis', '')):,} characters ({word_count:,} words)"
-                )
-                show_preview(result.get("final_analysis", ""))
-
-            sys.exit(0)
         else:
-            print(f"\n❌ Analysis failed: {result.get('error', 'Unknown error')}")
-            sys.exit(1)
-    else:
-        # Use simple pipeline (analyst only)
-        result = await SimplePipeline.run_analyst_only(
-            idea=idea,
-            config=config,
-            use_websearch=not no_websearch,
-            tools_override=tools_override,
-        )
-
-        if result.get("success", False):
+            # Simple mode - just show basic info
             print(f"\n✅ Analysis saved to: {result.get('file_path', 'unknown')}")
 
-            # Show statistics
-            metadata = result.get("metadata", {})
-            if metadata:
-                print("\n📊 Statistics:")
-                print(f"  • Duration: {metadata.get('duration', 0):.1f}s")
-                print(f"  • Messages: {metadata.get('message_count', 0)}")
-                if not no_websearch:
-                    print(f"  • Web searches: {metadata.get('search_count', 0)}")
-
-            analysis = result.get("analysis", "")
-            if analysis:
-                word_count = len(analysis.split())
-                print(
-                    f"  • Output size: {len(analysis):,} characters ({word_count:,} words)"
-                )
-
-                # Show preview
-                show_preview(analysis)
-
-            sys.exit(0)
-        else:
-            print(f"\n❌ Analysis failed: {result.get('error', 'Unknown error')}")
-            sys.exit(1)
+        sys.exit(0)
+    else:
+        print(f"\n❌ Analysis failed: {result.get('error', 'Unknown error')}")
+        sys.exit(1)
 
 
 if __name__ == "__main__":
