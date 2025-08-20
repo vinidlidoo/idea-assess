@@ -279,6 +279,6 @@ class AnalysisPipeline:
 
         # Update symlink to latest iteration
         symlink = self.output_dir / "analysis.md"
-        if symlink.exists():
+        if symlink.exists() or symlink.is_symlink():
             symlink.unlink()
         symlink.symlink_to(analysis_file_path.relative_to(self.output_dir))

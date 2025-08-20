@@ -113,9 +113,9 @@ class TestPipelineIntegration:
 
         # Verify result structure
         assert result["success"] is True
-        assert "file_path" in result
-        assert "iteration_count" in result
-        assert result["iteration_count"] == 1  # Still stops at 1 because accepted
+        assert "analysis_file" in result
+        assert "iterations_completed" in result
+        assert result["iterations_completed"] == 1  # Still stops at 1 because accepted
 
         # Verify agents were called
         mock_analyst.process.assert_called_once()
@@ -148,8 +148,8 @@ class TestPipelineIntegration:
 
         # Verify result
         assert result["success"] is True
-        assert result["iteration_count"] == 1
-        assert result["final_status"] == "completed"
+        assert result["iterations_completed"] == 1
+        assert "analysis_file" in result
 
         # Verify only analyst was called
         mock_analyst.process.assert_called_once()
@@ -265,8 +265,8 @@ class TestPipelineIntegration:
 
         # Verify iterations
         assert result["success"] is True
-        assert result["iteration_count"] == 2
-        assert result["final_status"] == "accepted"
+        assert result["iterations_completed"] == 2
+        assert result["final_status"] == "completed"
 
         # Verify agents were called correct number of times
         assert mock_analyst.process.call_count == 2
@@ -346,7 +346,7 @@ class TestPipelineIntegration:
 
         # Verify it stopped at max iterations
         assert result["success"] is True
-        assert result["iteration_count"] == 2
+        assert result["iterations_completed"] == 2
         assert result["final_status"] == "max_iterations_reached"
         assert mock_analyst.process.call_count == 2
         # Reviewer is called one less time (not on last iteration)
@@ -367,10 +367,14 @@ class TestPipelineIntegration:
             )
         )
 
-        # Run the pipeline
+        # Run the pipeline and expect failure in result
         with patch("src.core.pipeline.AnalystAgent", return_value=mock_analyst):
-            with pytest.raises(RuntimeError, match="Analyst failed"):
-                await pipeline.process(idea="Test idea", mode=PipelineMode.ANALYZE)
+            result = await pipeline.process(idea="Test idea", mode=PipelineMode.ANALYZE)
+
+        # Verify failure is captured in result
+        assert result["success"] is False
+        assert "error" in result
+        assert "API rate limit exceeded" in result["error"]
 
     @pytest.mark.asyncio
     @pytest.mark.integration
