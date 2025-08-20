@@ -89,9 +89,9 @@ class RunAnalytics:
         self.messages_file: Path = self.output_dir / f"{run_id}_messages.jsonl"
 
         # Global counters
-        self.global_message_count: int = 0
+        self.message_count: int = 0
         self.global_tool_count: int = 0
-        self.global_search_count: int = 0
+        self.search_count: int = 0
 
         # Ensure output directory exists
         self.output_dir.mkdir(parents=True, exist_ok=True)
@@ -110,7 +110,7 @@ class RunAnalytics:
             agent_name: Name of the agent processing this message
             iteration: Current iteration number (for multi-iteration workflows)
         """
-        self.global_message_count += 1
+        self.message_count += 1
 
         # Get or create agent metrics
         key = (agent_name, iteration)
@@ -142,8 +142,8 @@ class RunAnalytics:
         self._write_message_log(message, agent_name, iteration, artifacts)
 
         # Log progress periodically
-        if self.global_message_count % 10 == 0:
-            logger.debug(f"Tracked {self.global_message_count} messages")
+        if self.message_count % 10 == 0:
+            logger.debug(f"Tracked {self.message_count} messages")
 
     def _extract_system_artifacts(self, message: SystemMessage) -> dict[str, Any]:
         """Extract artifacts from SystemMessage."""
@@ -214,7 +214,7 @@ class RunAnalytics:
             if tool_name == "WebSearch" and block.input:
                 query = block.input.get("query", "")
                 metrics.search_queries.append(query)
-                self.global_search_count += 1
+                self.search_count += 1
                 if "tool_input" in tool_artifacts and isinstance(
                     tool_artifacts["tool_input"], dict
                 ):
@@ -321,7 +321,7 @@ class RunAnalytics:
             "run_id": self.run_id,
             "agent": agent_name,
             "iteration": iteration,
-            "message_index": self.global_message_count,
+            "message_index": self.message_count,
             "message_type": type(message).__name__,
             "artifacts": artifacts,
             "message": self._serialize_message(message),
@@ -437,9 +437,9 @@ class RunAnalytics:
             "end_time": datetime.now().isoformat(),
             "duration_seconds": (datetime.now() - self.start_time).total_seconds(),
             "global_stats": {
-                "total_messages": self.global_message_count,
+                "total_messages": self.message_count,
                 "total_tool_uses": self.global_tool_count,
-                "total_searches": self.global_search_count,
+                "total_searches": self.search_count,
             },
             "agent_metrics": agent_metrics_data,
         }
@@ -527,7 +527,7 @@ class RunAnalytics:
             Dictionary with current message and search counts
         """
         return {
-            "message_count": self.global_message_count,
-            "search_count": self.global_search_count,
+            "message_count": self.message_count,
+            "search_count": self.search_count,
             "tool_count": self.global_tool_count,
         }

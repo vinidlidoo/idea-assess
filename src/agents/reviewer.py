@@ -73,9 +73,6 @@ class ReviewerAgent(BaseAgent[ReviewerConfig, ReviewerContext]):
         # Setup interrupt handling
         original_handler = self.setup_interrupt_handler()  # type: ignore[reportAny]
 
-        # Local counters as fallback when run_analytics is None
-        local_message_count = 0
-
         # Get tools from context
         allowed_tools = self.get_allowed_tools(context)
 
@@ -100,10 +97,7 @@ class ReviewerAgent(BaseAgent[ReviewerConfig, ReviewerContext]):
                 iterations_dir / f"reviewer_feedback_iteration_{iteration}.json"
             )
 
-            # Create feedback file with empty JSON for reviewer to populate
-            if not feedback_file.exists():
-                _ = feedback_file.write_text("{}")
-                logger.debug(f"Created feedback template file: {feedback_file}")
+            # Feedback file should be pre-created by pipeline
 
             # Load and format review instructions template
             review_template = load_prompt(
@@ -144,19 +138,12 @@ class ReviewerAgent(BaseAgent[ReviewerConfig, ReviewerContext]):
                             error="Review interrupted by user",
                         )
 
-                    # Increment local counter
-                    local_message_count += 1
-
                     # Track message with RunAnalytics if available
                     if run_analytics:
                         run_analytics.track_message(message, "reviewer", iteration)
 
-                    # Use RunAnalytics counts if available, otherwise use local counts
-                    message_count = (
-                        run_analytics.global_message_count
-                        if run_analytics
-                        else local_message_count
-                    )
+                    # Get counts from RunAnalytics (always available in practice)
+                    message_count = run_analytics.message_count if run_analytics else 0
 
                     # Progress tracking
                     if (

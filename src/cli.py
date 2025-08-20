@@ -17,6 +17,7 @@ from src.core.pipeline import AnalysisPipeline
 from src.core.types import PipelineMode
 from src.utils.text_processing import create_slug
 from src.utils.logger import setup_logging
+from src.utils.result_formatter import format_pipeline_result
 
 
 async def main():
@@ -90,16 +91,17 @@ Examples:
     if debug:
         print(f"Debug logging enabled: {log_file}")
 
-    # Get configuration and apply CLI overrides
+    # Get configuration (immutable)
     config = get_default_config()
 
-    # Apply prompt variant override to analyst config
+    # Store context overrides (don't modify config!)
     prompt_variant: str = args.prompt_variant
-    if prompt_variant != config.analyst.prompt_variant:
-        config.analyst.prompt_variant = prompt_variant
-
-    # Always use the main pipeline
-    pipeline = AnalysisPipeline(config)
+    analyst_prompt_override = (
+        prompt_variant if prompt_variant != config.analyst.prompt_variant else None
+    )
+    analyst_tools_override = (
+        [] if no_websearch else None
+    )  # Explicit empty list if no websearch
 
     # Determine pipeline mode based on CLI flags
     if not with_review:
@@ -111,61 +113,24 @@ Examples:
             f"\n🔄 Running analysis with reviewer feedback (max {max_iterations} iterations)..."
         )
 
-    # Apply websearch preference to config
-    if no_websearch:
-        config.analyst.default_tools = []
-
-    # Run the pipeline with the new interface
-    result = await pipeline.process(
+    # Create pipeline with all parameters upfront
+    pipeline = AnalysisPipeline(
         idea=idea,
+        config=config,
         mode=mode,
-        max_iterations_override=max_iterations if with_review else None,
+        max_iterations=max_iterations if with_review else None,
+        analyst_prompt_override=analyst_prompt_override,
+        analyst_tools_override=analyst_tools_override,
     )
 
-    if result.get("success", False):
-        if with_review:
-            # Review mode - show detailed feedback
-            status_emoji = "✅" if result.get("final_status") == "accepted" else "⚠️"
-            status_text = (
-                "ACCEPTED"
-                if result.get("final_status") == "accepted"
-                else "MAX ITERATIONS REACHED"
-            )
+    # Run the pipeline (no parameters needed!)
+    result = await pipeline.process()
 
-            print(
-                f"\n{status_emoji} Analysis {status_text} after {result.get('iteration_count', 1)} iteration(s)"
-            )
-            print(f"   Saved to: {result.get('file_path', 'unknown')}")
+    # Format and display the result
+    format_pipeline_result(result, with_review)
 
-            if result.get("history_path"):
-                print(f"   Iteration history: {result.get('history_path', 'N/A')}")
-
-            # Show feedback summary
-            if result.get("feedback_history"):
-                last_feedback = result.get("feedback_history", [])[-1]
-                print("\n📋 Final Review:")
-                print(
-                    f"   • Assessment: {last_feedback.get('overall_assessment', 'N/A')}"
-                )
-                print(
-                    f"   • Critical issues: {len(last_feedback.get('critical_issues', []))}"
-                )
-                print(
-                    f"   • Improvements: {len(last_feedback.get('improvements', []))}"
-                )
-                print(
-                    f"   • Decision: {last_feedback.get('iteration_recommendation', 'N/A').upper()}"
-                )
-                if last_feedback.get("iteration_reason"):
-                    print(f"   • Reason: {last_feedback.get('iteration_reason')}")
-        else:
-            # Simple mode - just show basic info
-            print(f"\n✅ Analysis saved to: {result.get('file_path', 'unknown')}")
-
-        sys.exit(0)
-    else:
-        print(f"\n❌ Analysis failed: {result.get('error', 'Unknown error')}")
-        sys.exit(1)
+    # Exit with appropriate code
+    sys.exit(0 if result.get("success", False) else 1)
 
 
 if __name__ == "__main__":

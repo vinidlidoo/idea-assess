@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import override
 
 from claude_code_sdk import ClaudeSDKClient, ClaudeCodeOptions
-from claude_code_sdk.types import ResultMessage, AssistantMessage, ToolUseBlock
+from claude_code_sdk.types import ResultMessage
 
 from ..core.agent_base import BaseAgent, AgentResult
 from ..core.config import AnalystConfig, AnalystContext
@@ -73,10 +73,6 @@ class AnalystAgent(BaseAgent[AnalystConfig, AnalystContext]):
 
         # Setup interrupt handling
         original_handler = self.setup_interrupt_handler()  # type: ignore[reportAny]
-
-        # Local counters as fallback when run_analytics is None
-        local_message_count = 0
-        local_search_count = 0
 
         # Extract idea slug for logging
         idea_slug = create_slug(input_data)
@@ -180,33 +176,13 @@ class AnalystAgent(BaseAgent[AnalystConfig, AnalystContext]):
                             error="Analysis interrupted by user",
                         )
 
-                    # Increment local counter
-                    local_message_count += 1
-
-                    # Check if this is a WebSearch tool use
-                    if isinstance(message, AssistantMessage) and message.content:
-                        for block in message.content:
-                            if (
-                                isinstance(block, ToolUseBlock)
-                                and block.name == "WebSearch"
-                            ):
-                                local_search_count += 1
-
                     # Track message with RunAnalytics if available
                     if run_analytics:
                         run_analytics.track_message(message, "analyst", iteration)
 
-                    # Use RunAnalytics counts if available, otherwise use local counts
-                    message_count = (
-                        run_analytics.global_message_count
-                        if run_analytics
-                        else local_message_count
-                    )
-                    search_count = (
-                        run_analytics.global_search_count
-                        if run_analytics
-                        else local_search_count
-                    )
+                    # Get counts from RunAnalytics (always available in practice)
+                    message_count = run_analytics.message_count if run_analytics else 0
+                    search_count = run_analytics.search_count if run_analytics else 0
 
                     if (
                         message_count > 0
