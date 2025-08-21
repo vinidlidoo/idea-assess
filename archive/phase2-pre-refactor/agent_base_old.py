@@ -8,18 +8,17 @@ from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Generic, TypeVar
 import signal
 
-from .results import AgentResult
+from .types import AgentResult
 
 if TYPE_CHECKING:
-    from .config import BaseAgentConfig
-    from .contexts import BaseContext
+    from .config import AnalystConfig, ReviewerConfig, BaseContext
 
 # Module-level logger
 logger = logging.getLogger(__name__)
 
 
 # Type variables for config and context generics
-TConfig = TypeVar("TConfig", bound="BaseAgentConfig")
+TConfig = TypeVar("TConfig", bound="AnalystConfig | ReviewerConfig")
 TContext = TypeVar("TContext", bound="BaseContext")
 
 
@@ -55,9 +54,12 @@ class BaseAgent(ABC, Generic[TConfig, TContext]):
         """
         pass
 
-    def get_system_prompt_path(self) -> str:
+    def get_system_prompt_path(self, context: TContext | None = None) -> str:
         """
-        Get system prompt path from config.
+        Get system prompt path with context override support.
+
+        Args:
+            context: Runtime context that may contain system_prompt_override
 
         Returns:
             Path relative to prompts directory (e.g., 'agents/analyst/system.md')
@@ -65,21 +67,36 @@ class BaseAgent(ABC, Generic[TConfig, TContext]):
         from pathlib import Path
 
         agent_type = self.agent_name.lower()
-        prompt = self.config.system_prompt
 
-        # If no slash, it's a filename in the agent's directory
-        if "/" not in prompt:
-            return str(Path("agents") / agent_type / prompt)
-        else:
-            # Contains slash, treat as path from prompts_dir
-            return prompt
+        # Check context override first
+        if (
+            context
+            and hasattr(context, "system_prompt_override")
+            and context.system_prompt_override
+        ):
+            override = context.system_prompt_override
+            if override.startswith("experimental/"):
+                # Experimental prompt: experimental/analyst/yc_style
+                return f"{override}.md"
+            elif "/" in override:
+                # Full path provided
+                return override
+            else:
+                # Relative to agent folder
+                return str(Path("agents") / agent_type / f"{override}.md")
 
-    def load_system_prompt(self) -> str:
+        # Default: use standard system prompt
+        return str(Path("agents") / agent_type / "system.md")
+
+    def load_system_prompt(self, context: TContext | None = None) -> str:
         """
         Load the complete system prompt with includes processed.
 
         This method handles {{include:path}} directives in prompts,
         allowing shared components to be included.
+
+        Args:
+            context: Runtime context that may contain system_prompt_override
 
         Returns:
             The complete system prompt with all includes processed
@@ -93,7 +110,7 @@ class BaseAgent(ABC, Generic[TConfig, TContext]):
             raise ValueError(f"prompts_dir not configured for {self.agent_name}")
 
         return load_prompt_with_includes(
-            self.get_system_prompt_path(), self.config.prompts_dir
+            self.get_system_prompt_path(context), self.config.prompts_dir
         )
 
     def get_allowed_tools(self, context: TContext) -> list[str]:
@@ -108,12 +125,12 @@ class BaseAgent(ABC, Generic[TConfig, TContext]):
         Returns:
             List of tool names (e.g., ['WebSearch'])
         """
-        # Check if context has tools override
-        if context and context.tools is not None:
-            return context.tools
-
-        # Otherwise use config's allowed tools
-        return self.config.get_allowed_tools()
+        # Default implementation - child classes can override if needed
+        if hasattr(context, "tools_override") and context.tools_override is not None:
+            return context.tools_override
+        if hasattr(self.config, "default_tools"):
+            return self.config.default_tools  # type: ignore[attr-defined]
+        return []
 
     @property
     @abstractmethod

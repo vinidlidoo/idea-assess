@@ -10,11 +10,9 @@ from claude_code_sdk import ClaudeSDKClient, ClaudeCodeOptions
 from claude_code_sdk.types import ResultMessage
 
 from ..core.agent_base import BaseAgent
-from ..core.types import AgentResult
-from ..core.config import (
-    ReviewerConfig,
-    ReviewerContext,
-)
+from ..core.results import AgentResult, Success, Error
+from ..core.config import ReviewerConfig
+from ..core.contexts import ReviewerContext
 from ..utils.file_operations import load_prompt
 from ..utils.json_validator import FeedbackValidator
 
@@ -65,38 +63,36 @@ class ReviewerAgent(BaseAgent[ReviewerConfig, ReviewerContext]):
 
         # Track with RunAnalytics if available
         run_analytics = context.run_analytics if context else None
-        iteration = (
-            context.revision_context.iteration
-            if context and context.revision_context
-            else 1
-        )
+        iteration = context.iteration if context else 1
 
         # Setup interrupt handling
         original_handler = self.setup_interrupt_handler()  # type: ignore[reportAny]
 
-        # Get tools from context
-        allowed_tools = self.get_allowed_tools(context)
+        # Get tools from context or config
+        allowed_tools = (
+            context.tools
+            if context and context.tools
+            else self.config.get_allowed_tools()
+        )
 
         # Validate input path for security (before try block)
-        if not context.analysis_path:
-            raise ValueError("analysis_path is required in ReviewerContext")
+        if not context.analysis_input_path:
+            raise ValueError("analysis_input_path is required in ReviewerContext")
 
         # Extract idea slug from analysis path for logging
-        idea_slug = context.analysis_path.parent.name
+        idea_slug = context.analysis_input_path.parent.name
         logger.info(f"Starting review for {idea_slug}, iteration {iteration}")
 
         try:
             # Validate that path is within analyses directory for security
-            analysis_path = self._validate_analysis_path(str(context.analysis_path))
-
-            # Load the reviewer prompt with includes (with context for overrides)
-            system_prompt = self.load_system_prompt(context)
-            # Feedback file should already exist (created by pipeline)
-            # analysis_path is already in the iterations directory
-            iterations_dir = analysis_path.parent
-            feedback_file = (
-                iterations_dir / f"reviewer_feedback_iteration_{iteration}.json"
+            analysis_path = self._validate_analysis_path(
+                str(context.analysis_input_path)
             )
+
+            # Load the reviewer prompt with includes
+            system_prompt = self.load_system_prompt()
+            # Use feedback output path from context
+            feedback_file = context.feedback_output_path
 
             # Feedback file should be pre-created by pipeline
 
@@ -107,7 +103,7 @@ class ReviewerAgent(BaseAgent[ReviewerConfig, ReviewerContext]):
             )
             user_prompt = review_template.format(
                 iteration=iteration,
-                max_iterations=self.config.max_review_iterations,
+                max_iterations=self.config.max_iterations,
                 analysis_path=analysis_path,
                 feedback_file=feedback_file,
             )
@@ -129,15 +125,7 @@ class ReviewerAgent(BaseAgent[ReviewerConfig, ReviewerContext]):
                     if self.interrupt_event.is_set():
                         await client.interrupt()
                         logger.warning("Review interrupted by user")
-                        return AgentResult(
-                            content="",
-                            metadata={
-                                "iteration": iteration,
-                                "interrupted": True,
-                            },
-                            success=False,
-                            error="Review interrupted by user",
-                        )
+                        return Error(message="Review interrupted by user")
 
                     # Track message with RunAnalytics if available
                     if run_analytics:
@@ -147,10 +135,7 @@ class ReviewerAgent(BaseAgent[ReviewerConfig, ReviewerContext]):
                     message_count = run_analytics.message_count if run_analytics else 0
 
                     # Progress tracking
-                    if (
-                        message_count > 0
-                        and message_count % self.config.message_log_interval == 0
-                    ):
+                    if message_count > 0 and message_count % 10 == 0:
                         logger.debug(
                             f"Review progress: {message_count} messages processed"
                         )
@@ -165,11 +150,8 @@ class ReviewerAgent(BaseAgent[ReviewerConfig, ReviewerContext]):
                 feedback_json = self._validate_and_fix_feedback(feedback_file)
                 if feedback_json is None:
                     # Validation failed and couldn't be fixed
-                    return AgentResult(
-                        content="",
-                        metadata={"iteration": iteration},
-                        success=False,
-                        error="Invalid feedback structure could not be fixed",
+                    return Error(
+                        message="Invalid feedback structure could not be fixed"
                     )
 
                 # Create metadata from feedback
@@ -184,29 +166,17 @@ class ReviewerAgent(BaseAgent[ReviewerConfig, ReviewerContext]):
                     + f"{metadata['improvements_count']} improvements suggested"
                 )
 
-                return AgentResult(
-                    content=str(feedback_file),
-                    metadata=metadata,
-                    success=True,
-                )
+                return Success()
             else:
                 # Reviewer failed to edit feedback file
-                return AgentResult(
-                    content="",
-                    metadata={"iteration": iteration},
-                    success=False,
-                    error=f"Reviewer failed to edit feedback file: {feedback_file}",
+                return Error(
+                    message=f"Reviewer failed to edit feedback file: {feedback_file}"
                 )
 
         except Exception as e:
             logger.error(f"Review error: {str(e)}", exc_info=True)
 
-            return AgentResult(
-                content="",
-                metadata={"iteration": iteration},
-                success=False,
-                error=str(e),
-            )
+            return Error(message=str(e))
         finally:
             # Restore original interrupt handler
             self.restore_interrupt_handler(original_handler)

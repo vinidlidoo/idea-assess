@@ -10,11 +10,9 @@ import logging
 from ..agents.analyst import AnalystAgent
 from ..agents.reviewer import ReviewerAgent
 from ..utils.text_processing import create_slug
-from .config import SystemConfig, AnalystConfig, ReviewerConfig
-from .contexts import AnalystContext, ReviewerContext
-from .results import Success, Error, PipelineResult
+from .config import AnalysisConfig, AnalystContext, ReviewerContext
 from .run_analytics import RunAnalytics
-from .types import PipelineMode
+from .types import PipelineMode, PipelineResult
 
 logger = logging.getLogger(__name__)
 
@@ -25,48 +23,52 @@ class AnalysisPipeline:
     def __init__(
         self,
         idea: str,
-        system_config: SystemConfig,
-        analyst_config: AnalystConfig,
-        reviewer_config: ReviewerConfig,
+        config: AnalysisConfig,
         mode: PipelineMode = PipelineMode.ANALYZE,
+        max_iterations: int | None = None,
+        analyst_system_prompt_override: str | None = None,
+        reviewer_system_prompt_override: str | None = None,
+        analyst_tools_override: list[str] | None = None,
     ) -> None:
         """
         Initialize the pipeline with idea and configuration.
 
         Args:
             idea: Business idea to analyze
-            system_config: System configuration
-            analyst_config: Analyst agent configuration
-            reviewer_config: Reviewer agent configuration
+            config: Analysis configuration object
             mode: Pipeline execution mode
+            max_iterations: Optional override for max iterations
+            analyst_system_prompt_override: Optional system prompt override for analyst
+            reviewer_system_prompt_override: Optional system prompt override for reviewer
+            analyst_tools_override: Optional tools override for analyst
         """
         # Core configuration
         self.idea: str = idea
         self.slug: str = create_slug(idea)
-        self.system_config: SystemConfig = system_config
-        self.analyst_config: AnalystConfig = analyst_config
-        self.reviewer_config: ReviewerConfig = reviewer_config
+        self.config: AnalysisConfig = config
         self.mode: PipelineMode = mode
 
+        # Context overrides (passed to agents)
+        self.analyst_system_prompt_override: str | None = analyst_system_prompt_override
+        self.reviewer_system_prompt_override: str | None = (
+            reviewer_system_prompt_override
+        )
+        self.analyst_tools_override: list[str] | None = analyst_tools_override
+
         # Setup output directories
-        self.output_dir: Path = system_config.analyses_dir / self.slug
+        self.output_dir: Path = Path("analyses") / self.slug
         self.iterations_dir: Path = self.output_dir / "iterations"
         self.output_dir.mkdir(parents=True, exist_ok=True)
         self.iterations_dir.mkdir(exist_ok=True)
 
-        # Set max iterations based on pipeline mode
-        self.max_iterations: int
-        if mode == PipelineMode.ANALYZE:
-            # Analyst-only mode has no iterations (just one pass)
-            self.max_iterations = 1
-        else:
-            # Review modes use the reviewer's configured max iterations
-            self.max_iterations = reviewer_config.max_iterations
+        # Iteration configuration
+        self.max_iterations: int = (
+            max_iterations or config.pipeline.max_iterations_by_mode.get(mode, 3)
+        )
 
         # Runtime state (initialized but will be set during process)
         self.iteration_count: int = 0
         self.current_analysis_file: Path | None = None
-        self.last_feedback_file: Path | None = None
         self.last_feedback: dict[str, Any] | None = None  # pyright: ignore[reportExplicitAny]
         self.analytics: RunAnalytics | None = None
 
@@ -108,7 +110,7 @@ class AnalysisPipeline:
 
     async def _analyze_only(self) -> PipelineResult:
         """Run analyst only (no review)."""
-        analyst = AnalystAgent(self.analyst_config)
+        analyst = AnalystAgent(self.config.analyst)
         self.iteration_count = 1
 
         logger.info("📝 Running analyst (no review)")
@@ -120,8 +122,8 @@ class AnalysisPipeline:
 
     async def _analyze_with_review(self) -> PipelineResult:
         """Run analyst-reviewer feedback loop."""
-        analyst = AnalystAgent(self.analyst_config)
-        reviewer = ReviewerAgent(self.reviewer_config)
+        analyst = AnalystAgent(self.config.analyst)
+        reviewer = ReviewerAgent(self.config.reviewer)
 
         while self.iteration_count < self.max_iterations:
             self.iteration_count += 1
@@ -174,11 +176,10 @@ class AnalysisPipeline:
 
         analyst_context = AnalystContext(
             idea_slug=self.slug,
-            analysis_output_path=analysis_file,
-            feedback_input_path=self.last_feedback_file
-            if self.iteration_count > 1
-            else None,
+            output_dir=self.output_dir,
             iteration=self.iteration_count,
+            system_prompt_override=self.analyst_system_prompt_override,
+            tools_override=self.analyst_tools_override,
         )
         analyst_context.run_analytics = self.analytics
 
@@ -188,17 +189,12 @@ class AnalysisPipeline:
 
         analyst_result = await analyst.process(self.idea, analyst_context)
 
-        # Pattern match on result type
-        match analyst_result:
-            case Error(message=msg):
-                logger.error(f"Analyst failed: {msg}")
-                return False
-            case Success():
-                pass
+        if not analyst_result.success:
+            logger.error(f"Analyst failed: {analyst_result.error}")
+            return False
 
         # Save analysis iteration
         self._save_analysis_iteration()
-        self.current_analysis_file = analysis_file
         return True
 
     async def _run_reviewer(self, reviewer: ReviewerAgent) -> bool:
@@ -212,27 +208,19 @@ class AnalysisPipeline:
             _ = feedback_file.write_text("{}")
             logger.debug(f"Created empty feedback file: {feedback_file}")
 
-        if not self.current_analysis_file:
-            logger.error("No current analysis file to review")
-            return False
-
         reviewer_context = ReviewerContext(
-            analysis_input_path=self.current_analysis_file,
-            feedback_output_path=feedback_file,
-            iteration=self.iteration_count,
+            analysis_path=self.current_analysis_file,
+            output_dir=self.output_dir,
+            system_prompt_override=self.reviewer_system_prompt_override,
         )
         reviewer_context.run_analytics = self.analytics
 
         logger.info(f"🔍 Running reviewer for iteration {self.iteration_count}")
         reviewer_result = await reviewer.process("", reviewer_context)
 
-        # Pattern match on result type
-        match reviewer_result:
-            case Error(message=msg):
-                logger.error(f"Reviewer failed: {msg}")
-                return False
-            case Success():
-                pass
+        if not reviewer_result.success:
+            logger.error(f"Reviewer failed: {reviewer_result.error}")
+            return False
 
         # Parse reviewer feedback
         feedback_file = (
@@ -248,7 +236,6 @@ class AnalysisPipeline:
             feedback_text = feedback_file.read_text()
             feedback = json.loads(feedback_text)  # pyright: ignore[reportAny]
             self.last_feedback = feedback
-            self.last_feedback_file = feedback_file
 
             # Check recommendation
             recommendation = feedback.get("recommendation", "approve")  # pyright: ignore[reportAny]
@@ -270,27 +257,29 @@ class AnalysisPipeline:
         if error:
             return {
                 "success": False,
-                "analysis_path": None,
-                "feedback_path": None,
-                "idea_slug": self.slug,
-                "iterations": self.iteration_count,
-                "message": error,
+                "idea": self.idea,
+                "slug": self.slug,
+                "error": error,
             }
 
-        # Get feedback path if it exists
-        feedback_path = (
-            str(self.last_feedback_file) if self.last_feedback_file else None
-        )
+        # Determine final status
+        final_status = "completed"
+        if self.iteration_count >= self.max_iterations:
+            if (
+                self.last_feedback
+                and self.last_feedback.get("recommendation") != "approve"
+            ):
+                final_status = "max_iterations_reached"
 
         return {
             "success": True,
-            "analysis_path": str(self.current_analysis_file)
+            "idea": self.idea,
+            "slug": self.slug,
+            "analysis_file": str(self.current_analysis_file)
             if self.current_analysis_file
-            else None,
-            "feedback_path": feedback_path,
-            "idea_slug": self.slug,
-            "iterations": self.iteration_count,
-            "message": None,
+            else "",
+            "iterations_completed": self.iteration_count,
+            "final_status": final_status,
         }
 
     def _save_analysis_iteration(self) -> None:

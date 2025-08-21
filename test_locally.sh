@@ -2,17 +2,19 @@
 # Comprehensive test script for the Business Idea Analyzer
 # Compatible with older bash versions (3.x)
 #
-# Updated to use --prompt-variant flag with new prompt system:
-#   "main" - active prompt from agents/{agent}/main.md
-#   "v1", "v2", "v3" - historical versions from versions/{agent}/
-#   "revision" - special workflow prompts
+# Updated to use --analyst-prompt and --reviewer-prompt flags:
+#   These flags directly set the system_prompt in agent configs
+#   Default is "system.md" as configured in BaseAgentConfig
 
 # Set up trap to handle Ctrl+C properly
 cleanup() {
   echo ""
   echo "Test interrupted by user"
-  # Kill any running python processes
+  # Kill any child processes including timeout and python
+  jobs -p | xargs -r kill 2>/dev/null
   pkill -P $$ 2>/dev/null
+  # Kill any python processes that might be hanging
+  pkill -f "python -m src.cli" 2>/dev/null
   exit 130
 }
 trap cleanup INT TERM
@@ -51,13 +53,13 @@ SCENARIO_NAMES=(
 SCENARIO_FLAGS=(
   "--no-websearch --debug"
   "--no-websearch"
-  "--no-websearch --prompt-variant v2"
-  "--no-websearch --debug --with-review --max-iterations 1"
-  "--no-websearch --with-review --max-iterations 1"
+  "--no-websearch --analyst-prompt experimental/analyst/concise.md"
+  "--no-websearch --debug --with-review --max-iterations 2"
   "--no-websearch --with-review --max-iterations 2"
-  "--debug"                          # Default includes websearch with debug
-  ""                                 # Default includes websearch
-  "--with-review --max-iterations 3" # Full with websearch
+  "--no-websearch --with-review" #use Default max-iterations
+  "--debug"                      # Default includes websearch with debug
+  ""                             # Default includes websearch
+  "--with-review"                # Full with websearch
 )
 
 # Results tracking
@@ -90,24 +92,48 @@ run_test() {
   echo "Flags: ${flags:-none}"
   echo "--------------------------------------"
 
-  # Create log file for test output
-  timestamp=$(date +%Y%m%d_%H%M%S)
-  test_dir="logs/tests/${timestamp}_${scenario_name}_$(echo "$idea" | cut -d' ' -f1-3 | tr ' ' '_' | cut -c1-30)"
-  mkdir -p "$test_dir"
-  log_file="$test_dir/output.log"
+  # No need to create log file - run_analytics handles logging
 
   # Use 5 minute timeout for all tests
-  local timeout_seconds=300
+  local timeout_seconds=600
 
   # Run the analysis with timeout, showing output in real-time
   echo "Running test..."
   echo ""
 
-  # Use tee to show output and save to log file simultaneously
-  # Use --foreground with timeout to allow signal propagation
-  if timeout --foreground $timeout_seconds python src/cli.py "$idea" $flags 2>&1 | tee "$log_file"; then
+  # Run the analysis with timeout (run_analytics handles logging)
+  # Create a temp file to capture output since we need to handle interrupts properly
+  local temp_output=$(mktemp)
+
+  # Run in background to allow better interrupt handling
+  timeout $timeout_seconds python -m src.cli "$idea" $flags >"$temp_output" 2>&1 &
+  local pid=$!
+
+  # Wait for the process and show output in real-time
+  while kill -0 $pid 2>/dev/null; do
+    if [ -s "$temp_output" ]; then
+      cat "$temp_output"
+      >"$temp_output" # Clear the file after displaying
+    fi
+    sleep 0.1
+  done
+
+  # Get any remaining output and exit code
+  wait $pid
+  exit_code=$?
+
+  # Display any remaining output
+  if [ -s "$temp_output" ]; then
+    cat "$temp_output"
+  fi
+
+  # Save output for checking success
+  output=$(cat "$temp_output")
+  rm -f "$temp_output"
+
+  if [ $exit_code -eq 0 ]; then
     # Check if analysis was successful (handles both regular and reviewer modes)
-    if grep -q -E "(Analysis saved to:|Saved to:)" "$log_file"; then
+    if echo "$output" | grep -q -E "(Analysis saved to:|Analysis completed)"; then
       echo ""
       echo -e "${GREEN}✅ TEST PASSED${NC}"
       test_results="${test_results}${test_id}:success;"
@@ -117,16 +143,18 @@ run_test() {
       echo -e "${RED}❌ TEST FAILED${NC} (no output file created)"
       test_results="${test_results}${test_id}:failed_no_output;"
     fi
-  else
-    exit_code=$?
+  elif [ $exit_code -eq 124 ]; then
     echo ""
-    if [ $exit_code -eq 124 ]; then
-      echo -e "${YELLOW}⏱️  TEST TIMEOUT${NC} (>${timeout_seconds}s)"
-      test_results="${test_results}${test_id}:timeout;"
-    else
-      echo -e "${RED}❌ TEST FAILED${NC} (exit code: $exit_code)"
-      test_results="${test_results}${test_id}:failed_error;"
-    fi
+    echo -e "${YELLOW}⏱️  TEST TIMEOUT${NC} (>${timeout_seconds}s)"
+    test_results="${test_results}${test_id}:timeout;"
+  elif [ $exit_code -eq 130 ] || [ $exit_code -eq 143 ]; then
+    echo ""
+    echo -e "${YELLOW}⚠️  TEST INTERRUPTED${NC}"
+    test_results="${test_results}${test_id}:interrupted;"
+  else
+    echo ""
+    echo -e "${RED}❌ TEST FAILED${NC} (exit code: $exit_code)"
+    test_results="${test_results}${test_id}:failed_error;"
   fi
 
   ((total_tests++))
@@ -285,7 +313,7 @@ else
 fi
 
 echo ""
-echo "All test logs saved in: logs/tests/"
+echo "All test logs saved by run_analytics in: logs/runs/"
 echo ""
 
 # Exit with appropriate code

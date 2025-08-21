@@ -42,15 +42,16 @@ def setup_logging(
     # Determine log level
     level = logging.DEBUG if debug else logging.INFO
 
-    # Generate run ID
-    run_id = datetime.now().strftime("%Y%m%d_%H%M%S")
+    # Generate run ID (same format as pipeline)
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    run_id = f"{timestamp}_{idea_slug}"
 
-    # Create log directory
-    log_dir = Path("logs") / f"{run_type}s"
+    # Create log directory with subfolder for this run
+    log_dir = Path("logs") / f"{run_type}s" / run_id
     log_dir.mkdir(parents=True, exist_ok=True)
 
-    # Create log file path
-    log_file = log_dir / f"{run_id}_{idea_slug}.log"
+    # Create log file path with simple name
+    log_file = log_dir / "stdout.log"
 
     # Configure root logger
     root_logger = logging.getLogger()

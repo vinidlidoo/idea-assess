@@ -78,7 +78,8 @@ class RunAnalytics:
             output_dir: Directory to write output files (typically logs/runs)
         """
         self.run_id: str = run_id
-        self.output_dir: Path = Path(output_dir)  # Ensure Path object
+        # Create a subfolder for this run using the run_id
+        self.output_dir: Path = Path(output_dir) / run_id
         self.start_time: datetime = datetime.now()
 
         # Tracking structures
@@ -86,7 +87,8 @@ class RunAnalytics:
         self.tool_correlations: dict[
             str, dict[str, Any]
         ] = {}  # tool_use_id -> result mapping
-        self.messages_file: Path = self.output_dir / f"{run_id}_messages.jsonl"
+        # Use simple filenames within the run subfolder
+        self.messages_file: Path = self.output_dir / "messages.jsonl"
 
         # Global counters
         self.message_count: int = 0
@@ -459,7 +461,8 @@ class RunAnalytics:
         # Calculate aggregated statistics
         summary["aggregated_stats"] = self._calculate_aggregated_stats()
 
-        summary_file = self.output_dir / f"{self.run_id}_run_summary.json"
+        # Use simple filename within the run subfolder
+        summary_file = self.output_dir / "run_summary.json"
         try:
             with open(summary_file, "w") as f:
                 json.dump(summary, f, indent=2, default=str)

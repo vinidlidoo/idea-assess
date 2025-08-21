@@ -12,7 +12,8 @@ import argparse
 import asyncio
 import logging
 
-from src.core import get_default_config
+from pathlib import Path
+from src.core.config import create_default_configs
 from src.core.pipeline import AnalysisPipeline
 from src.core.types import PipelineMode
 from src.utils.text_processing import create_slug
@@ -49,12 +50,12 @@ Examples:
 
     parser.add_argument(  # pyright: ignore[reportUnusedCallResult]
         "--analyst-prompt",
-        help="Override analyst system prompt (e.g., 'experimental/yc_style')",
+        help="Override analyst system prompt (e.g., 'concise' for experimental/analyst/concise.md)",
     )
 
     parser.add_argument(  # pyright: ignore[reportUnusedCallResult]
         "--reviewer-prompt",
-        help="Override reviewer system prompt (e.g., 'experimental/strict')",
+        help="Override reviewer system prompt (e.g., 'strict' for experimental/reviewer/strict.md)",
     )
 
     parser.add_argument(  # pyright: ignore[reportUnusedCallResult]
@@ -95,15 +96,21 @@ Examples:
     if debug:
         print(f"Debug logging enabled: {log_file}")
 
-    # Get configuration (immutable)
-    config = get_default_config()
+    # Get configurations
+    project_root = Path.cwd()
+    system_config, analyst_config, reviewer_config = create_default_configs(
+        project_root
+    )
 
-    # Store context overrides (don't modify config!)
-    analyst_system_prompt_override = analyst_prompt  # From CLI args
-    reviewer_system_prompt_override = reviewer_prompt  # From CLI args
-    analyst_tools_override: list[str] | None = (
-        [] if no_websearch else None
-    )  # Explicit empty list if no websearch
+    # Apply CLI overrides directly to configs
+    if analyst_prompt:
+        analyst_config.system_prompt = analyst_prompt
+    if reviewer_prompt:
+        reviewer_config.system_prompt = reviewer_prompt
+    if no_websearch:
+        analyst_config.allowed_tools = []  # No external tools
+    if with_review and max_iterations:
+        reviewer_config.max_iterations = max_iterations
 
     # Determine pipeline mode based on CLI flags
     if not with_review:
@@ -115,15 +122,13 @@ Examples:
             f"\n🔄 Running analysis with reviewer feedback (max {max_iterations} iterations)..."
         )
 
-    # Create pipeline with all parameters upfront
+    # Create pipeline with configurations
     pipeline = AnalysisPipeline(
         idea=idea,
-        config=config,
+        system_config=system_config,
+        analyst_config=analyst_config,
+        reviewer_config=reviewer_config,
         mode=mode,
-        max_iterations=max_iterations if with_review else None,
-        analyst_system_prompt_override=analyst_system_prompt_override,
-        reviewer_system_prompt_override=reviewer_system_prompt_override,
-        analyst_tools_override=analyst_tools_override,
     )
 
     # Run the pipeline (no parameters needed!)

@@ -2,16 +2,15 @@
 
 import logging
 import time
-from datetime import datetime
-from pathlib import Path
 from typing import override
 
 from claude_code_sdk import ClaudeSDKClient, ClaudeCodeOptions
 from claude_code_sdk.types import ResultMessage
 
 from ..core.agent_base import BaseAgent
-from ..core.types import AgentResult
-from ..core.config import AnalystConfig, AnalystContext
+from ..core.results import AgentResult, Success, Error
+from ..core.config import AnalystConfig
+from ..core.contexts import AnalystContext
 from ..utils.file_operations import load_prompt
 from ..utils.text_processing import create_slug
 
@@ -60,8 +59,12 @@ class AnalystAgent(BaseAgent[AnalystConfig, AnalystContext]):
         # Setup
         start_time = time.time()
 
-        # Get tools from context
-        allowed_tools = self.get_allowed_tools(context)
+        # Get tools from context or config
+        allowed_tools = (
+            context.tools
+            if context and context.tools
+            else self.config.get_allowed_tools()
+        )
         use_websearch = "WebSearch" in allowed_tools
 
         # Reset interrupt state
@@ -80,8 +83,8 @@ class AnalystAgent(BaseAgent[AnalystConfig, AnalystContext]):
         logger.info(f"Starting analysis for {idea_slug}, iteration {iteration}")
 
         try:
-            # Load the analyst prompt with includes (with context for overrides)
-            system_prompt = self.load_system_prompt(context)
+            # Load the analyst prompt with includes
+            system_prompt = self.load_system_prompt()
 
             # Load and format websearch instruction template
             if use_websearch:
@@ -109,30 +112,19 @@ class AnalystAgent(BaseAgent[AnalystConfig, AnalystContext]):
                 max_websearches=self.config.max_websearches if use_websearch else 0,
             )
 
-            # Determine output file path
-            # Iteration is now 1-based throughout (1 = first iteration)
-            if context.output_dir:
-                iterations_dir = context.output_dir / "iterations"
-                iterations_dir.mkdir(parents=True, exist_ok=True)
-                output_file = iterations_dir / f"iteration_{iteration}.md"
-            else:
-                # Fallback if no output_dir specified
-                iterations_dir = Path(f"analyses/{idea_slug}/iterations")
-                iterations_dir.mkdir(parents=True, exist_ok=True)
-                output_file = iterations_dir / f"iteration_{iteration}.md"
+            # Use output path from context
+            output_file = context.analysis_output_path
 
             # Build user prompt based on whether this is a revision
-            if context.revision_context:
+            if context.feedback_input_path:
                 # Load revision-specific user prompt
                 revision_template = load_prompt(
                     "agents/analyst/user/revision.md", self.config.prompts_dir
                 )
                 user_prompt = revision_template.format(
                     idea=input_data,
-                    previous_analysis_file=str(
-                        context.revision_context.previous_analysis_path or ""
-                    ),
-                    feedback_file=str(context.revision_context.feedback_path or ""),
+                    previous_analysis_file="",  # Claude has context
+                    feedback_file=str(context.feedback_input_path),
                     resource_note=resource_note,
                     websearch_instruction=websearch_note,
                     output_file=str(output_file),
@@ -167,15 +159,7 @@ class AnalystAgent(BaseAgent[AnalystConfig, AnalystContext]):
                     if self.interrupt_event.is_set():
                         await client.interrupt()
                         logger.warning("Analysis interrupted by user")
-                        return AgentResult(
-                            content="",
-                            metadata={
-                                "idea": input_data,
-                                "interrupted": True,
-                            },
-                            success=False,
-                            error="Analysis interrupted by user",
-                        )
+                        return Error(message="Analysis interrupted by user")
 
                     # Track message with RunAnalytics if available
                     if run_analytics:
@@ -185,10 +169,7 @@ class AnalystAgent(BaseAgent[AnalystConfig, AnalystContext]):
                     message_count = run_analytics.message_count if run_analytics else 0
                     search_count = run_analytics.search_count if run_analytics else 0
 
-                    if (
-                        message_count > 0
-                        and message_count % self.config.message_log_interval == 0
-                    ):
+                    if message_count > 0 and message_count % 10 == 0:
                         logger.debug(
                             f"Analysis progress: {message_count} messages processed"
                         )
@@ -202,55 +183,24 @@ class AnalystAgent(BaseAgent[AnalystConfig, AnalystContext]):
                             )
                             logger.info(f"Analysis written to: {output_file}")
 
-                            return AgentResult(
-                                content=str(
-                                    output_file
-                                ),  # Return file path, not content
-                                metadata={
-                                    "idea": input_data,
-                                    "slug": create_slug(input_data),
-                                    "timestamp": datetime.now().isoformat(),
-                                    "interrupted": self.interrupt_event.is_set(),
-                                    "output_file": str(output_file),
-                                },
-                                success=True,
-                            )
+                            return Success()
                         else:
                             # Agent didn't create the file - this is an error
                             logger.error(
                                 f"Agent failed to write analysis to {output_file}"
                             )
-                            return AgentResult(
-                                content="",
-                                metadata={
-                                    "idea": input_data,
-                                    "slug": create_slug(input_data),
-                                    "timestamp": datetime.now().isoformat(),
-                                    "expected_file": str(output_file),
-                                },
-                                success=False,
-                                error=f"Agent failed to write analysis to {output_file}",
+                            return Error(
+                                message=f"Agent failed to write analysis to {output_file}"
                             )
-                        break
 
             # If no ResultMessage was found, log error
             logger.error("Analysis failed: No ResultMessage received")
-            return AgentResult(
-                content="",
-                metadata={"idea": input_data},
-                success=False,
-                error="Analysis failed to generate content",
-            )
+            return Error(message="Analysis failed to generate content")
 
         except Exception as e:
             logger.error(f"Analysis error: {str(e)}", exc_info=True)
 
-            return AgentResult(
-                content="",
-                metadata={"idea": input_data, "iteration": iteration},
-                success=False,
-                error=str(e),
-            )
+            return Error(message=str(e))
 
         finally:
             # Restore original interrupt handler

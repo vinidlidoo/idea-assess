@@ -6,87 +6,101 @@ This directory contains all prompt templates for the Business Idea Evaluator age
 
 ```text
 config/prompts/
-├── shared/              # Shared components (NEW)
-│   └── file_edit_rules.md  # Common Read-before-Edit rules
 ├── agents/              # Active agent prompts
 │   ├── analyst/
-│   │   ├── system.md    # Primary system prompt (with includes)
-│   │   ├── main.md      # Legacy, kept for compatibility
-│   │   └── user/        # User prompts (renamed from partials/)
+│   │   ├── system.md    # Primary system prompt (includes shared components)
+│   │   └── user/        # User prompts for different workflows
 │   │       ├── initial.md       # Initial analysis
-│   │       ├── revision.md      # Revision workflow
+│   │       ├── revision.md      # Revision workflow (iteration 2+)
 │   │       ├── constraints.md   # Resource constraints
 │   │       ├── websearch_instruction.md
 │   │       └── websearch_disabled.md
 │   ├── reviewer/
-│   │   ├── system.md    # Primary system prompt (with includes)
-│   │   ├── main.md      # Legacy, kept for compatibility
+│   │   ├── system.md    # Primary system prompt
 │   │   └── user/
 │   │       └── review.md        # Review instructions
-│   ├── judge/
-│   │   └── main.md
-│   └── synthesizer/
-│       └── main.md
-├── versions/            # Historical versions for reference
+│   ├── judge/          # Phase 3 (future)
+│   │   └── system.md
+│   └── synthesizer/    # Phase 4 (future)
+│       └── system.md
+├── shared/             # Shared components
+│   └── file_edit_rules.md  # Common file editing rules
+├── versions/           # Historical versions (for rollback)
 │   ├── analyst/
 │   │   ├── v1.md
 │   │   ├── v2.md
 │   │   └── v3.md
 │   └── reviewer/
-│       ├── v1.md
-│       └── v1_simple.md
-└── archive/             # Deprecated/experimental prompts
+│       └── v1.md
+└── experimental/       # Experimental prompts (testing)
+    └── analyst/
+        └── concise.md
+```
+
+## How Prompts Work After Refactoring
+
+### 1. Default Behavior
+
+- Each agent has a `system.md` file that is loaded by default
+- The `prompt_version` in config is currently not used (always loads system.md)
+- User prompts are loaded based on workflow needs
+
+### 2. Overriding Prompts
+
+Prompts can be overridden via:
+
+- **CLI flags**: `--analyst-prompt v2` or `--reviewer-prompt strict`
+- **Direct config modification**: `analyst_config.prompt_version = "v2"`
+- **Context system_prompt**: Set `context.system_prompt = "custom/path.md"`
+
+### 3. Include System
+
+System prompts can include shared components using `{{include:path}}`:
+
+```markdown
+{{include:shared/file_edit_rules.md}}
 ```
 
 ## Current Active Prompts
 
-- **Analyst**: `agents/analyst/system.md` (v3 with includes)
-- **Reviewer**: `agents/reviewer/system.md` (v1 with includes)
-- **Judge**: `agents/judge/main.md` (Phase 3)
-- **Synthesizer**: `agents/synthesizer/main.md` (Phase 4)
+- **Analyst**: `agents/analyst/system.md` (v3 content with includes)
+- **Reviewer**: `agents/reviewer/system.md` (v1 content with includes)
+- **Judge**: Not implemented (Phase 3)
+- **Synthesizer**: Not implemented (Phase 4)
 
-## Naming Conventions
+## File Organization Rules
 
-- `main.md` - Primary prompt for each agent
-- `{workflow}.md` - Specific workflow prompts (e.g., revision.md)
-- `partials/*.md` - Reusable prompt components
-- `v{n}.md` - Version numbers for historical prompts
-
-## How Prompts Are Loaded
-
-The system uses a prompt registry (`src/core/prompt_registry.py`) to map old filenames to new locations, ensuring backwards compatibility while maintaining the new organization.
-
-```python
-# Example usage
-from src.core.file_operations import load_prompt
-
-# Loads from config/prompts/agents/analyst/main.md
-prompt = load_prompt("analyst_main.md")
-
-# With custom path
-prompt = load_prompt("revision.md", Path("config/prompts/agents/analyst"))
-```
+1. **system.md** - Primary prompt for each agent (loaded by default)
+2. **user/*.md** - User prompts for specific workflows
+3. **shared/*.md** - Reusable components (included via {{include}})
+4. **versions/*.md** - Historical versions for reference/rollback
+5. **experimental/*.md** - Test prompts not in production
 
 ## Making Changes
 
-1. **Edit prompts** in the `agents/` directory for active changes
-2. **Test thoroughly** before deploying
-3. **Keep historical versions** in `versions/` for rollback capability
-4. **Document significant changes** in commit messages
+1. **Edit `system.md`** for agent-specific changes
+2. **Edit `shared/*.md`** for cross-agent changes
+3. **Test thoroughly** before deploying
+4. **Archive old versions** to `versions/` before major changes
 
-## Prompt Versioning
+## Cleanup Notes (Post-Refactoring)
 
-When creating a new version:
+### Removed/Deprecated
 
-1. Copy current `main.md` to `versions/{agent}/v{n}.md`
-2. Update `main.md` with new version
-3. Update `prompt_registry.py` if filenames change
-4. Test the system end-to-end
+- `main.md` files - No longer used, system.md is the standard
+- `archive/` directory - Old experiments moved to versions or deleted
+- Complex prompt registry - Simplified to direct file loading
+
+### Simplified
+
+- No more prompt_registry.py mapping
+- Direct path resolution in agent_base.py
+- Cleaner separation between system and user prompts
 
 ## Best Practices
 
-1. **Active vs Versioned**: Keep current prompts in `agents/`, historical in `versions/`
-2. **Modular Components**: Use `partials/` for reusable prompt segments
-3. **Clear Purpose**: Group by agent type for clarity
-4. **Version Control**: Move old versions to `versions/` instead of deleting
-5. **Documentation**: Each prompt should have a header comment explaining its purpose
+1. **One Source of Truth**: Each agent has one `system.md`
+2. **Explicit Includes**: Use `{{include}}` for shared components
+3. **Version in Filename**: Historical versions as `v1.md`, `v2.md` etc
+4. **Clear Workflow Separation**: User prompts organized by workflow
+5. **Document Changes**: Update this README when structure changes
