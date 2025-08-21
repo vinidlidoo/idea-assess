@@ -98,6 +98,8 @@
   - Successfully tested Level 1 (basic functionality)
 - [x] **Run Level 2 tests** - ✅ COMPLETED 2025-08-15
   - All reviewer tests passing after bug fixes
+- [ ] **Update test_locally.sh** - Ensure compatibility with cleaned codebase
+- [ ] **Fix unit tests for cleaned utils** - Update tests after removing 75% of utils code
 - [ ] **Create real integration tests** - Test with actual Claude SDK (not mocks)
 - [ ] **Run Level 3 tests** - Full features with WebSearch
 - [ ] **Fix failing unit tests** - 7 tests need mock setup fixes

@@ -10,7 +10,8 @@ from .config import (
     RevisionContext,
     get_default_config,
 )
-from .agent_base import BaseAgent, AgentResult
+from .agent_base import BaseAgent
+from .types import AgentResult
 
 __all__ = [
     # Configuration classes

@@ -9,7 +9,8 @@ from pathlib import Path
 from claude_code_sdk import ClaudeSDKClient, ClaudeCodeOptions
 from claude_code_sdk.types import ResultMessage
 
-from ..core.agent_base import BaseAgent, AgentResult
+from ..core.agent_base import BaseAgent
+from ..core.types import AgentResult
 from ..core.config import (
     ReviewerConfig,
     ReviewerContext,
@@ -282,7 +283,7 @@ class ReviewerAgent(BaseAgent[ReviewerConfig, ReviewerContext]):
         return {
             "iteration": iteration,
             "feedback_file": str(feedback_file),
-            "recommendation": feedback_json.get("iteration_recommendation", "unknown"),
+            "recommendation": feedback_json.get("recommendation", "unknown"),
             "critical_issues_count": safe_list_len(feedback_json, "critical_issues"),
             "improvements_count": safe_list_len(feedback_json, "improvements"),
             "minor_suggestions_count": safe_list_len(

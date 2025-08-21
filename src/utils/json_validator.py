@@ -7,21 +7,23 @@ from jsonschema import validate, ValidationError
 
 
 # Define the schema for reviewer feedback
+# Note: Using "recommendation" to match actual usage in pipeline
 REVIEWER_FEEDBACK_SCHEMA = {
     "$schema": "http://json-schema.org/draft-07/schema#",
     "type": "object",
     "required": [
-        "iteration_recommendation",
-        "iteration_reason",
-        "critical_issues",
-        "improvements",
-        "minor_suggestions",
+        "recommendation",  # Changed from iteration_recommendation to match actual usage
     ],
     "properties": {
-        "iteration_recommendation": {
+        "recommendation": {  # This is what pipeline.py actually reads
+            "type": "string",
+            "enum": ["approve", "reject"],  # Changed to match pipeline expectations
+            "description": "Whether to approve or reject the current analysis",
+        },
+        "iteration_recommendation": {  # Keep for backward compatibility
             "type": "string",
             "enum": ["accept", "reject"],
-            "description": "Whether to accept or reject the current analysis",
+            "description": "Legacy field - use 'recommendation' instead",
         },
         "iteration_reason": {
             "type": "string",
@@ -198,19 +200,29 @@ class FeedbackValidator:
         if "minor_suggestions" not in feedback:
             feedback["minor_suggestions"] = []
 
-        # Fix iteration_recommendation values
-        if "iteration_recommendation" in feedback:
+        # Map iteration_recommendation to recommendation (the field pipeline actually uses)
+        if "iteration_recommendation" in feedback and "recommendation" not in feedback:
             rec_raw = feedback.get("iteration_recommendation", "")
             if isinstance(rec_raw, str):
                 rec = rec_raw.lower()
                 if rec in ["accept", "approve", "pass"]:
-                    feedback["iteration_recommendation"] = "accept"
+                    feedback["recommendation"] = "approve"
                 elif rec in ["reject", "fail", "revise"]:
-                    feedback["iteration_recommendation"] = "reject"
+                    feedback["recommendation"] = "reject"
 
-        # Ensure iteration_reason exists
+        # Fix recommendation values if present
+        if "recommendation" in feedback:
+            rec_raw = feedback.get("recommendation", "")
+            if isinstance(rec_raw, str):
+                rec = rec_raw.lower()
+                if rec in ["accept", "approve", "pass"]:
+                    feedback["recommendation"] = "approve"
+                elif rec in ["reject", "fail", "revise"]:
+                    feedback["recommendation"] = "reject"
+
+        # Ensure iteration_reason exists (optional field)
         if "iteration_reason" not in feedback or not feedback["iteration_reason"]:
-            if feedback.get("iteration_recommendation") == "accept":
+            if feedback.get("recommendation") == "approve":
                 feedback["iteration_reason"] = "Analysis meets quality standards"
             else:
                 feedback["iteration_reason"] = "Analysis needs improvements"

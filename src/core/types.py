@@ -14,12 +14,8 @@ __all__ = [
     # Pipeline types
     "PipelineMode",
     "PipelineResult",
-    # Archive and utility types
+    # Analysis types
     "AnalysisResult",
-    "ArchiveMetadata",
-    "ArchiveSummaryItem",
-    "ArchiveSummary",
-    "CleanupStats",
 ]
 
 
@@ -78,57 +74,3 @@ class PipelineResult(TypedDict, total=False):
     error: str
     error_context: str
     timestamp: str
-
-
-# ==============================================================================
-# ARCHIVE AND UTILITY TYPES
-# ==============================================================================
-
-
-class ArchiveMetadata(TypedDict, total=False):
-    """Metadata for archived runs."""
-
-    archived_at: str
-    run_type: str
-    run_number: int
-    created_at: str
-    final_status: str
-    iteration_count: int
-    word_count: int
-    character_count: int
-    reviewer_decision: str
-    critical_issues: int
-    improvements: int
-    assessment: str
-    iterations: list[dict[str, object]]
-    # Future fields for Phase 3
-    grade: str  # A-D grade from Judge
-    score: float  # Numeric score from Judge
-
-
-class ArchiveSummaryItem(TypedDict):
-    """Single archive summary item."""
-
-    name: str
-    run_type: str
-    archived_at: str
-    run_number: int
-
-
-class ArchiveSummary(TypedDict):
-    """Summary of all archives."""
-
-    archives: list[ArchiveSummaryItem]
-    total: int
-    test_runs: int
-    production_runs: int
-
-
-class CleanupStats(TypedDict):
-    """Statistics from cleanup operations."""
-
-    status: str
-    files_moved: int
-    files_deleted: int
-    duplicates_removed: int
-    files_archived: int

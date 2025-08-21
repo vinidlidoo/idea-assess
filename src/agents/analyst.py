@@ -9,7 +9,8 @@ from typing import override
 from claude_code_sdk import ClaudeSDKClient, ClaudeCodeOptions
 from claude_code_sdk.types import ResultMessage
 
-from ..core.agent_base import BaseAgent, AgentResult
+from ..core.agent_base import BaseAgent
+from ..core.types import AgentResult
 from ..core.config import AnalystConfig, AnalystContext
 from ..utils.file_operations import load_prompt
 from ..utils.text_processing import create_slug
