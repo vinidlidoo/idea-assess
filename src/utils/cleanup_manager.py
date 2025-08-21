@@ -4,18 +4,9 @@ import shutil
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import cast
-from typing import TypedDict
 import re
 
-
-class CleanupStats(TypedDict):
-    """Statistics from cleanup operations."""
-
-    status: str
-    files_moved: int
-    files_deleted: int
-    duplicates_removed: int
-    files_archived: int
+from src.core.types import CleanupStats
 
 
 class CleanupManager:

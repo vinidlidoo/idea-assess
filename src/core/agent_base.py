@@ -5,25 +5,16 @@ from __future__ import annotations
 import logging
 import threading
 from abc import ABC, abstractmethod
-from dataclasses import dataclass
 from typing import TYPE_CHECKING, Generic, TypeVar
 import signal
+
+from .types import AgentResult
 
 if TYPE_CHECKING:
     from .config import AnalystConfig, ReviewerConfig, BaseContext
 
 # Module-level logger
 logger = logging.getLogger(__name__)
-
-
-@dataclass
-class AgentResult:
-    """Standard result container for all agents."""
-
-    content: str
-    metadata: dict[str, object]
-    success: bool
-    error: str | None = None
 
 
 # Type variables for config and context generics

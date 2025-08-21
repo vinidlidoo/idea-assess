@@ -1,24 +1,13 @@
 """File operation utilities for the idea assessment system."""
 
 from pathlib import Path
-from datetime import datetime
-from typing import NamedTuple
 from functools import lru_cache
 from filelock import FileLock, Timeout
 import json
 
+from src.core.types import AnalysisResult
+
 # Prompt registry import moved to load_prompt function for lazy loading
-
-
-class AnalysisResult(NamedTuple):
-    """Container for analysis results and metadata."""
-
-    content: str
-    idea: str
-    slug: str
-    timestamp: datetime
-    interrupted: bool = False
-    # Note: search_count, message_count, duration removed - now tracked by RunAnalytics
 
 
 def create_or_update_symlink(link_path: Path, target: Path | str) -> None:

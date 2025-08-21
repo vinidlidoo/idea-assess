@@ -4,44 +4,9 @@ import json
 import shutil
 from datetime import datetime
 from pathlib import Path
-from typing import TypedDict
 import re
 
-
-class ArchiveMetadata(TypedDict, total=False):
-    """Metadata for archived runs."""
-
-    archived_at: str
-    run_type: str
-    run_number: int
-    created_at: str
-    final_status: str
-    iteration_count: int
-    word_count: int
-    character_count: int
-    reviewer_decision: str
-    critical_issues: int
-    improvements: int
-    assessment: str
-    iterations: list[dict[str, object]]
-
-
-class ArchiveSummaryItem(TypedDict):
-    """Single archive summary item."""
-
-    name: str
-    run_type: str
-    archived_at: str
-    run_number: int
-
-
-class ArchiveSummary(TypedDict):
-    """Summary of all archives."""
-
-    archives: list[ArchiveSummaryItem]
-    total: int
-    test_runs: int
-    production_runs: int
+from src.core.types import ArchiveMetadata, ArchiveSummary, ArchiveSummaryItem
 
 
 class ArchiveManager:
