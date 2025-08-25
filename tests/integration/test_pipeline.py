@@ -7,8 +7,7 @@ from unittest.mock import Mock, AsyncMock, patch
 
 from src.core.pipeline import AnalysisPipeline
 from src.core.config import AnalysisConfig, PipelineConfig
-from src.core.types import PipelineMode
-from src.core.agent_base import AgentResult
+from src.core.types import PipelineMode, AgentResult
 
 
 class TestPipelineIntegration:

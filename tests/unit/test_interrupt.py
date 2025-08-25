@@ -7,7 +7,8 @@ import threading
 from unittest.mock import Mock, AsyncMock, patch
 
 from src.agents.analyst import AnalystAgent
-from src.core.config import AnalystConfig, AnalystContext
+from src.core.config import AnalystConfig
+from src.core.types import AnalystContext
 
 
 class TestInterruptHandling:

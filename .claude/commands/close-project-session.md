@@ -37,12 +37,14 @@ Based on the above:
    - Keep it minimal - detailed history goes in session logs
    - Do NOT add implementation details or decisions (those go in session log)
 
-5. Review all changes and create a single git commit:
+5. Read @requirements.md, @implementation-plan.md, and @system-architecture.md, and update as appropriate to reflect the project's latest state. Also trim and simplify content where it makes sense.
+
+6. Review all changes and create a single git commit:
    - Add all necessary files (check if cwd is a sub-directory)
    - Include session log in the commit
    - Suggest a commit message and ask for user confirmation before committing
 
-6. Final check:
+7. Final check:
    - Confirm session log captures all important decisions and work
    - Verify CLAUDE.md points to the new session log
    - Ensure handoff notes are clear for next session

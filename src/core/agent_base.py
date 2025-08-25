@@ -8,11 +8,11 @@ from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Generic, TypeVar
 import signal
 
-from .results import AgentResult
+from .types import AgentResult
 
 if TYPE_CHECKING:
     from .config import BaseAgentConfig
-    from .contexts import BaseContext
+    from .types import BaseContext
 
 # Module-level logger
 logger = logging.getLogger(__name__)

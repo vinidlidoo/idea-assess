@@ -1,6 +1,6 @@
 """Utility for formatting pipeline results for CLI display."""
 
-from src.core.results import PipelineResult
+from src.core.types import PipelineResult
 
 
 def format_pipeline_result(result: PipelineResult, with_review: bool) -> None:

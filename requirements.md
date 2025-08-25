@@ -146,8 +146,7 @@ Automate the evaluation of 10-15 business ideas simultaneously, providing detail
 
 ### Security & Compliance
 
-- Respect robots.txt for web scraping
-- Rate limiting for API calls
+- TBD 
 
 ## Success Criteria
 
@@ -217,7 +216,7 @@ Automate the evaluation of 10-15 business ideas simultaneously, providing detail
 
 ## Constraints & Assumptions
 
-- Claude Max plan (5x capacity) available
+- Claude Max plan (20x capacity) available
 - Ideas provided as input (not generated)
 - English-language analysis only
 - Focus on software/tech business ideas initially

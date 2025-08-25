@@ -21,6 +21,11 @@
 13. [Data Flow](#data-flow)
 14. [Extension Points](#extension-points)
 15. [Design Decisions](#design-decisions)
+16. [Performance Considerations](#performance-considerations)
+17. [Error Handling](#error-handling)
+18. [Testing Strategy](#testing-strategy)
+19. [Future Enhancements](#future-enhancements-phase-34)
+20. [Maintenance Notes](#maintenance-notes)
 
 ## Overview
 
@@ -161,7 +166,7 @@ BaseAgent[TConfig, TContext] (Abstract)
 class AnalystConfig(BaseAgentConfig):
     max_websearches: int = 10
     min_words: int = 3000
-    allowed_tools: list[str] = ["web_search", "web_fetch"]
+    allowed_tools: list[str] = ["WebSearch", "WebFetch"]
 ```
 
 **Context**:
@@ -402,19 +407,32 @@ config/prompts/
 ├── agents/
 │   ├── analyst/
 │   │   ├── system.md           # Default analyst prompt
-│   │   ├── analyst_user.md     # User message template
-│   │   ├── revision_request.md # Revision instructions
-│   │   └── websearch_*.md      # WebSearch templates
-│   └── reviewer/
-│       ├── system.md            # Default reviewer prompt
-│       └── review_output.md     # Output format template
+│   │   └── user/               # User message templates
+│   │       ├── initial.md      # Initial analysis
+│   │       ├── revision.md     # Revision instructions
+│   │       ├── constraints.md  # Word count/section constraints
+│   │       ├── websearch_instruction.md
+│   │       └── websearch_disabled.md
+│   ├── reviewer/
+│   │   ├── system.md           # Default reviewer prompt
+│   │   └── user/
+│   │       └── review.md       # Review instructions
+│   ├── judge/
+│   │   └── system.md           # Judge prompt (Phase 3)
+│   └── synthesizer/
+│       └── system.md           # Synthesizer prompt (Phase 4)
 ├── experimental/
-│   ├── analyst/
-│   │   └── concise.md          # Alternative prompts
-│   └── reviewer/
-│       └── strict.md
-└── shared/
-    └── evaluation_criteria.md  # Shared components
+│   └── analyst/
+│       └── concise.md          # Alternative prompts
+├── shared/
+│   └── file_edit_rules.md     # Shared file editing rules
+└── versions/                   # Historical prompt versions
+    ├── analyst/
+    │   ├── analyst_v1.md
+    │   ├── analyst_v2.md
+    │   └── analyst_v3.md
+    └── reviewer/
+        └── reviewer_v1.md
 ```
 
 ### Prompt Loading
@@ -467,12 +485,11 @@ Structured logging with:
 
 ```text
 logs/
-├── runs/
-│   └── 20250821_121325_test-idea/
-│       ├── messages.jsonl      # All Claude messages
-│       ├── run_summary.json    # Analytics summary
-│       └── debug.log           # Debug output
-└── debug_{timestamp}.json      # Legacy format
+└── runs/
+    └── 20250821_121325_test-idea/
+        ├── messages.jsonl      # All Claude messages
+        ├── run_summary.json    # Analytics summary
+        └── debug.log           # Debug output
 ```
 
 ## Utilities
@@ -562,18 +579,21 @@ idea-assess/
 
 ```text
 1. Initial Analysis
-   ├─> Analyst generates iteration_1.md
-   └─> Pipeline updates symlink
+   ├─> Pipeline creates empty iteration_1.md file
+   ├─> Analyst agent edits/fills iteration_1.md
+   └─> Pipeline updates analysis.md symlink
 
 2. Review Cycle
+   ├─> Pipeline creates empty reviewer_feedback_iteration_1.json
    ├─> Reviewer reads iteration_1.md
-   ├─> Generates feedback_1.json
-   └─> Checks recommendation
+   ├─> Reviewer edits/fills feedback JSON file
+   └─> Pipeline checks recommendation
 
 3. Revision (if needed)
-   ├─> Analyst reads feedback_1.json
-   ├─> Generates iteration_2.md
-   └─> Pipeline updates symlink
+   ├─> Pipeline creates empty iteration_2.md file
+   ├─> Analyst reads reviewer_feedback_iteration_1.json
+   ├─> Analyst edits/fills iteration_2.md
+   └─> Pipeline updates analysis.md symlink
 
 4. Repeat until approved or max_iterations
 ```
@@ -678,7 +698,8 @@ PipelineMode.ANALYZE_REVIEW_AND_JUDGE = "analyze_review_and_judge"
 
 ### File Pre-creation
 
-- Pipeline pre-creates output files
+- Pipeline pre-creates empty output files (current implementation)
+- Future: Will create files from templates in `config/templates/`
 - Enables file locking if needed
 - Provides clear output structure
 
@@ -742,21 +763,7 @@ PipelineMode.ANALYZE_REVIEW_AND_JUDGE = "analyze_review_and_judge"
 - Batch processing mode
 - Queue management
 
-### API Interface
-
-- REST API for programmatic access
-- WebSocket for real-time updates
-- Authentication and rate limiting
-
 ## Maintenance Notes
-
-### Adding Features
-
-1. Update relevant config classes
-2. Extend contexts if needed
-3. Modify pipeline for new modes
-4. Update CLI for new flags
-5. Document in this file
 
 ### Debugging
 
@@ -772,19 +779,7 @@ PipelineMode.ANALYZE_REVIEW_AND_JUDGE = "analyze_review_and_judge"
 3. Tune `min_words` for quality
 4. Configure timeouts in test harness
 
-## Conclusion
-
-This architecture provides a clean, extensible foundation for the Business Idea Evaluator. The Phase 2 implementation demonstrates:
-
-- Clear separation of concerns
-- Type-safe design patterns
-- Extensible agent system
-- Comprehensive logging
-- Production-ready error handling
-
-The system is ready for Phase 3 additions (Judge) and Phase 4 enhancements (Synthesizer) with minimal refactoring required.
-
----
+--
 
 *For implementation history and decisions, see `docs/phase2-architecture-simplification-v4.md`*  
 *For session-by-session development logs, see `session-logs/`*

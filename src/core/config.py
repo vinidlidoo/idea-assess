@@ -35,9 +35,7 @@ class BaseAgentConfig:
     system_prompt: str = "system.md"  # Relative to agent's prompt dir
 
     # Tools configuration
-    allowed_tools: list[str] = field(
-        default_factory=lambda: ["web_search", "web_fetch"]
-    )
+    allowed_tools: list[str] = field(default_factory=list)
 
     def get_allowed_tools(self) -> list[str]:
         """Get the list of allowed tools for this agent."""
@@ -49,13 +47,11 @@ class AnalystConfig(BaseAgentConfig):
     """Configuration specific to the Analyst agent."""
 
     # Analyst-specific settings
-    max_websearches: int = 10
-    min_words: int = 3000
+    max_websearches: int = 4
+    min_words: int = 800
 
-    # Default tools for analyst
-    allowed_tools: list[str] = field(
-        default_factory=lambda: ["web_search", "web_fetch"]
-    )
+    # Default tools for analyst is to use WebSearch
+    allowed_tools: list[str] = field(default_factory=lambda: ["WebSearch"])
 
 
 @dataclass

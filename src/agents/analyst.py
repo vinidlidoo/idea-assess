@@ -8,9 +8,8 @@ from claude_code_sdk import ClaudeSDKClient, ClaudeCodeOptions
 from claude_code_sdk.types import ResultMessage
 
 from ..core.agent_base import BaseAgent
-from ..core.results import AgentResult, Success, Error
+from ..core.types import AgentResult, Success, Error, AnalystContext
 from ..core.config import AnalystConfig
-from ..core.contexts import AnalystContext
 from ..utils.file_operations import load_prompt
 from ..utils.text_processing import create_slug
 
@@ -148,6 +147,9 @@ class AnalystAgent(BaseAgent[AnalystConfig, AnalystContext]):
                 max_turns=self.config.max_turns,
                 allowed_tools=allowed_tools,
                 permission_mode="acceptEdits",  # Allow agent to edit files directly
+            )
+            logger.debug(
+                msg=f"Analyst options: allowed_tools={options.allowed_tools}, max_turns={options.max_turns} "
             )
 
             # Create client and analyze

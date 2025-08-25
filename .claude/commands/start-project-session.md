@@ -12,7 +12,7 @@ description: Start a new project work session with session logging
 - Current git status: !`git status --short`
 - Current branch: !`git branch --show-current`
 - Current project file tree: !`tree -L 3`
-- Project overview: @requirements.md, @implementation-plan.md
+- Project overview: @requirements.md, @implementation-plan.md, @system-architecture.md
 - Latest Claude Code session IDs: !`/Users/vincent/dotfiles/utils/claude-sessions.sh -Users-vincent-Projects-recursive-experiments-idea-assess -n 5`
 - Session objective: !`echo "${ARGUMENTS:-No specific objective provided}"`
 - Small TODOs: @TODO.md
