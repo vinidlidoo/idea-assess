@@ -25,3 +25,9 @@ Thumbs.db
 # Project specific
 logs/
 *.log
+
+# Testing
+.coverage
+htmlcov/
+*.coverage*
+.pytest_cache/

@@ -1,7 +1,16 @@
 # Core dependencies for Business Idea Evaluator
 # Install with: uv pip install -r requirements.txt
-claude-code-sdk==0.0.19  # Latest version as of Aug 12 2025
-filelock>=3.15.0  # For concurrent file access safety
+
+# Core SDK
+claude-code-sdk==0.0.20  # Latest version as of Aug 26 2025
+
+# Testing
 pytest>=8.3.0  # For running tests
 pytest-asyncio>=0.24.0  # For async test support
-jsonschema
+pytest-cov>=6.0.0  # For coverage reporting
+
+# Validation
+jsonschema>=4.0.0  # For JSON schema validation
+
+# Utilities
+filelock>=3.15.0  # For concurrent file access safety

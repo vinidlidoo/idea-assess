@@ -22,6 +22,24 @@ class TestAnalysisPipeline(BaseAgentTest):
     def system_config(self) -> SystemConfig:
         """Create system configuration."""
         assert self.temp_dir is not None
+
+        # Create required template files for pipeline tests
+        analyst_template_dir = (
+            self.temp_dir / "config" / "templates" / "agents" / "analyst"
+        )
+        analyst_template_dir.mkdir(parents=True, exist_ok=True)
+        analyst_template = analyst_template_dir / "analysis.md"
+        _ = analyst_template.write_text("# Analysis Template\n\n{{content}}")
+
+        reviewer_template_dir = (
+            self.temp_dir / "config" / "templates" / "agents" / "reviewer"
+        )
+        reviewer_template_dir.mkdir(parents=True, exist_ok=True)
+        reviewer_template = reviewer_template_dir / "feedback.json"
+        _ = reviewer_template.write_text(
+            '{"recommendation": "pending", "reason": "pending"}'
+        )
+
         return SystemConfig(
             project_root=self.temp_dir,
             analyses_dir=self.temp_dir / "analyses",
