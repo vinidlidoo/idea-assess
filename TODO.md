@@ -14,11 +14,14 @@
 
 ## Features
 
-- [ ] Enable human feedback iteration
+- [ ] Invite the analyst to use the WebFetch tool and to further dive results from the WebSearch tool
+- [ ] Invite the analyst to the TodoWrite tool to produce better results
+- [ ] Invite the analyst to Thinking mode to produce better results (we should see ThinkingBlock messages when the agent thinks)
 - [ ] Resume the analyst-reviewer loop with additional iterations when running the CLI on the same idea slug
+- [ ] Enable human feedback iteration
+- [ ] Add capability for the CLI to run multiple pipelines on different ideas at once
 - [x] De-couple system prompts and file edit template. Have Pipeline orchestrator create file with template instead of creating empty files
 
 ## Bugs
 
 - [ ] The allowed-tools Claude Code Options field doesn't seem to work as expected. Investigate and adjust as appropriate
-- [x] FIXED: Turn efficiency issue - agents were editing templates section-by-section instead of all at once (solved with single Edit operation instruction)

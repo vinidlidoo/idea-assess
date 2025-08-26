@@ -1,8 +1,8 @@
 # System Architecture - Business Idea Evaluator
 
-**Version**: 2.0 (Phase 2 Complete)  
-**Last Updated**: 2025-08-21  
-**Status**: Production-Ready for Phase 2  
+**Version**: 2.1 (Template Decoupling Complete)  
+**Last Updated**: 2025-08-26  
+**Status**: Production-Ready with Template System  
 
 ## Table of Contents
 
@@ -127,7 +127,7 @@ User-facing interfaces:
 
 Supporting utilities:
 
-1. **file_operations.py** - Prompt loading with includes
+1. **file_operations.py** - Prompt loading with includes, template operations
 2. **text_processing.py** - Text manipulation (slugs, etc.)
 3. **logger.py** - Structured logging system
 4. **result_formatter.py** - Output formatting
@@ -266,7 +266,8 @@ class AnalysisPipeline:
 SystemConfig (System-wide settings)
     ├── paths (project_root, analyses_dir, etc.)
     ├── limits (output_limit, max_file_size)
-    └── defaults (slug_max_length, etc.)
+    ├── defaults (slug_max_length, etc.)
+    └── template_dir (Path to template directory)
 
 BaseAgentConfig (Common agent settings)
     ├── max_turns: int
@@ -329,6 +330,7 @@ BaseContext (Minimal shared state)
 
 AnalystContext (Analysis-specific)
     ├── analysis_output_path: Path
+    ├── previous_analysis_input_path: Path | None
     ├── feedback_input_path: Path | None
     ├── idea_slug: str
     └── websearch_count: int
@@ -403,15 +405,13 @@ class PipelineResult(TypedDict):
 config/prompts/
 ├── agents/
 │   ├── analyst/
-│   │   ├── system.md           # Default analyst prompt
+│   │   ├── system.md           # Analyst principles (73 lines)
 │   │   └── user/               # User message templates
 │   │       ├── initial.md      # Initial analysis
 │   │       ├── revision.md     # Revision instructions
-│   │       ├── constraints.md  # Word count/section constraints
-│   │       ├── websearch_instruction.md
-│   │       └── websearch_disabled.md
+│   │       └── constraints.md  # Consolidated constraints
 │   ├── reviewer/
-│   │   ├── system.md           # Default reviewer prompt
+│   │   ├── system.md           # Reviewer principles (89 lines)
 │   │   └── user/
 │   │       └── review.md       # Review instructions
 │   ├── judge/
@@ -495,6 +495,9 @@ logs/
 
 - `load_prompt()` - Simple prompt loading with caching
 - `load_prompt_with_includes()` - Prompt loading with include support
+- `load_template()` - Load template files
+- `create_file_from_template()` - Create file from template
+- `append_metadata_to_analysis()` - Add metadata to analysis files
 
 ### text_processing.py
 
@@ -545,7 +548,8 @@ idea-assess/
 │   │   └── json_validator.py
 │   └── cli.py                 # CLI interface
 ├── config/
-│   └── prompts/               # Prompt templates
+│   ├── prompts/               # Agent prompts (principles-focused)
+│   └── templates/             # File templates (structure-focused)
 ├── analyses/                  # Output directory
 │   └── {idea-slug}/
 │       ├── analysis.md        # Latest (symlink)
@@ -576,20 +580,20 @@ idea-assess/
 
 ```text
 1. Initial Analysis
-   ├─> Pipeline creates empty iteration_1.md file
-   ├─> Analyst agent edits/fills iteration_1.md
+   ├─> Pipeline creates iteration_1.md from template with TODO instructions
+   ├─> Analyst agent reads template and replaces TODO sections
    └─> Pipeline updates analysis.md symlink
 
 2. Review Cycle
-   ├─> Pipeline creates empty reviewer_feedback_iteration_1.json
+   ├─> Pipeline creates reviewer_feedback_iteration_1.json from template
    ├─> Reviewer reads iteration_1.md
-   ├─> Reviewer edits/fills feedback JSON file
+   ├─> Reviewer replaces TODO sections in feedback JSON
    └─> Pipeline checks recommendation
 
 3. Revision (if needed)
-   ├─> Pipeline creates empty iteration_2.md file
-   ├─> Analyst reads reviewer_feedback_iteration_1.json
-   ├─> Analyst edits/fills iteration_2.md
+   ├─> Pipeline creates iteration_2.md from template
+   ├─> Analyst reads previous analysis and reviewer feedback
+   ├─> Analyst replaces TODO sections with revised content
    └─> Pipeline updates analysis.md symlink
 
 4. Repeat until approved or max_iterations
@@ -665,6 +669,11 @@ PipelineMode.ANALYZE_REVIEW_AND_JUDGE = "analyze_review_and_judge"
 **Problem**: Mixing configuration and runtime state causes confusion  
 **Solution**: Clear separation - config is capability, context is runtime
 
+### Why Template-Prompt Decoupling?
+
+**Problem**: Prompts contained both structure and principles, making changes difficult  
+**Solution**: Templates define structure with TODOs, prompts focus on principles only
+
 ### Why Success/Error Instead of Booleans?
 
 **Problem**: Boolean returns lose error information  
@@ -695,10 +704,10 @@ PipelineMode.ANALYZE_REVIEW_AND_JUDGE = "analyze_review_and_judge"
 
 ### File Pre-creation
 
-- Pipeline pre-creates empty output files (current implementation)
-- Future: Will create files from templates in `config/templates/`
-- Enables file locking if needed
-- Provides clear output structure
+- Pipeline creates files from templates in `config/templates/` (implemented)
+- Templates contain structure with TODO instructions
+- Agents replace TODO sections with content
+- Enables clear separation of structure from content
 
 ## Error Handling
 
