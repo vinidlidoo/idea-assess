@@ -13,6 +13,7 @@ class SystemConfig:
     analyses_dir: Path
     config_dir: Path
     logs_dir: Path
+    template_dir: Path | None = None  # Directory for file templates
 
     # System limits
     output_limit: int = 50000
@@ -23,6 +24,12 @@ class SystemConfig:
         self.analyses_dir = Path(self.analyses_dir).resolve()
         self.config_dir = Path(self.config_dir).resolve()
         self.logs_dir = Path(self.logs_dir).resolve()
+
+        # Set default template_dir if not provided
+        if self.template_dir is None:
+            self.template_dir = self.config_dir / "templates"
+        else:
+            self.template_dir = Path(self.template_dir).resolve()
 
 
 @dataclass

@@ -137,7 +137,7 @@ class ReviewerAgent(BaseAgent[ReviewerConfig, ReviewerContext]):
                     message_count = run_analytics.message_count if run_analytics else 0
 
                     # Progress tracking
-                    if message_count > 0 and message_count % 10 == 0:
+                    if message_count > 0 and message_count % 5 == 0:
                         logger.debug(
                             f"Review progress: {message_count} messages processed"
                         )

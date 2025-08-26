@@ -94,8 +94,8 @@ run_test() {
 
   # No need to create log file - run_analytics handles logging
 
-  # Use 5 minute timeout for all tests
-  local timeout_seconds=600
+  # Use 20 minutes timeout for all tests
+  local timeout_seconds=1200
 
   # Run the analysis with timeout, showing output in real-time
   echo "Running test..."

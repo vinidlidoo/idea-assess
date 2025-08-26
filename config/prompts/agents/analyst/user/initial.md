@@ -2,13 +2,11 @@
 
 Analyze this business idea: "{idea}"
 
-{resource_note}
+{{include:agents/analyst/user/constraints.md}}
 
 Please generate a comprehensive analysis following the structure and word limits
-specified in your instructions. {websearch_instruction}
+specified in your instructions.
 
-IMPORTANT: The file {output_file} has been created for you.
+The file {output_file} has been created with a template structure for your analysis.
 
-1. First, use the Read tool to read the file
-2. Then, use the Edit tool to replace its content with your analysis
-Do NOT use the Write tool - the file already exists.
+Follow the file operation best practices when working with this template.

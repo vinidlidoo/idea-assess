@@ -10,7 +10,7 @@ from claude_code_sdk.types import ResultMessage
 from ..core.agent_base import BaseAgent
 from ..core.types import AgentResult, Success, Error, AnalystContext
 from ..core.config import AnalystConfig
-from ..utils.file_operations import load_prompt
+from ..utils.file_operations import load_prompt_with_includes
 from ..utils.text_processing import create_slug
 
 # Module-level logger
@@ -85,59 +85,45 @@ class AnalystAgent(BaseAgent[AnalystConfig, AnalystContext]):
             # Load the analyst prompt with includes
             system_prompt = self.load_system_prompt()
 
-            # Load and format websearch instruction template
+            # Build websearch instruction based on configuration
             if use_websearch:
-                websearch_template = load_prompt(
-                    "agents/analyst/user/websearch_instruction.md",
-                    self.config.prompts_dir,
-                )
-                websearch_note = websearch_template.format(
-                    max_websearches=self.config.max_websearches,
-                )
+                websearch_instruction = f"Use WebSearch efficiently (maximum {self.config.max_websearches} searches) to gather the most critical data to support your analysis."
             else:
-                websearch_template = load_prompt(
-                    "agents/analyst/user/websearch_disabled.md",
-                    self.config.prompts_dir,
-                )
-                websearch_note = websearch_template
-
-            # Load and format resource constraints template
-            resource_template = load_prompt(
-                "agents/analyst/user/constraints.md",
-                self.config.prompts_dir,
-            )
-            resource_note = resource_template.format(
-                max_turns=self.config.max_turns,
-                max_websearches=self.config.max_websearches if use_websearch else 0,
-            )
+                websearch_instruction = "WebSearch is disabled for this analysis. Use your existing knowledge."
 
             # Use output path from context
             output_file = context.analysis_output_path
 
             # Build user prompt based on whether this is a revision
             if context.feedback_input_path:
-                # Load revision-specific user prompt
-                revision_template = load_prompt(
+                # Load revision-specific user prompt (includes constraints.md)
+                revision_template = load_prompt_with_includes(
                     "agents/analyst/user/revision.md", self.config.prompts_dir
+                )
+                # Use the previous analysis path if available, otherwise empty string
+                previous_file = (
+                    str(context.previous_analysis_input_path)
+                    if context.previous_analysis_input_path
+                    else ""
                 )
                 user_prompt = revision_template.format(
                     idea=input_data,
-                    previous_analysis_file="",  # Claude has context
+                    previous_analysis_file=previous_file,
                     feedback_file=str(context.feedback_input_path),
-                    resource_note=resource_note,
-                    websearch_instruction=websearch_note,
+                    max_turns=self.config.max_turns,
+                    websearch_instruction=websearch_instruction,
                     output_file=str(output_file),
                 )
             else:
-                # Load and format standard user prompt template
-                user_template = load_prompt(
+                # Load and format standard user prompt template (includes constraints.md)
+                user_template = load_prompt_with_includes(
                     "agents/analyst/user/initial.md",
                     self.config.prompts_dir,
                 )
                 user_prompt = user_template.format(
                     idea=input_data,
-                    resource_note=resource_note,
-                    websearch_instruction=websearch_note,
+                    max_turns=self.config.max_turns,
+                    websearch_instruction=websearch_instruction,
                     output_file=str(output_file),
                 )
 
@@ -171,7 +157,7 @@ class AnalystAgent(BaseAgent[AnalystConfig, AnalystContext]):
                     message_count = run_analytics.message_count if run_analytics else 0
                     search_count = run_analytics.search_count if run_analytics else 0
 
-                    if message_count > 0 and message_count % 10 == 0:
+                    if message_count > 0 and message_count % 5 == 0:
                         logger.debug(
                             f"Analysis progress: {message_count} messages processed"
                         )

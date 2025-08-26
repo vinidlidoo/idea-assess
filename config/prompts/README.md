@@ -2,21 +2,21 @@
 
 This directory contains all prompt templates for the Business Idea Evaluator agents.
 
+**Note**: After template decoupling (2025-08-26), prompts now focus solely on principles and approach. Document structure and formatting are handled by templates in `config/templates/`.
+
 ## Directory Structure
 
 ```text
 config/prompts/
-├── agents/              # Active agent prompts
+├── agents/              # Active agent prompts (principles-focused)
 │   ├── analyst/
-│   │   ├── system.md    # Primary system prompt (includes shared components)
+│   │   ├── system.md    # Analyst principles (73 lines, no structure)
 │   │   └── user/        # User prompts for different workflows
 │   │       ├── initial.md       # Initial analysis
 │   │       ├── revision.md      # Revision workflow (iteration 2+)
-│   │       ├── constraints.md   # Resource constraints
-│   │       ├── websearch_instruction.md
-│   │       └── websearch_disabled.md
+│   │       └── constraints.md   # Consolidated resource constraints
 │   ├── reviewer/
-│   │   ├── system.md    # Primary system prompt
+│   │   ├── system.md    # Reviewer principles (89 lines, no structure)
 │   │   └── user/
 │   │       └── review.md        # Review instructions
 │   ├── judge/          # Phase 3 (future)
