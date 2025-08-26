@@ -3,5 +3,5 @@
 Resource constraints for this analysis:
 
 - Maximum turns: {max_turns}
-- Maximum web searches: {max_websearches}
+- {websearch_instruction}
 - Complete the analysis in a single comprehensive response if possible

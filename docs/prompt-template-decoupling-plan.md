@@ -488,4 +488,3 @@ This decoupling will significantly improve the system's maintainability and exte
 ---
 
 *Document created: 2025-08-25*
-*Author: Claude Code Assistant*

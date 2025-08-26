@@ -82,6 +82,7 @@ class AnalystContext(BaseContext):
 
     # Explicit typed paths
     analysis_output_path: Path = Path("analysis.md")
+    previous_analysis_input_path: Path | None = None  # Only on iteration 2+
     feedback_input_path: Path | None = None  # Only on iteration 2+
 
     # Analyst-specific state

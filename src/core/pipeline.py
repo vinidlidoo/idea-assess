@@ -10,6 +10,8 @@ import logging
 from ..agents.analyst import AnalystAgent
 from ..agents.reviewer import ReviewerAgent
 from ..utils.text_processing import create_slug
+from ..utils.file_operations import create_file_from_template
+from ..utils.file_operations import append_metadata_to_analysis
 from .config import SystemConfig, AnalystConfig, ReviewerConfig
 from .types import (
     PipelineMode,
@@ -171,15 +173,32 @@ class AnalysisPipeline:
 
     async def _run_analyst(self, analyst: AnalystAgent) -> bool:
         """Run analyst for current iteration. Returns True on success."""
-        # Pre-create the analysis file for the agent to edit
+
+        # Create analysis file from template
         analysis_file = self.iterations_dir / f"iteration_{self.iteration_count}.md"
         if not analysis_file.exists():
-            _ = analysis_file.write_text("")
-            logger.debug(f"Created empty analysis file: {analysis_file}")
+            # template_dir is guaranteed to be set after __post_init__
+            assert self.system_config.template_dir is not None
+            template_path = (
+                self.system_config.template_dir / "agents" / "analyst" / "analysis.md"
+            )
+            create_file_from_template(template_path, analysis_file)
+            logger.debug(f"Created analysis file from template: {analysis_file}")
+
+        # Determine previous analysis path for revisions
+        previous_analysis = None
+        if self.iteration_count > 1:
+            previous_analysis = (
+                self.iterations_dir / f"iteration_{self.iteration_count - 1}.md"
+            )
+            if not previous_analysis.exists():
+                logger.warning(f"Previous analysis not found: {previous_analysis}")
+                previous_analysis = None
 
         analyst_context = AnalystContext(
             idea_slug=self.slug,
             analysis_output_path=analysis_file,
+            previous_analysis_input_path=previous_analysis,
             feedback_input_path=self.last_feedback_file
             if self.iteration_count > 1
             else None,
@@ -199,7 +218,15 @@ class AnalysisPipeline:
                 logger.error(f"Analyst failed: {msg}")
                 return False
             case Success():
-                pass
+                # Append metadata to the completed analysis
+                websearch_count = self.analytics.search_count if self.analytics else 0
+                append_metadata_to_analysis(
+                    analysis_file,
+                    self.idea,
+                    self.slug,
+                    self.iteration_count,
+                    websearch_count,
+                )
 
         # Save analysis iteration
         self._save_analysis_iteration()
@@ -208,14 +235,23 @@ class AnalysisPipeline:
 
     async def _run_reviewer(self, reviewer: ReviewerAgent) -> bool:
         """Run reviewer and process feedback. Returns True if should continue."""
-        # Pre-create the feedback file for the reviewer to edit
+
+        # Create feedback file from template
         feedback_file = (
             self.iterations_dir
             / f"reviewer_feedback_iteration_{self.iteration_count}.json"
         )
         if not feedback_file.exists():
-            _ = feedback_file.write_text("{}")
-            logger.debug(f"Created empty feedback file: {feedback_file}")
+            # template_dir is guaranteed to be set after __post_init__
+            assert self.system_config.template_dir is not None
+            template_path = (
+                self.system_config.template_dir
+                / "agents"
+                / "reviewer"
+                / "feedback.json"
+            )
+            create_file_from_template(template_path, feedback_file)
+            logger.debug(f"Created feedback file from template: {feedback_file}")
 
         if not self.current_analysis_file:
             logger.error("No current analysis file to review")

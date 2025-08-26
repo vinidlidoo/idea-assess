@@ -70,3 +70,59 @@ def load_prompt_with_includes(prompt_file: str, prompts_dir: Path) -> str:
 
     return content
 
+
+# Template operations (for creating files from templates)
+
+
+@lru_cache(maxsize=32)
+def load_template(template_path: Path) -> str:
+    """Load and cache a template file.
+
+    Args:
+        template_path: Path to the template file
+
+    Returns:
+        Template content as string
+    """
+    return template_path.read_text()
+
+
+def create_file_from_template(template_path: Path, output_path: Path) -> None:
+    """Create a file from a template.
+
+    Args:
+        template_path: Path to the template file
+        output_path: Path where the file should be created
+    """
+    template_content = load_template(template_path)
+    _ = output_path.write_text(template_content)
+
+
+def append_metadata_to_analysis(
+    analysis_file: Path, idea: str, slug: str, iteration: int, websearch_count: int = 0
+) -> None:
+    """Append metadata comment to completed analysis.
+
+    Args:
+        analysis_file: Path to the analysis file
+        idea: Original business idea text
+        slug: Generated slug for the idea
+        iteration: Current iteration number
+        websearch_count: Number of websearches performed
+    """
+    from datetime import datetime
+
+    metadata = f"""
+---
+<!-- Analysis Metadata - Auto-generated, Do Not Edit -->
+<!-- 
+Idea Input: "{idea}"
+Idea Slug: {slug}
+Iteration: {iteration}
+Timestamp: {datetime.now().isoformat()}
+Websearches Used: {websearch_count}
+-->
+"""
+
+    with open(analysis_file, "a") as f:
+        _ = f.write(metadata)
