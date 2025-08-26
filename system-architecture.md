@@ -1,8 +1,8 @@
 # System Architecture - Business Idea Evaluator
 
-**Version**: 2.1 (Template Decoupling Complete)  
+**Version**: 2.2 (Tool Improvements Complete)  
 **Last Updated**: 2025-08-26  
-**Status**: Production-Ready with Template System  
+**Status**: Production-Ready with Enhanced Tool Integration  
 
 ## Table of Contents
 
@@ -35,7 +35,8 @@ The Business Idea Evaluator is an AI-powered system that transforms one-liner bu
 
 - **Idea Analysis**: Convert one-liner ideas into 1000+ word market analyses
 - **Iterative Refinement**: Reviewer feedback loop for quality improvement
-- **Web Research**: Optional integration with WebSearch for current market data
+- **Web Research**: Integration with WebSearch and WebFetch for comprehensive market data
+- **Task Organization**: TodoWrite tool for complex analysis planning
 - **Flexible Prompting**: Configurable system prompts for different analysis styles
 - **Comprehensive Logging**: Detailed analytics and debugging capabilities
 
@@ -163,7 +164,7 @@ BaseAgent[TConfig, TContext] (Abstract)
 class AnalystConfig(BaseAgentConfig):
     max_websearches: int = 10
     min_words: int = 3000
-    allowed_tools: list[str] = ["WebSearch", "WebFetch"]
+    allowed_tools: list[str] = ["WebSearch", "WebFetch", "TodoWrite"]
 ```
 
 **Context**:

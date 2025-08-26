@@ -11,10 +11,10 @@ Building an AI-powered business idea evaluation system using Claude SDK and MCP 
 ## Current Phase & Focus
 
 **Phase:** Phase 2 - COMPLETE (implementation finished)  
-**Latest Session:** `session-logs/2025-08-26-template-implementation.md`  
-**Immediate Focus:** Ready for Phase 3 (Judge agent implementation)
-**Status:** Template decoupling complete - templates contain structure, prompts contain principles
-**Note:** Tests refactored, templates decoupled, turn efficiency fixed
+**Latest Session:** `session-logs/2025-08-26-tool-improvements-implementation.md`  
+**Immediate Focus:** Ready for TODO line 20 (citation accuracy improvements)
+**Status:** Tool improvements complete (WebFetch, TodoWrite enabled)
+**Note:** Ready for TODO line 20 (citation accuracy improvements)
 
 ## Key Documents
 

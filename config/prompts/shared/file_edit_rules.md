@@ -23,6 +23,19 @@ When working with pre-created template files:
    - Replace with your complete, finished output
    - Do NOT edit individual sections separately
 
+## Research Workflow
+
+When analyzing business ideas:
+
+1. **Read the template first** - Use Read tool to understand structure
+2. **Plan** (optional): Use TodoWrite for complex ideas needing organization  
+3. **Research** (if web tools enabled): Use WebSearch to find sources
+4. **Deep Dive** (if web tools enabled): Use WebFetch for detailed extraction
+5. **Synthesize**: Complete all research before editing
+6. **Execute**: Use ONE Edit operation on the template
+
+Remember: ALWAYS READ before EDIT.
+
 ## File Operations Best Practices
 
 - NEVER use the Write tool - files are pre-created for you  

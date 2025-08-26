@@ -37,7 +37,7 @@ class BaseAgentConfig:
     """Base configuration shared by all agents."""
 
     # Common settings
-    max_turns: int = 20
+    max_turns: int = 50
     prompts_dir: Path = Path("config/prompts")
     system_prompt: str = "system.md"  # Relative to agent's prompt dir
 
@@ -57,8 +57,10 @@ class AnalystConfig(BaseAgentConfig):
     max_websearches: int = 4
     min_words: int = 800
 
-    # Default tools for analyst is to use WebSearch
-    allowed_tools: list[str] = field(default_factory=lambda: ["WebSearch"])
+    # Default tools for analyst: web research + task organization
+    allowed_tools: list[str] = field(
+        default_factory=lambda: ["WebSearch", "WebFetch", "TodoWrite"]
+    )
 
 
 @dataclass

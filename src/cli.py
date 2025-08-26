@@ -42,10 +42,10 @@ Examples:
     )
 
     parser.add_argument(  # pyright: ignore[reportUnusedCallResult]
-        "--no-websearch",
+        "--no-web-tools",
         "-n",
         action="store_true",
-        help="Disable WebSearch tool for faster analysis (uses existing knowledge only)",
+        help="Disable WebSearch and WebFetch tools (uses existing knowledge only)",
     )
 
     parser.add_argument(  # pyright: ignore[reportUnusedCallResult]
@@ -79,7 +79,7 @@ Examples:
     # Extract values from args with proper typing
     idea: str = args.idea
     debug: bool = args.debug
-    no_websearch: bool = args.no_websearch
+    no_web_tools: bool = args.no_web_tools
     with_review: bool = args.with_review
     max_iterations: int = args.max_iterations
     analyst_prompt: str | None = getattr(args, "analyst_prompt", None)
@@ -107,8 +107,9 @@ Examples:
         analyst_config.system_prompt = analyst_prompt
     if reviewer_prompt:
         reviewer_config.system_prompt = reviewer_prompt
-    if no_websearch:
-        analyst_config.allowed_tools = []  # No external tools
+    if no_web_tools:
+        # Remove only web tools, keep TodoWrite
+        analyst_config.allowed_tools = ["TodoWrite"]
     if with_review and max_iterations:
         reviewer_config.max_iterations = max_iterations
 

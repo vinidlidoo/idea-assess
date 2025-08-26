@@ -14,12 +14,14 @@
 
 ## Features
 
-- [ ] Invite the analyst to use the WebFetch tool and to further dive results from the WebSearch tool
-- [ ] Invite the analyst to the TodoWrite tool to produce better results
-- [ ] Invite the analyst to Thinking mode to produce better results (we should see ThinkingBlock messages when the agent thinks)
+- [x] Invite the analyst to use the WebFetch tool and to further dive results from the WebSearch tool
+- [x] Invite the analyst to the TodoWrite tool to produce better results
+- [x] Invite the analyst to Thinking mode to produce better results (noted: future Claude feature)
+- [ ] Tweak prompt to make references/citations more accurate
 - [ ] Resume the analyst-reviewer loop with additional iterations when running the CLI on the same idea slug
 - [ ] Enable human feedback iteration
 - [ ] Add capability for the CLI to run multiple pipelines on different ideas at once
+- [ ] Add analysis cost in the metadata at the bottom of the analysis file
 - [x] De-couple system prompts and file edit template. Have Pipeline orchestrator create file with template instead of creating empty files
 
 ## Bugs

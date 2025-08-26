@@ -64,7 +64,6 @@ class AnalystAgent(BaseAgent[AnalystConfig, AnalystContext]):
             if context and context.tools
             else self.config.get_allowed_tools()
         )
-        use_websearch = "WebSearch" in allowed_tools
 
         # Reset interrupt state
         self.interrupt_event.clear()
@@ -85,11 +84,18 @@ class AnalystAgent(BaseAgent[AnalystConfig, AnalystContext]):
             # Load the analyst prompt with includes
             system_prompt = self.load_system_prompt()
 
-            # Build websearch instruction based on configuration
-            if use_websearch:
-                websearch_instruction = f"Use WebSearch efficiently (maximum {self.config.max_websearches} searches) to gather the most critical data to support your analysis."
+            # Build simple tool status variables
+            if "WebSearch" in allowed_tools:
+                web_tools_status = "enabled"
+                web_tools_instruction = (
+                    f"Use WebSearch (max {self.config.max_websearches}) to find sources. "
+                    f"Use WebFetch to deep-dive promising URLs for detailed data."
+                )
             else:
-                websearch_instruction = "WebSearch is disabled for this analysis. Use your existing knowledge."
+                web_tools_status = "disabled"
+                web_tools_instruction = (
+                    "Web tools disabled. Use your existing knowledge."
+                )
 
             # Use output path from context
             output_file = context.analysis_output_path
@@ -111,7 +117,9 @@ class AnalystAgent(BaseAgent[AnalystConfig, AnalystContext]):
                     previous_analysis_file=previous_file,
                     feedback_file=str(context.feedback_input_path),
                     max_turns=self.config.max_turns,
-                    websearch_instruction=websearch_instruction,
+                    max_websearches=self.config.max_websearches,
+                    web_tools_status=web_tools_status,
+                    web_tools_instruction=web_tools_instruction,
                     output_file=str(output_file),
                 )
             else:
@@ -123,7 +131,9 @@ class AnalystAgent(BaseAgent[AnalystConfig, AnalystContext]):
                 user_prompt = user_template.format(
                     idea=input_data,
                     max_turns=self.config.max_turns,
-                    websearch_instruction=websearch_instruction,
+                    max_websearches=self.config.max_websearches,
+                    web_tools_status=web_tools_status,
+                    web_tools_instruction=web_tools_instruction,
                     output_file=str(output_file),
                 )
 

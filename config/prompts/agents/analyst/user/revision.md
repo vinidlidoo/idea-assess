@@ -22,9 +22,11 @@ Please create an improved analysis that:
 
 Generate the complete revised analysis directly in markdown format, following the same structure as before.
 
-{{include:agents/analyst/user/constraints.md}}
+{{include:agents/analyst/user/tools.md}}
 
 Write your complete revised analysis to the file: {output_file}
 
 The revision file has been created with a template structure.
 Follow the file operation best practices when working with this template.
+
+IMPORTANT: Do NOT add any metadata footer or metadata comments to the analysis. The system will automatically add metadata after you complete your work.
