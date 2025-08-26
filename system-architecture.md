@@ -42,9 +42,9 @@ The Business Idea Evaluator is an AI-powered system that transforms one-liner bu
 ### Technology Stack
 
 - **Language**: Python 3.10+ (required for pattern matching)
-- **AI Model**: Claude 3.5 Sonnet via Claude SDK
+- **AI Model**: Claude Opus 4.1 via Claude SDK
 - **Package Management**: uv (modern Python package manager)
-- **External Tools**: MCP protocol for WebSearch/WebFetch
+- **External Tools**: MCP protocol (not yet implemented)
 - **Version Control**: Git
 
 ## Architecture Principles
@@ -103,12 +103,10 @@ match result:
 The foundation of the system, providing:
 
 1. **config.py** - Configuration management
-2. **contexts.py** - Runtime context definitions
-3. **results.py** - Result type definitions
-4. **agent_base.py** - Abstract agent interface
-5. **pipeline.py** - Orchestration logic
-6. **types.py** - Shared type definitions
-7. **run_analytics.py** - Analytics and telemetry
+2. **agent_base.py** - Abstract agent interface
+3. **pipeline.py** - Orchestration logic
+4. **types.py** - Shared type definitions
+5. **run_analytics.py** - Analytics and telemetry
 
 ### Agent Layer (`src/agents/`)
 
@@ -124,7 +122,6 @@ Concrete agent implementations:
 User-facing interfaces:
 
 1. **cli.py** - Command-line interface
-2. *(Future: api.py - REST API interface)*
 
 ### Utility Layer (`src/utils/`)
 
@@ -725,11 +722,16 @@ PipelineMode.ANALYZE_REVIEW_AND_JUDGE = "analyze_review_and_judge"
 
 ## Testing Strategy
 
-### Unit Tests (TODO)
+### Unit Tests (✅ COMPLETE)
 
-- Test each agent in isolation
-- Mock Claude SDK responses
-- Verify file operations
+Following a comprehensive Phase 1-4 overhaul (2025-08-26), the test suite now follows behavior-driven testing principles:
+
+- **36 tests** covering agents, pipeline, CLI, config, and SDK errors
+- **~0.14s execution time** - fast and focused
+- **Behavior-focused** - tests what agents DO, not HOW they do it
+- **Minimal mocking** - only external dependencies (SDK, filesystem for errors)
+
+See `tests/README.md` for detailed testing philosophy and patterns.
 
 ### Integration Tests
 

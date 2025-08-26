@@ -2,227 +2,243 @@
 
 ## Overview
 
-This document outlines our testing philosophy and approach for the idea-assess project, balancing pragmatism with maintainability.
+This document outlines our testing philosophy following the Phase 1-4 unit test overhaul completed on 2025-08-26. The test suite has been completely rewritten to follow behavior-driven testing principles.
 
 ## Testing Philosophy
 
 ### Core Principles
 
-1. **Pragmatic Coverage**: We prioritize testing critical business logic and integration points over achieving 100% coverage
-2. **Integration Over Isolation**: For SDK-dependent code, integration tests provide more value than complex mocking
-3. **Test What Matters**: Focus on behavior and outcomes rather than implementation details
-4. **Maintainability**: Tests should be easy to understand and update as the codebase evolves
+1. **Behavior Over Implementation**: Test what agents DO, not HOW they do it
+2. **Minimal Viable Mocking**: Mock only external dependencies (SDK, filesystem when testing errors)
+3. **Clear Success Criteria**: Each test has one clear purpose with observable outcomes
+4. **Fast and Focused**: Entire suite runs in < 0.2 seconds
 
-## Testing Layers
+### What We Test vs What We Don't
 
-### 1. Unit Tests (`tests/unit/`)
+**✅ We Test:**
 
-**Purpose**: Test isolated business logic and utilities
+- File existence determines Success/Error
+- Configuration affects agent behavior
+- Pipeline orchestration logic
+- Error propagation from dependencies
+- CLI argument parsing and effects
 
-**Good Candidates for Unit Testing**:
+**❌ We Don't Test:**
 
-- Pure functions (e.g., `create_slug`, `count_words`)
-- Data validation logic (e.g., `FeedbackValidator`)
-- Configuration loading and merging
-- Utility functions with minimal dependencies
+- Mock behavior
+- SDK internal operations
+- Implementation details
+- Method call counts (unless critical)
 
-**Poor Candidates for Unit Testing**:
+## Current Test Suite (36 tests, ~0.14s)
 
-- SDK-dependent code requiring complex mocks (e.g., `RunAnalytics` message processing)
-- Agent implementations that primarily orchestrate SDK calls
-- Pipeline orchestration that coordinates multiple components
+### Unit Tests (`tests/unit/`)
 
-**Example**:
+**Structure:**
+
+```text
+tests/unit/
+├── base_test.py              # Provides temp dir + mock client helper
+├── test_agents/
+│   ├── test_analyst.py       # 7 behavior tests
+│   └── test_reviewer.py      # 4 behavior tests
+├── test_core/
+│   ├── test_pipeline.py      # 7 orchestration tests
+│   └── test_config.py        # 7 validation tests
+├── test_cli.py               # 7 CLI behavior tests
+└── test_sdk_errors.py        # 4 error handling tests
+```
+
+### Test Categories
+
+#### 1. Agent Tests (11 tests)
+
+- **Analyst**: File creation, feedback handling, tool configuration
+- **Reviewer**: Feedback JSON creation, path validation
+
+#### 2. Pipeline Tests (7 tests)
+
+- Mode selection (ANALYZE vs ANALYZE_AND_REVIEW)
+- Iteration limits and early termination
+- Error propagation
+- Directory/symlink creation
+
+#### 3. CLI Tests (7 tests)
+
+- Command parsing and flag effects
+- Configuration overrides
+- Output formatting
+- Argument validation
+
+#### 4. Configuration Tests (7 tests)
+
+- Defaults and modifications
+- Path resolution
+- Tool configuration
+
+#### 5. SDK Error Tests (4 tests)
+
+- Connection errors
+- Timeouts
+- Invalid JSON handling
+
+## Testing Patterns
+
+### Base Test Class
 
 ```python
-def test_create_slug():
-    assert create_slug("AI-Powered Tool") == "ai-powered-tool"
-    assert create_slug("Test!!!123") == "test123"
+class BaseAgentTest:
+    """Provides temp directory and mock SDK client helper."""
+    
+    temp_dir: Path | None = None
+    
+    @pytest.fixture(autouse=True)
+    def setup_teardown(self):
+        """Creates and cleans temp directory."""
+        self.temp_dir = Path(tempfile.mkdtemp())
+        yield
+        if self.temp_dir:
+            shutil.rmtree(self.temp_dir, ignore_errors=True)
+    
+    @staticmethod
+    def create_mock_sdk_client() -> AsyncMock:
+        """Create properly configured mock SDK client."""
+        mock_client = AsyncMock()
+        mock_client.__aenter__ = AsyncMock(return_value=mock_client)
+        mock_client.__aexit__ = AsyncMock(return_value=None)
+        return mock_client
 ```
 
-### 2. Integration Tests (`tests/integration/`)
-
-**Purpose**: Test component interactions and SDK integrations
-
-**What We Test**:
-
-- Agent-to-agent communication via files
-- Pipeline orchestration flows
-- SDK message processing and artifact extraction
-- File I/O operations in context
-
-**Approach**:
-
-- Use real file system (temp directories)
-- Mock only external services (Claude API)
-- Test complete workflows end-to-end
-
-### 3. End-to-End Tests (`test_locally.sh`)
-
-**Purpose**: Validate complete system behavior with real Claude API
-
-**Coverage**:
-
-- Simple analysis pipeline
-- Reviewer feedback loop
-- WebSearch integration
-- Error handling and recovery
-- Different configuration variants
-
-## Handling SDK Dependencies
-
-### The Challenge
-
-The Claude SDK uses complex type hierarchies that are difficult to mock effectively:
-
-- `TextBlock`, `ToolUseBlock`, etc. are SDK-specific types
-- `isinstance()` checks fail with simple `Mock()` objects
-- Creating proper mock hierarchies is fragile and maintenance-heavy
-
-### Our Approach
-
-1. **Don't Mock SDK Types**: Accept that SDK-dependent code is tested via integration tests
-2. **Extract Business Logic**: Where possible, separate pure business logic from SDK interactions
-3. **Use Real SDK Objects**: In tests that must use SDK types, create real instances rather than mocks
-4. **Focus on Outcomes**: Test that the system produces correct outputs rather than how it processes SDK messages
-
-### Example: RunAnalytics Testing
-
-**What We Don't Test (Unit)**:
+### Good Test Example
 
 ```python
-# DON'T: Complex mocking of SDK types
-def test_track_text_block():
-    mock_block = Mock(spec=TextBlock)  # Won't pass isinstance checks
-    # This approach is fragile and provides limited value
+@pytest.mark.asyncio
+async def test_successful_file_creation(self, config, context):
+    """Test that agent returns Success when output file is created."""
+    with patch("src.agents.analyst.ClaudeSDKClient") as MockClient:
+        mock_client = self.create_mock_sdk_client()
+        MockClient.return_value = mock_client
+        
+        async def mock_receive():
+            # Simulate file being created (what matters)
+            _ = context.analysis_output_path.write_text("# Analysis\nContent")
+            yield ResultMessage(subtype="success", ...)
+        
+        mock_client.receive_response = mock_receive
+        agent = AnalystAgent(config)
+        result = await agent.process(idea, context)
+        
+        # Test ONLY the behavior we care about
+        assert isinstance(result, Success)
+        assert context.analysis_output_path.exists()
 ```
-
-**What We Do Test (Integration)**:
-
-```python
-# DO: Test the complete flow with real data
-def test_runanalytics_integration():
-    # Run actual analysis with test data
-    # Verify output files are created correctly
-    # Check aggregated statistics are accurate
-```
-
-## Test Organization
-
-### Directory Structure
-
-```
-tests/
-├── README.md               # This file
-├── unit/                   # Isolated unit tests
-│   ├── test_utils.py      # Pure function tests
-│   ├── test_config.py     # Configuration tests
-│   └── test_validators.py # Validation logic tests
-├── integration/            # Component integration tests
-│   ├── test_pipeline.py   # Pipeline orchestration
-│   └── test_agents.py     # Agent interactions
-└── fixtures/              # Test data and fixtures
-    ├── prompts/           # Test prompt files
-    └── analyses/          # Sample analysis outputs
-```
-
-### Naming Conventions
-
-- Test files: `test_<module_name>.py`
-- Test classes: `Test<ClassName>`
-- Test methods: `test_<what_is_being_tested>`
-- Fixtures: `<name>_fixture`
 
 ## Running Tests
 
-### Unit Tests Only
+### All Unit Tests
 
 ```bash
-pytest tests/unit/ -v
+pytest tests/unit/ -xvs
 ```
 
-### Integration Tests Only
+### Specific Test File
 
 ```bash
-pytest tests/integration/ -v
-```
-
-### All Tests
-
-```bash
-pytest tests/ -v
+pytest tests/unit/test_agents/test_analyst.py -xvs
 ```
 
 ### With Coverage
 
 ```bash
-pytest tests/ --cov=src --cov-report=html
+pytest tests/unit/ --cov=src --cov-report=html
 ```
 
-### End-to-End Tests
+### Quick Run (no traceback)
 
 ```bash
-./test_locally.sh
+pytest tests/unit/ -q --tb=no
 ```
 
-## Guidelines for New Tests
+## Anti-Patterns to Avoid
 
-### Before Writing a Test, Ask
+### ❌ Testing Mock Behavior
 
-1. **Is this testing business logic or SDK orchestration?**
-   - Business logic → Unit test
-   - SDK orchestration → Integration test
+```python
+# BAD: Testing the mock itself
+def test_mock_returns_correct_value():
+    mock = Mock(return_value="test")
+    assert mock() == "test"  # Useless!
+```
 
-2. **Would mocking make the test fragile?**
-   - Yes → Integration test
-   - No → Unit test
+### ❌ Over-Specifying Implementation
 
-3. **What am I actually validating?**
-   - Implementation details → Reconsider the test
-   - Behavior/outcomes → Good test
+```python
+# BAD: Too specific
+assert mock.call_args[0][0] == "specific string"
+assert mock.call_count == 3
+assert mock.method_calls[1][0] == "process"
 
-### Writing Good Tests
+# GOOD: Behavior focused
+assert isinstance(result, Success)
+assert output_file.exists()
+```
 
-1. **Arrange-Act-Assert**: Clear test structure
-2. **Single Responsibility**: One test, one behavior
-3. **Descriptive Names**: Test name should explain what and why
-4. **Minimal Setup**: Use fixtures and helpers to reduce boilerplate
-5. **Fast Execution**: Unit tests should run in milliseconds
+### ❌ Complex Fixture Hierarchies
 
-## Known Limitations
+```python
+# BAD: Unnecessary fixtures
+@pytest.fixture
+def sample_feedback():
+    return {"recommendation": "approve"}
 
-### Current Gaps
+# GOOD: Inline when simple
+def test_something():
+    feedback = {"recommendation": "approve"}  # Clear and immediate
+```
 
-1. **RunAnalytics Unit Tests**: Complex SDK dependencies make isolated testing impractical
-2. **Agent Unit Tests**: Primarily SDK orchestration, limited unit test value
-3. **Pipeline Unit Tests**: Better tested via integration tests
+## Type Safety
 
-### Future Improvements
+### Handling Type Warnings
 
-1. **Dependency Injection**: Refactor components to accept SDK clients as parameters
-2. **Interface Abstraction**: Create interfaces between business logic and SDK
-3. **Test Utilities**: Build helpers for creating test SDK objects
-4. **Performance Testing**: Add benchmarks for critical paths
+Most warnings are from mock assertions and are expected. Use targeted ignores:
 
-## Decision Log
+```python
+# For mock assertions
+assert mock.process.call_count == 2  # pyright: ignore[reportAny]
 
-### 2025-08-19: RunAnalytics Testing Strategy
+# For inner functions needing types
+async def mock_function(*_args: Any, **_kwargs: Any) -> None:
+    ...
+```
 
-- **Decision**: Skip complex unit tests for RunAnalytics
-- **Rationale**: SDK type dependencies make mocking impractical
-- **Alternative**: Rely on integration tests and production validation
-- **Trade-off**: Less granular testing, but more maintainable test suite
+## Future Testing Priorities
+
+### High Priority
+
+- Add strictness level tests for ReviewerAgent
+- Add more edge case handling (permissions, disk full)
+
+### Medium Priority  
+
+- Add performance benchmarks
+- Integration tests for full pipeline
+
+### Low Priority
+
+- Property-based testing for configurations
+- Mutation testing for coverage quality
 
 ## Maintenance
 
-This document should be updated when:
+This document reflects the test suite after the Phase 1-4 overhaul. Update when:
 
-- New testing patterns are established
-- Testing tools or frameworks change
-- Significant testing decisions are made
+- New test patterns are established
 - Test organization changes
+- Significant testing decisions are made
 
 ---
 
-*Last Updated: 2025-08-19*
-*Maintainer: Development Team*
+*Last Updated: 2025-08-26*
+*Test Count: 36 tests*
+*Execution Time: ~0.14s*
+*Coverage Focus: Behavior and Critical Paths*
