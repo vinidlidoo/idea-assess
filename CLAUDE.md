@@ -11,10 +11,10 @@ Building an AI-powered business idea evaluation system using Claude SDK and MCP 
 ## Current Phase & Focus
 
 **Phase:** Phase 2 - COMPLETE (implementation finished)  
-**Latest Session:** `session-logs/2025-08-25-ad-hoc-tasks.md`  
-**Immediate Focus:** Ad hoc maintenance and improvements
-**Status:** Type system consolidated, SDK tool inheritance issue documented
-**Note:** Tests need major refactoring before Phase 3
+**Latest Session:** `session-logs/2025-08-26-template-decoupling-design.md`  
+**Immediate Focus:** Implement template decoupling system (8 hours estimated)
+**Status:** Design complete, ready for implementation
+**Note:** Tests refactored, template system designed
 
 ## Key Documents
 
