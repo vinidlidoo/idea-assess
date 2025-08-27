@@ -10,9 +10,9 @@ Building an AI-powered business idea evaluation system using Claude SDK and MCP 
 
 ## Current Phase & Focus
 
-**Phase:** Phase 2 - COMPLETE (implementation finished)  
-**Latest Session:** `session-logs/2025-08-26-citation-accuracy-improvements.md`  
-**Immediate Focus:** Implement fact-checker agent for parallel citation verification  
+**Phase:** Phase 2 - COMPLETE (implementation finished)
+**Latest Session:** `session-logs/2025-08-26-citation-accuracy-improvements.md`
+**Immediate Focus:** Implement fact-checker agent for parallel citation verification
 **Status:** Citation accuracy improved 2.5x, fact-checker spec ready in docs/
 **Note:** Citation-strict prompt reduces failures from 70% to 33%
 

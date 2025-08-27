@@ -54,9 +54,9 @@ class TestCLI:
             assert "analysis.md" in output.lower()  # pyright: ignore[reportAny]
 
     @pytest.mark.asyncio
-    async def test_websearch_flag_disables_tool(self):
-        """Test that --no-websearch removes WebSearch from allowed_tools."""
-        test_args = ["cli.py", "AI fitness app", "--no-websearch"]
+    async def test_no_web_tools_flag_disables_tools(self):
+        """Test that --no-web-tools removes web tools from allowed_tools."""
+        test_args = ["cli.py", "AI fitness app", "--no-web-tools"]
 
         with (
             patch.object(sys, "argv", test_args),
@@ -83,8 +83,8 @@ class TestCLI:
             # Verify pipeline was called with correct config
             MockPipeline.assert_called_once()
             call_kwargs = MockPipeline.call_args.kwargs
-            # When no-websearch is set, allowed_tools should be empty
-            assert call_kwargs["analyst_config"].allowed_tools == []  # pyright: ignore[reportAny]
+            # When no-web-tools is set, only TodoWrite should remain
+            assert call_kwargs["analyst_config"].allowed_tools == ["TodoWrite"]  # pyright: ignore[reportAny]
 
     @pytest.mark.asyncio
     async def test_review_mode_configuration(self):

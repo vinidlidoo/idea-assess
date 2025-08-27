@@ -39,11 +39,11 @@ class TestConfiguration(BaseAgentTest):
         """Test AnalystConfig has correct defaults."""
         config = AnalystConfig()
 
-        # Check defaults
-        assert config.max_turns == 20
+        # Check defaults (updated to match current config)
+        assert config.max_turns == 50  # BaseAgentConfig default
         assert config.max_websearches == 4
         assert config.min_words == 800
-        assert config.allowed_tools == ["WebSearch"]
+        assert config.allowed_tools == ["WebSearch", "WebFetch", "TodoWrite"]
         assert config.system_prompt == "system.md"
         assert config.prompts_dir == Path("config/prompts")
 
@@ -51,8 +51,8 @@ class TestConfiguration(BaseAgentTest):
         """Test ReviewerConfig has correct defaults."""
         config = ReviewerConfig()
 
-        # Check defaults
-        assert config.max_turns == 20
+        # Check defaults (updated to match current config)
+        assert config.max_turns == 50  # BaseAgentConfig default
         assert config.max_iterations == 3
         assert config.strictness == "normal"
         assert config.allowed_tools == []
@@ -74,7 +74,7 @@ class TestConfiguration(BaseAgentTest):
         # Check analyst config
         assert isinstance(analyst, AnalystConfig)
         assert analyst.prompts_dir == self.temp_dir / "config" / "prompts"
-        assert analyst.allowed_tools == ["WebSearch"]
+        assert analyst.allowed_tools == ["WebSearch", "WebFetch", "TodoWrite"]
 
         # Check reviewer config
         assert isinstance(reviewer, ReviewerConfig)
@@ -84,13 +84,14 @@ class TestConfiguration(BaseAgentTest):
     def test_get_allowed_tools_returns_copy(self):
         """Test that get_allowed_tools returns a copy, not original."""
         config = AnalystConfig()
+        original_tools = config.allowed_tools.copy()
 
         # Get tools and modify the returned list
         tools = config.get_allowed_tools()
         tools.append("NewTool")
 
         # Original should be unchanged
-        assert config.allowed_tools == ["WebSearch"]
+        assert config.allowed_tools == original_tools
         assert "NewTool" not in config.allowed_tools
 
     def test_config_modification(self):

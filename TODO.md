@@ -11,6 +11,10 @@
 - [ ] Distinguish the role of integrations tests vs test harness under test_locally.sh (no sure I understand the difference)
 - [ ] Invest in making run_analytics output easier to read and analyze. Evaluate developing a log management services using tools like DuckDB, Streamlit/Evidence.dev, Axiom/Better Stack.
 - [ ] Solve against the duplication of artifacts and message content printed in messages.jsonl by run_analytics
+- [ ] Consider adding property-based testing with Hypothesis for validators
+- [ ] Add integration tests for full pipeline with real files
+- [ ] Consider mutation testing to verify test quality
+- [ ] Add performance benchmarks for large analyses
 
 ## Features
 

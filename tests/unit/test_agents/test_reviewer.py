@@ -18,6 +18,25 @@ from tests.unit.base_test import BaseAgentTest
 class TestReviewerAgent(BaseAgentTest):
     """Test the ReviewerAgent class."""
 
+    def _create_mock_client(self):
+        """Helper to create a properly configured mock client."""
+        mock_client = AsyncMock()
+        mock_client.__aenter__ = AsyncMock(return_value=mock_client)
+        mock_client.__aexit__ = AsyncMock(return_value=None)
+        return mock_client
+
+    def _create_result_message(self, is_error=False):
+        """Helper to create a ResultMessage."""
+        return ResultMessage(
+            subtype="error" if is_error else "success",
+            duration_ms=1000,
+            duration_api_ms=800,
+            is_error=is_error,
+            num_turns=1,
+            session_id="test",
+            total_cost_usd=0.001,
+        )
+
     @pytest.fixture
     def config(self) -> ReviewerConfig:
         """Create reviewer configuration."""
@@ -25,7 +44,7 @@ class TestReviewerAgent(BaseAgentTest):
             max_turns=5,
             prompts_dir=Path("config/prompts"),
             system_prompt="agents/reviewer/system.md",
-            allowed_tools=["Read", "Edit"],
+            allowed_tools=[],  # Reviewer doesn't need tools by default
             max_iterations=3,
             strictness="normal",
         )
@@ -63,9 +82,7 @@ class TestReviewerAgent(BaseAgentTest):
             mock_validate.return_value = context.analysis_input_path
 
             with patch("src.agents.reviewer.ClaudeSDKClient") as MockClient:
-                mock_client = AsyncMock()
-                mock_client.__aenter__ = AsyncMock(return_value=mock_client)
-                mock_client.__aexit__ = AsyncMock(return_value=None)
+                mock_client = self._create_mock_client()
                 MockClient.return_value = mock_client
 
                 async def mock_receive():
@@ -73,15 +90,7 @@ class TestReviewerAgent(BaseAgentTest):
                     feedback = {"recommendation": "approve"}
                     _ = context.feedback_output_path.write_text(json.dumps(feedback))
 
-                    yield ResultMessage(
-                        subtype="success",
-                        duration_ms=1000,
-                        duration_api_ms=800,
-                        is_error=False,
-                        num_turns=1,
-                        session_id="test",
-                        total_cost_usd=0.001,
-                    )
+                    yield self._create_result_message(is_error=False)
 
                 mock_client.receive_response = mock_receive
                 agent = ReviewerAgent(config)
@@ -105,22 +114,12 @@ class TestReviewerAgent(BaseAgentTest):
             mock_validate.return_value = context.analysis_input_path
 
             with patch("src.agents.reviewer.ClaudeSDKClient") as MockClient:
-                mock_client = AsyncMock()
-                mock_client.__aenter__ = AsyncMock(return_value=mock_client)
-                mock_client.__aexit__ = AsyncMock(return_value=None)
+                mock_client = self._create_mock_client()
                 MockClient.return_value = mock_client
 
                 async def mock_receive():
                     # SDK completes but doesn't create feedback file
-                    yield ResultMessage(
-                        subtype="success",
-                        duration_ms=1000,
-                        duration_api_ms=800,
-                        is_error=False,
-                        num_turns=1,
-                        session_id="test",
-                        total_cost_usd=0.001,
-                    )
+                    yield self._create_result_message(is_error=False)
 
                 mock_client.receive_response = mock_receive
                 agent = ReviewerAgent(config)
@@ -174,3 +173,101 @@ class TestReviewerAgent(BaseAgentTest):
 
                 assert isinstance(result, Error)
                 assert "API connection failed" in result.message
+
+    @pytest.mark.asyncio
+    async def test_invalid_json_feedback(
+        self, config: ReviewerConfig, context: ReviewerContext
+    ):
+        """Test that agent handles invalid JSON feedback properly."""
+        with patch(
+            "src.agents.reviewer.ReviewerAgent._validate_analysis_path"
+        ) as mock_validate:
+            mock_validate.return_value = context.analysis_input_path
+
+            with patch("src.agents.reviewer.ClaudeSDKClient") as MockClient:
+                mock_client = self._create_mock_client()
+                MockClient.return_value = mock_client
+
+                async def mock_receive():
+                    # Write invalid JSON to feedback file
+                    _ = context.feedback_output_path.write_text("not valid json")
+                    yield self._create_result_message(is_error=False)
+
+                mock_client.receive_response = mock_receive
+                agent = ReviewerAgent(config)
+                result = await agent.process("", context)
+
+                # Should return Error for invalid JSON
+                assert isinstance(result, Error)
+                assert (
+                    "invalid" in result.message.lower()
+                    or "failed" in result.message.lower()
+                )
+
+    @pytest.mark.asyncio
+    async def test_sdk_error_message(
+        self, config: ReviewerConfig, context: ReviewerContext
+    ):
+        """Test that SDK errors are properly reported."""
+        with patch(
+            "src.agents.reviewer.ReviewerAgent._validate_analysis_path"
+        ) as mock_validate:
+            mock_validate.return_value = context.analysis_input_path
+
+            with patch("src.agents.reviewer.ClaudeSDKClient") as MockClient:
+                mock_client = self._create_mock_client()
+                MockClient.return_value = mock_client
+
+                async def mock_receive():
+                    # SDK returns error
+                    yield self._create_result_message(is_error=True)
+
+                mock_client.receive_response = mock_receive
+                agent = ReviewerAgent(config)
+                result = await agent.process("", context)
+
+                # Should return Error when SDK reports error
+                assert isinstance(result, Error)
+
+    @pytest.mark.asyncio
+    async def test_missing_context_validation(self, config: ReviewerConfig):
+        """Test that agent validates context is provided."""
+        agent = ReviewerAgent(config)
+
+        # Should raise ValueError for missing context
+        with pytest.raises(ValueError, match="Reviewer requires context"):
+            _ = await agent.process("", None)
+
+    @pytest.mark.asyncio
+    async def test_feedback_with_different_recommendations(
+        self, config: ReviewerConfig, context: ReviewerContext
+    ):
+        """Test different feedback recommendations."""
+        with patch(
+            "src.agents.reviewer.ReviewerAgent._validate_analysis_path"
+        ) as mock_validate:
+            mock_validate.return_value = context.analysis_input_path
+
+            # Test each valid recommendation type
+            for recommendation in ["approve", "reject"]:
+                with patch("src.agents.reviewer.ClaudeSDKClient") as MockClient:
+                    mock_client = self._create_mock_client()
+                    MockClient.return_value = mock_client
+
+                    async def mock_receive():
+                        feedback = {
+                            "recommendation": recommendation,
+                            "reason": f"Testing {recommendation}",
+                        }
+                        _ = context.feedback_output_path.write_text(
+                            json.dumps(feedback)
+                        )
+                        yield self._create_result_message(is_error=False)
+
+                    mock_client.receive_response = mock_receive
+                    agent = ReviewerAgent(config)
+                    result = await agent.process("", context)
+
+                    assert isinstance(result, Success)
+                    feedback_data = json.loads(context.feedback_output_path.read_text())
+                    assert feedback_data["recommendation"] == recommendation

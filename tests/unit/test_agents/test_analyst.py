@@ -20,6 +20,25 @@ from tests.unit.base_test import BaseAgentTest
 class TestAnalystAgent(BaseAgentTest):
     """Test the AnalystAgent class."""
 
+    def _create_mock_client(self):
+        """Helper to create a properly configured mock client."""
+        mock_client = AsyncMock()
+        mock_client.__aenter__ = AsyncMock(return_value=mock_client)
+        mock_client.__aexit__ = AsyncMock(return_value=None)
+        return mock_client
+
+    def _create_result_message(self, is_error=False):
+        """Helper to create a ResultMessage."""
+        return ResultMessage(
+            subtype="error" if is_error else "success",
+            duration_ms=1000,
+            duration_api_ms=800,
+            is_error=is_error,
+            num_turns=1,
+            session_id="test",
+            total_cost_usd=0.001,
+        )
+
     @pytest.fixture
     def config(self) -> AnalystConfig:
         """Create analyst configuration."""
@@ -27,7 +46,7 @@ class TestAnalystAgent(BaseAgentTest):
             max_turns=10,
             prompts_dir=Path("config/prompts"),
             system_prompt="agents/analyst/system.md",
-            allowed_tools=["WebSearch", "Edit"],
+            allowed_tools=["WebSearch", "WebFetch", "TodoWrite"],
             max_websearches=5,
             min_words=1000,
         )
@@ -53,42 +72,28 @@ class TestAnalystAgent(BaseAgentTest):
     ):
         """Test that agent returns Success when output file is created."""
         with patch("src.agents.analyst.ClaudeSDKClient") as MockClient:
-            mock_client = AsyncMock()
-            mock_client.__aenter__ = AsyncMock(return_value=mock_client)
-            mock_client.__aexit__ = AsyncMock(return_value=None)
+            mock_client = self._create_mock_client()
             MockClient.return_value = mock_client
 
             async def mock_receive():
-                # Simulate file being created by SDK (this is what matters)
-                _ = context.analysis_output_path.write_text("# Analysis\nContent here")
-
-                # Return success result
-                yield ResultMessage(
-                    subtype="success",
-                    duration_ms=1000,
-                    duration_api_ms=800,
-                    is_error=False,
-                    num_turns=1,
-                    session_id="test",
-                    total_cost_usd=0.001,
-                )
+                # Simulate file being created by SDK
+                context.analysis_output_path.write_text("# Analysis\nContent here")
+                yield self._create_result_message(is_error=False)
 
             mock_client.receive_response = mock_receive
             agent = AnalystAgent(config)
             result = await agent.process(TEST_IDEAS["simple"], context)
 
-            # The ONLY thing that matters: Success when file exists
             assert isinstance(result, Success)
             assert context.analysis_output_path.exists()
+            assert context.analysis_output_path.read_text().startswith("# Analysis")
 
     @pytest.mark.asyncio
     async def test_failure_when_no_file_created(
         self, config: AnalystConfig, context: AnalystContext
     ):
         """Test that agent returns Error when output file is not created."""
-        # Delete the file that was created in the fixture
-        if context.analysis_output_path.exists():
-            context.analysis_output_path.unlink()
+        context.analysis_output_path.unlink(missing_ok=True)
 
         with patch("src.agents.analyst.ClaudeSDKClient") as MockClient:
             mock_client = AsyncMock()
