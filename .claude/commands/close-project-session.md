@@ -1,5 +1,5 @@
 ---
-allowed-tools: Bash(git add:*), Bash(git status:*), Bash(git commit:*), Bash(date:*), Bash(/Users/vincent/dotfiles/utils/claude-sessions.sh:*)
+allowed-tools: Bash(git add:*), Bash(git status:*), Bash(git commit:*), Bash(date:*), Bash(git log:*), Bash(/Users/vincent/dotfiles/utils/claude-sessions.sh:*)
 description: Tasks to wrap up the current session using session logs
 ---
 # Tasks to wrap up a session
@@ -36,6 +36,7 @@ Based on the above:
    - Update "Immediate Focus" with next priority
    - Keep it minimal - detailed history goes in session logs
    - Do NOT add implementation details or decisions (those go in session log)
+   - Add lessons learned from working in the project with this particular user, which would help things go smoother next time
 
 5. Read @requirements.md, @implementation-plan.md, and @system-architecture.md, and update as appropriate to reflect the project's latest state. Also trim and simplify content where it makes sense.
 

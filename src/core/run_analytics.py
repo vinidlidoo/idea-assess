@@ -432,6 +432,35 @@ class RunAnalytics:
                 "is_error": block.is_error,
             }
 
+    def log_system_prompt(self, agent_name: str, iteration: int, prompt: str) -> None:
+        """
+        Log the formatted system prompt for an agent.
+
+        Args:
+            agent_name: Name of the agent (e.g., "analyst")
+            iteration: Current iteration number
+            prompt: The fully formatted system prompt
+        """
+        from datetime import datetime
+
+        # Create filename with agent and iteration
+        prompt_file = self.output_dir / f"{agent_name}_system_prompt_iter{iteration}.md"
+
+        try:
+            with open(prompt_file, "w") as f:
+                # Write header with metadata
+                _ = f.write(f"# {agent_name.title()} System Prompt\n\n")
+                _ = f.write(f"**Iteration:** {iteration}\n")
+                _ = f.write(f"**Timestamp:** {datetime.now().isoformat()}\n")
+                _ = f.write(f"**Run ID:** {self.run_id}\n\n")
+                _ = f.write("---\n\n")
+                # Write the actual prompt
+                _ = f.write(prompt)
+
+            logger.debug(f"System prompt written to: {prompt_file}")
+        except (IOError, OSError) as e:
+            logger.error(f"Failed to write system prompt: {e}", exc_info=True)
+
     def finalize(self) -> None:
         """Write final run summary when pipeline completes."""
         agent_metrics_data: dict[str, Any] = {}

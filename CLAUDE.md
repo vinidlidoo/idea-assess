@@ -11,10 +11,10 @@ Building an AI-powered business idea evaluation system using Claude SDK and MCP 
 ## Current Phase & Focus
 
 **Phase:** Phase 2 - COMPLETE (implementation finished)
-**Latest Session:** `session-logs/2025-08-26-citation-accuracy-improvements.md`
-**Immediate Focus:** Implement fact-checker agent for parallel citation verification
-**Status:** Citation accuracy improved 2.5x, fact-checker spec ready in docs/
-**Note:** Citation-strict prompt reduces failures from 70% to 33%
+**Latest Session:** `session-logs/2025-08-26-prompt-standardization.md`
+**Immediate Focus:** Phase 3 - Judge agent implementation with 7-criteria evaluation
+**Status:** Citation-strict prompt now default, system prompts fully observable in logs
+**Note:** Prompt system simplified from ~90 to ~30 lines, 2.5x citation accuracy improvement
 
 ## Key Documents
 
@@ -25,8 +25,9 @@ Building an AI-powered business idea evaluation system using Claude SDK and MCP 
 ### Session History
 
 - **session-logs/** - Detailed work logs per session
-- Latest: `2025-08-26-citation-accuracy-improvements.md`
+- Latest: `2025-08-26-prompt-standardization.md`
 - Key sessions:
+  - `2025-08-26-prompt-standardization.md` - Prompt standardization, tools in system prompts, observability
   - `2025-08-26-citation-accuracy-improvements.md` - Citation accuracy 2.5x improvement, fact-checker spec
   - `2025-08-26-template-implementation.md` - Implemented template decoupling, fixed turn efficiency
   - `2025-08-21-utils-cleanup-complete.md` - Utils cleanup, removed 75% dead code, fixed critical bugs
@@ -152,3 +153,13 @@ idea-assess/
 - always activate the virtual environment before running python files
 - use `fd` not `find`, `ripgrep` not `grep`, `uv` not `pip`, `zoxide` not ``
 - all files in session-logs/ should begin with creation date in the YYYY-MM-DD format
+
+## Lessons Learned Working with This User
+
+- **Start simple, iterate** - User prefers minimal working solutions over complex perfect ones
+- **Show don't tell** - User wants to see actual test results, not just descriptions
+- **Challenge assumptions** - Simplifications like "WebSearch/WebFetch always together" save complexity
+- **Direct feedback style** - User will say "you're not getting it" to redirect approach
+- **Leverage existing utilities** - Don't reinvent wheels, use load_prompt_with_includes etc.
+- **Aggressive timelines** - User pushes for rapid iteration and simplification
+- **Test in background** - Use `run_in_background: true` for long-running tests

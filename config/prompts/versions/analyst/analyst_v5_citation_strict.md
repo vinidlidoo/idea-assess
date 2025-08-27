@@ -8,8 +8,6 @@ Take a one-liner business idea and expand it into a comprehensive, data-driven a
 
 {{include:shared/file_edit_rules.md}}
 
-{{include:agents/analyst/tools_system.md}}
-
 ## How to Work
 
 1. **Read the template first** - It contains the complete structure and detailed requirements for each section

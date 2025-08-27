@@ -81,21 +81,43 @@ class AnalystAgent(BaseAgent[AnalystConfig, AnalystContext]):
         logger.info(f"Starting analysis for {idea_slug}, iteration {iteration}")
 
         try:
-            # Load the analyst prompt with includes
-            system_prompt = self.load_system_prompt()
+            # Load the analyst prompt with includes processed
+            system_prompt_template = load_prompt_with_includes(
+                self.get_system_prompt_path(), self.config.prompts_dir
+            )
 
-            # Build simple tool status variables
-            if "WebSearch" in allowed_tools:
-                web_tools_status = "enabled"
-                web_tools_instruction = (
-                    f"Use WebSearch (max {self.config.max_websearches}) to find sources. "
-                    f"Use WebFetch to deep-dive promising URLs for detailed data."
-                )
-            else:
-                web_tools_status = "disabled"
-                web_tools_instruction = (
-                    "Web tools disabled. Use your existing knowledge."
-                )
+            # Determine web tools availability (WebSearch and WebFetch are always together)
+            web_tools_enabled = "WebSearch" in allowed_tools
+
+            # Build tools list - TodoWrite is always available
+            tools_list = ["WebSearch", "WebFetch"] if web_tools_enabled else []
+            tools_list.extend(["TodoWrite", "Read", "Edit", "MultiEdit"])
+
+            # Load appropriate web tools content based on availability
+            snippet_file = (
+                "web_tools_enabled.md" if web_tools_enabled else "web_tools_disabled.md"
+            )
+            web_tools_content = load_prompt_with_includes(
+                f"agents/analyst/snippets/{snippet_file}", self.config.prompts_dir
+            )
+
+            # Format the web tools content with max_websearches
+            web_tools_content = web_tools_content.format(
+                max_websearches=self.config.max_websearches
+            )
+
+            # Format the system prompt with all variables
+            system_prompt = system_prompt_template.format(
+                max_turns=self.config.max_turns,
+                max_websearches=self.config.max_websearches,
+                tools_list=", ".join(tools_list),
+                web_tools_content=web_tools_content,
+            )
+
+            # Log the formatted system prompt for observability
+            if run_analytics:
+                run_analytics.log_system_prompt("analyst", iteration, system_prompt)
+                logger.debug(f"System prompt logged for iteration {iteration}")
 
             # Use output path from context
             output_file = context.analysis_output_path
@@ -116,10 +138,6 @@ class AnalystAgent(BaseAgent[AnalystConfig, AnalystContext]):
                     idea=input_data,
                     previous_analysis_file=previous_file,
                     feedback_file=str(context.feedback_input_path),
-                    max_turns=self.config.max_turns,
-                    max_websearches=self.config.max_websearches,
-                    web_tools_status=web_tools_status,
-                    web_tools_instruction=web_tools_instruction,
                     output_file=str(output_file),
                 )
             else:
@@ -130,10 +148,6 @@ class AnalystAgent(BaseAgent[AnalystConfig, AnalystContext]):
                 )
                 user_prompt = user_template.format(
                     idea=input_data,
-                    max_turns=self.config.max_turns,
-                    max_websearches=self.config.max_websearches,
-                    web_tools_status=web_tools_status,
-                    web_tools_instruction=web_tools_instruction,
                     output_file=str(output_file),
                 )
 

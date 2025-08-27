@@ -8,6 +8,8 @@ Review the provided business analysis and fill in the feedback template with str
 
 {{include:shared/file_edit_rules.md}}
 
+{{include:agents/reviewer/tools_system.md}}
+
 ## How to Work
 
 1. **Read the analysis document first** - Understand what's been written

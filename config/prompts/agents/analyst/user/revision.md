@@ -22,8 +22,6 @@ Please create an improved analysis that:
 
 Generate the complete revised analysis directly in markdown format, following the same structure as before.
 
-{{include:agents/analyst/user/tools.md}}
-
 Write your complete revised analysis to the file: {output_file}
 
 The revision file has been created with a template structure.
