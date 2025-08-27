@@ -10,11 +10,11 @@ Building an AI-powered business idea evaluation system using Claude SDK and MCP 
 
 ## Current Phase & Focus
 
-**Phase:** Phase 2 - COMPLETE (implementation finished)
-**Latest Session:** `session-logs/2025-08-26-prompt-standardization.md`
-**Immediate Focus:** Phase 3 - Judge agent implementation with 7-criteria evaluation
-**Status:** Citation-strict prompt now default, system prompts fully observable in logs
-**Note:** Prompt system simplified from ~90 to ~30 lines, 2.5x citation accuracy improvement
+**Phase:** Phase 2 - COMPLETE (implementation finished, citation accuracy fixed)
+**Latest Session:** `session-logs/2025-08-27-citation-accuracy-phase2-polish.md`
+**Immediate Focus:** FactChecker agent implementation (parallel citation verification)
+**Status:** Two-phase workflow with verification, 90% citation accuracy achieved
+**Note:** Next: Add dedicated FactChecker agent before Phase 3 Judge implementation
 
 ## Key Documents
 
@@ -154,6 +154,18 @@ idea-assess/
 - use `fd` not `find`, `ripgrep` not `grep`, `uv` not `pip`, `zoxide` not ``
 - all files in session-logs/ should begin with creation date in the YYYY-MM-DD format
 
+## Python Environment - CRITICAL
+
+**Virtual Environment Location**: `.venv` (not `venv`)
+**Python Command**: `.venv/bin/python` (not `python` or `python3`)
+**Package Manager**: `uv pip install` (not `pip` or `pip3`)
+**Package Name**: `claude-code-sdk` (not `claude-code-sdk-python`)
+**CLI Execution**: `.venv/bin/python -m src.cli` (not `python src/cli.py`)
+**CLI Flags**:
+
+- `--no-web-tools` (not `--no-websearch`)
+- `--analyst-prompt` expects relative path from prompts dir
+
 ## Lessons Learned Working with This User
 
 - **Start simple, iterate** - User prefers minimal working solutions over complex perfect ones
@@ -163,3 +175,6 @@ idea-assess/
 - **Leverage existing utilities** - Don't reinvent wheels, use load_prompt_with_includes etc.
 - **Aggressive timelines** - User pushes for rapid iteration and simplification
 - **Test in background** - Use `run_in_background: true` for long-running tests
+- **Verify results** - User wants to see WebFetch verification of claims, not just trust
+- **Two-phase patterns work** - Separating draft from polish improves quality significantly
+- **Explicit > implicit** - Agent needs clear "you MUST do X" rather than suggestions

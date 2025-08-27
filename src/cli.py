@@ -119,6 +119,7 @@ Examples:
     if no_web_tools:
         # Remove only web tools, keep TodoWrite
         analyst_config.allowed_tools = ["TodoWrite"]
+        analyst_config.max_websearches = 0  # No searches when web tools disabled
     if with_review and max_iterations:
         reviewer_config.max_iterations = max_iterations
 

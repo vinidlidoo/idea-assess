@@ -102,7 +102,7 @@ Precede each milestone with a bullet point `-`]
 
 ## References
 
-[TODO: Add 5-10 numbered citations supporting your key claims. Format each as:
+[TODO: Add 5-8 numbered citations supporting your key claims. Format each as:
 [#] Source Name. "Article/Report Title." Date 2024/2025. Key finding or statistic. <URL>
 
 Include:

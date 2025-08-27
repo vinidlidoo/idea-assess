@@ -16,9 +16,14 @@ This system transforms one-liner business ideas into comprehensive market analys
 1. **Install dependencies:**
 
    ```bash
-   python -m venv .venv
-   source .venv/bin/activate
+   # Create virtual environment (if not exists)
+   python3 -m venv .venv
+   
+   # Install dependencies using uv (preferred)
    uv pip install -r requirements.txt
+   
+   # Or use pip directly with venv Python
+   .venv/bin/pip install -r requirements.txt
    ```
 
 2. **Configure API Key:**
@@ -27,22 +32,35 @@ This system transforms one-liner business ideas into comprehensive market analys
 
 ## Usage
 
+### Important: Python Execution
+
+**Always use the virtual environment's Python:**
+
+```bash
+# Correct - using venv Python directly
+.venv/bin/python -m src.cli "Your business idea here"
+
+# Incorrect - may use wrong Python
+python src/cli.py "Your idea"
+```
+
 ### Basic Analysis
 
 ```bash
-python src/cli.py analyze "Your business idea here"
+.venv/bin/python -m src.cli "AI-powered fitness app for seniors"
 ```
 
-Example:
+### CLI Flags
 
-```bash
-python src/cli.py analyze "AI-powered fitness app for seniors"
-```
+- `--no-web-tools` or `-n`: Disable web search (not `--no-websearch`)
+- `--analyst-prompt PATH`: Override analyst prompt file
+- `--with-review`: Enable reviewer feedback loop
+- `--max-iterations N`: Set review iterations (1-5)
 
 ### With Reviewer Feedback Loop
 
 ```bash
-python src/cli.py analyze "Your idea" --with-review --max-iterations 3
+.venv/bin/python -m src.cli "Your idea" --with-review --max-iterations 3
 ```
 
 ### Debug Mode
@@ -50,7 +68,7 @@ python src/cli.py analyze "Your idea" --with-review --max-iterations 3
 Enable detailed logging:
 
 ```bash
-python src/cli.py analyze "Your idea" --debug
+.venv/bin/python -m src.cli "Your idea" --debug
 ```
 
 ### Disable WebSearch (Faster Testing)

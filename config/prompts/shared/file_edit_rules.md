@@ -1,44 +1,23 @@
-# CRITICAL TOOL USAGE RULES
+## File Operations Protocol
 
-**YOU MUST ALWAYS READ A FILE BEFORE EDITING IT**
+### Critical Rule: Read Before Edit
 
-1. To edit ANY file, you MUST first use the Read tool on that exact file
-2. Only after successfully reading a file can you use the Edit tool on it
-3. NEVER attempt to Edit without Reading first - it will fail
-4. This applies to ALL files, including pre-filled template files
+**You MUST use the Read tool before using Edit on ANY file** - this includes templates. Editing without reading first will fail.
 
-## Workflow for Template Files
+### Template Workflow
 
-When working with pre-created template files:
+1. **Read** - Use Read tool to understand template structure and TODO requirements
+2. **Research** - Complete ALL research before starting edits:
+   - Use TodoWrite to organize complex analyses (optional)
+   - Use WebSearch/WebFetch if available for data gathering
+3. **Edit** - Replace entire template in ONE operation:
+   - Match from first to last line
+   - Replace all content at once
+   - Don't edit sections separately
 
-1. **Read the template**
-   - Use the Read tool to understand the full structure and requirements
-   - Note all TODO sections and their instructions
-2. **Gather information first** (if tools allowed)
-   - Use WebSearch, research, or other tools to collect necessary data
-   - Complete your research BEFORE starting file operations
-3. **Replace with a single operation**
-   - Use ONE Edit operation to replace the ENTIRE file content
-   - Match from the first line to the last line of the template
-   - Replace with your complete, finished output
-   - Do NOT edit individual sections separately
+### Best Practices
 
-## Research Workflow
-
-When analyzing business ideas:
-
-1. **Read the template first** - Use Read tool to understand structure
-2. **Plan** (optional): Use TodoWrite for complex ideas needing organization  
-3. **Research** (if web tools enabled): Use WebSearch to find sources
-4. **Deep Dive** (if web tools enabled): Use WebFetch for detailed extraction
-5. **Synthesize**: Complete all research before editing
-6. **Execute**: Use ONE Edit operation on the template
-
-Remember: ALWAYS READ before EDIT.
-
-## File Operations Best Practices
-
-- NEVER use the Write tool - files are pre-created for you  
-- Always use the exact file paths provided - don't guess or modify paths
-- Use the MultiEdit for surgical updates - otherwise this can waste turns and may prevent completion
-- Complete your research and planning before starting the Edit operation
+- Use exact file paths provided (don't modify)
+- Never use Write tool (files are pre-created)
+- Use MultiEdit for surgical updates when needed
+- Complete research before editing to avoid wasting turns
