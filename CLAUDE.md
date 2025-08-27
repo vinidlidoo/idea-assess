@@ -176,5 +176,4 @@ idea-assess/
 - **Aggressive timelines** - User pushes for rapid iteration and simplification
 - **Test in background** - Use `run_in_background: true` for long-running tests
 - **Verify results** - User wants to see WebFetch verification of claims, not just trust
-- **Two-phase patterns work** - Separating draft from polish improves quality significantly
 - **Explicit > implicit** - Agent needs clear "you MUST do X" rather than suggestions
