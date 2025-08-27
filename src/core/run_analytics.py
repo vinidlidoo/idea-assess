@@ -94,6 +94,7 @@ class RunAnalytics:
         self.message_count: int = 0
         self.global_tool_count: int = 0
         self.search_count: int = 0
+        self.webfetch_count: int = 0
 
         # Ensure output directory exists
         self.output_dir.mkdir(parents=True, exist_ok=True)
@@ -221,6 +222,8 @@ class RunAnalytics:
                     tool_artifacts["tool_input"], dict
                 ):
                     tool_artifacts["tool_input"]["query"] = query
+            elif tool_name == "WebFetch":
+                self.webfetch_count += 1
             elif tool_name == "Read" and block.input:
                 file_path = block.input.get("file_path", "")
                 if file_path:
@@ -442,6 +445,7 @@ class RunAnalytics:
                 "total_messages": self.message_count,
                 "total_tool_uses": self.global_tool_count,
                 "total_searches": self.search_count,
+                "total_webfetches": self.webfetch_count,
             },
             "agent_metrics": agent_metrics_data,
         }
@@ -532,5 +536,6 @@ class RunAnalytics:
         return {
             "message_count": self.message_count,
             "search_count": self.search_count,
+            "webfetch_count": self.webfetch_count,
             "tool_count": self.global_tool_count,
         }

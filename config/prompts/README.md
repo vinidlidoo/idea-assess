@@ -14,7 +14,7 @@ config/prompts/
 │   │   └── user/        # User prompts for different workflows
 │   │       ├── initial.md       # Initial analysis
 │   │       ├── revision.md      # Revision workflow (iteration 2+)
-│   │       └── constraints.md   # Consolidated resource constraints
+│   │       └── tools.md         # Tool usage guidance
 │   ├── reviewer/
 │   │   ├── system.md    # Reviewer principles (89 lines, no structure)
 │   │   └── user/
@@ -34,7 +34,8 @@ config/prompts/
 │       └── v1.md
 └── experimental/       # Experimental prompts (testing)
     └── analyst/
-        └── concise.md
+        ├── concise.md          # Shorter, more focused analysis
+        └── citation-strict.md  # Strict citation accuracy requirements
 ```
 
 ## How Prompts Work After Refactoring

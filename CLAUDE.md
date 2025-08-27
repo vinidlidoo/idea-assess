@@ -11,10 +11,10 @@ Building an AI-powered business idea evaluation system using Claude SDK and MCP 
 ## Current Phase & Focus
 
 **Phase:** Phase 2 - COMPLETE (implementation finished)  
-**Latest Session:** `session-logs/2025-08-26-tool-improvements-implementation.md`  
-**Immediate Focus:** Ready for TODO line 20 (citation accuracy improvements)
-**Status:** Tool improvements complete (WebFetch, TodoWrite enabled)
-**Note:** Ready for TODO line 20 (citation accuracy improvements)
+**Latest Session:** `session-logs/2025-08-26-citation-accuracy-improvements.md`  
+**Immediate Focus:** Implement fact-checker agent for parallel citation verification  
+**Status:** Citation accuracy improved 2.5x, fact-checker spec ready in docs/
+**Note:** Citation-strict prompt reduces failures from 70% to 33%
 
 ## Key Documents
 
@@ -25,8 +25,9 @@ Building an AI-powered business idea evaluation system using Claude SDK and MCP 
 ### Session History
 
 - **session-logs/** - Detailed work logs per session
-- Latest: `2025-08-26-template-implementation.md`
+- Latest: `2025-08-26-citation-accuracy-improvements.md`
 - Key sessions:
+  - `2025-08-26-citation-accuracy-improvements.md` - Citation accuracy 2.5x improvement, fact-checker spec
   - `2025-08-26-template-implementation.md` - Implemented template decoupling, fixed turn efficiency
   - `2025-08-21-utils-cleanup-complete.md` - Utils cleanup, removed 75% dead code, fixed critical bugs
   - `2025-08-20-prompt-refactor-iteration-fixes.md` - Fixed iteration numbering, implemented prompt includes

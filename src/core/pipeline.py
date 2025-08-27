@@ -36,6 +36,7 @@ class AnalysisPipeline:
         analyst_config: AnalystConfig,
         reviewer_config: ReviewerConfig,
         mode: PipelineMode = PipelineMode.ANALYZE,
+        slug_suffix: str | None = None,
     ) -> None:
         """
         Initialize the pipeline with idea and configuration.
@@ -46,10 +47,13 @@ class AnalysisPipeline:
             analyst_config: Analyst agent configuration
             reviewer_config: Reviewer agent configuration
             mode: Pipeline execution mode
+            slug_suffix: Optional suffix to append to the slug
         """
         # Core configuration
         self.idea: str = idea
         self.slug: str = create_slug(idea)
+        if slug_suffix:
+            self.slug = f"{self.slug}-{slug_suffix}"
         self.system_config: SystemConfig = system_config
         self.analyst_config: AnalystConfig = analyst_config
         self.reviewer_config: ReviewerConfig = reviewer_config
@@ -220,12 +224,15 @@ class AnalysisPipeline:
             case Success():
                 # Append metadata to the completed analysis
                 websearch_count = self.analytics.search_count if self.analytics else 0
+                webfetch_count = self.analytics.webfetch_count if self.analytics else 0
+
                 append_metadata_to_analysis(
                     analysis_file,
                     self.idea,
                     self.slug,
                     self.iteration_count,
                     websearch_count,
+                    webfetch_count,
                 )
 
         # Save analysis iteration

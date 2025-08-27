@@ -99,7 +99,12 @@ def create_file_from_template(template_path: Path, output_path: Path) -> None:
 
 
 def append_metadata_to_analysis(
-    analysis_file: Path, idea: str, slug: str, iteration: int, websearch_count: int = 0
+    analysis_file: Path,
+    idea: str,
+    slug: str,
+    iteration: int,
+    websearch_count: int = 0,
+    webfetch_count: int = 0,
 ) -> None:
     """Append metadata comment to completed analysis.
 
@@ -109,6 +114,7 @@ def append_metadata_to_analysis(
         slug: Generated slug for the idea
         iteration: Current iteration number
         websearch_count: Number of websearches performed
+        webfetch_count: Number of WebFetch verifications performed
     """
     from datetime import datetime
 
@@ -121,6 +127,7 @@ Idea Slug: {slug}
 Iteration: {iteration}
 Timestamp: {datetime.now().isoformat()}
 Websearches Used: {websearch_count}
+Webfetches Used: {webfetch_count}
 -->
 """
 

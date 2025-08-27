@@ -74,6 +74,11 @@ Examples:
         help="Maximum iterations for reviewer feedback (default: 3)",
     )
 
+    parser.add_argument(  # pyright: ignore[reportUnusedCallResult]
+        "--slug-suffix",
+        help="Suffix to append to analysis slug (e.g., 'baseline', 'v2')",
+    )
+
     args = parser.parse_args()
 
     # Extract values from args with proper typing
@@ -84,9 +89,13 @@ Examples:
     max_iterations: int = args.max_iterations
     analyst_prompt: str | None = getattr(args, "analyst_prompt", None)
     reviewer_prompt: str | None = getattr(args, "reviewer_prompt", None)
+    slug_suffix: str | None = getattr(args, "slug_suffix", None)
 
     # Setup logging
     idea_slug = create_slug(idea)
+    # Apply suffix to slug if provided (must match pipeline behavior)
+    if slug_suffix:
+        idea_slug = f"{idea_slug}-{slug_suffix}"
     log_file = setup_logging(debug=debug, idea_slug=idea_slug, run_type="run")
 
     # Run the analysis
@@ -130,6 +139,7 @@ Examples:
         analyst_config=analyst_config,
         reviewer_config=reviewer_config,
         mode=mode,
+        slug_suffix=slug_suffix,
     )
 
     # Run the pipeline (no parameters needed!)
