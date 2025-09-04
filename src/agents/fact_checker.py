@@ -1,4 +1,4 @@
-"""Reviewer agent implementation that reads analysis from file."""
+"""FactChecker agent implementation for verifying claims and citations."""
 
 import json
 import logging
@@ -10,8 +10,8 @@ from claude_code_sdk import ClaudeSDKClient, ClaudeCodeOptions
 from claude_code_sdk.types import ResultMessage
 
 from ..core.agent_base import BaseAgent
-from ..core.types import AgentResult, Success, Error, ReviewerContext
-from ..core.config import ReviewerConfig
+from ..core.types import AgentResult, Success, Error, FactCheckContext
+from ..core.config import FactCheckerConfig
 from ..utils.file_operations import load_prompt
 from ..utils.json_validator import JsonResponseValidator
 
@@ -19,15 +19,15 @@ from ..utils.json_validator import JsonResponseValidator
 logger = logging.getLogger(__name__)
 
 
-class ReviewerAgent(BaseAgent[ReviewerConfig, ReviewerContext]):
-    """Agent responsible for reviewing analyses by reading from files."""
+class FactCheckerAgent(BaseAgent[FactCheckerConfig, FactCheckContext]):
+    """Agent responsible for fact-checking claims and citations in analyses."""
 
-    def __init__(self, config: ReviewerConfig):
+    def __init__(self, config: FactCheckerConfig):
         """
-        Initialize the Reviewer agent.
+        Initialize the FactChecker agent.
 
         Args:
-            config: Reviewer-specific configuration
+            config: FactChecker-specific configuration
         """
         super().__init__(config)
 
@@ -35,25 +35,25 @@ class ReviewerAgent(BaseAgent[ReviewerConfig, ReviewerContext]):
     @override
     def agent_name(self) -> str:
         """Return the name of this agent."""
-        return "Reviewer"
+        return "FactChecker"
 
     @override
     async def process(
-        self, input_data: str = "", context: ReviewerContext | None = None
+        self, input_data: str = "", context: FactCheckContext | None = None
     ) -> AgentResult:
         """
-        Review a business analysis by reading from file and write feedback to JSON.
+        Fact-check an analysis for accuracy of claims and citations.
 
         Args:
-            input_data: Not used by reviewer (defaults to empty string)
-            context: Runtime context with analysis_path and other settings
+            input_data: Not used for fact-checker (reads from file)
+            context: Runtime context with analysis path and output path
 
         Returns:
-            AgentResult containing path to feedback JSON file
+            AgentResult containing Success or Error
         """
-        # Reviewer requires context but not input_data
+        # FactChecker requires context
         if context is None:
-            raise ValueError("Reviewer requires context with analysis_path")
+            raise ValueError("FactChecker requires context with analysis_path")
 
         # Setup
         start_time = time.time()
@@ -77,11 +77,11 @@ class ReviewerAgent(BaseAgent[ReviewerConfig, ReviewerContext]):
 
         # Validate input path for security (before try block)
         if not context.analysis_input_path:
-            raise ValueError("analysis_input_path is required in ReviewerContext")
+            raise ValueError("analysis_input_path is required in FactCheckContext")
 
         # Extract idea slug from analysis path for logging
         idea_slug = context.analysis_input_path.parent.name
-        logger.info(f"Starting review for {idea_slug}, iteration {iteration}")
+        logger.info(f"Starting fact-check for {idea_slug}, iteration {iteration}")
 
         try:
             # Validate that path is within analyses directory for security
@@ -89,23 +89,23 @@ class ReviewerAgent(BaseAgent[ReviewerConfig, ReviewerContext]):
                 str(context.analysis_input_path)
             )
 
-            # Load the reviewer prompt with includes
+            # Load the fact-checker prompt with includes
             system_prompt = self.load_system_prompt()
-            # Use feedback output path from context
-            feedback_file = context.feedback_output_path
+            # Use fact-check output path from context
+            fact_check_file = context.fact_check_output_path
 
-            # Feedback file should be pre-created by pipeline
+            # Fact-check file should be pre-created by pipeline
 
-            # Load and format review instructions template
-            review_template = load_prompt(
-                "agents/reviewer/user/review.md",
+            # Load and format fact-check instructions template
+            fact_check_template = load_prompt(
+                "agents/factchecker/user/fact-check.md",
                 self.config.prompts_dir,
             )
-            user_prompt = review_template.format(
+            user_prompt = fact_check_template.format(
                 iteration=iteration,
-                max_iterations=self.config.max_iterations,
+                max_iterations=context.max_iterations,
                 analysis_path=analysis_path,
-                feedback_file=feedback_file,
+                fact_check_file=fact_check_file,
             )
 
             # Configure options
@@ -116,10 +116,10 @@ class ReviewerAgent(BaseAgent[ReviewerConfig, ReviewerContext]):
                 permission_mode="acceptEdits",  # Allow agent to edit files directly
             )
             logger.debug(
-                msg=f"Reviewer options: allowed_tools={options.allowed_tools}, max_turns={options.max_turns} "
+                msg=f"FactChecker options: allowed_tools={options.allowed_tools}, max_turns={options.max_turns}"
             )
 
-            # Create client and review
+            # Create client and fact-check
             async with ClaudeSDKClient(options=options) as client:
                 await client.query(user_prompt)
 
@@ -127,12 +127,12 @@ class ReviewerAgent(BaseAgent[ReviewerConfig, ReviewerContext]):
                     # Check for interrupt
                     if self.interrupt_event.is_set():
                         await client.interrupt()
-                        logger.warning("Review interrupted by user")
-                        return Error(message="Review interrupted by user")
+                        logger.warning("Fact-check interrupted by user")
+                        return Error(message="Fact-check interrupted by user")
 
                     # Track message with RunAnalytics if available
                     if run_analytics:
-                        run_analytics.track_message(message, "reviewer", iteration)
+                        run_analytics.track_message(message, "fact_checker", iteration)
 
                     # Get counts from RunAnalytics (always available in practice)
                     message_count = run_analytics.message_count if run_analytics else 0
@@ -140,44 +140,43 @@ class ReviewerAgent(BaseAgent[ReviewerConfig, ReviewerContext]):
                     # Progress tracking
                     if message_count > 0 and message_count % 5 == 0:
                         logger.debug(
-                            f"Review progress: {message_count} messages processed"
+                            f"Fact-check progress: {message_count} messages processed"
                         )
 
                     # Process when we hit ResultMessage (end of stream)
                     if isinstance(message, ResultMessage):
                         break
 
-            # Check if the feedback file has content (not just empty template)
-            if feedback_file.exists() and feedback_file.stat().st_size > 2:
-                # Read and validate the feedback
-                feedback_json = self._validate_and_fix_feedback(feedback_file)
-                if feedback_json is None:
+            # Check if the fact-check file has content (not just empty template)
+            if fact_check_file.exists() and fact_check_file.stat().st_size > 2:
+                # Read and validate the fact-check
+                fact_check_json = self._validate_and_fix_fact_check(fact_check_file)
+                if fact_check_json is None:
                     # Validation failed and couldn't be fixed
                     return Error(
-                        message="Invalid feedback structure could not be fixed"
+                        message="Invalid fact-check structure could not be fixed"
                     )
 
-                # Create metadata from feedback
-                metadata = self._create_feedback_metadata(
-                    feedback_json, iteration, feedback_file
+                # Create metadata from fact-check
+                metadata = self._create_fact_check_metadata(
+                    fact_check_json, iteration, fact_check_file
                 )
 
                 # Log summary
                 logger.info(
-                    f"Review complete: {metadata['recommendation']} with "
-                    + f"{metadata['critical_issues_count']} critical issues, "
-                    + f"{metadata['improvements_count']} improvements suggested"
+                    f"Fact-check complete: {metadata['recommendation']} with "
+                    + f"{metadata['issues_count']} issues identified"
                 )
 
                 return Success()
             else:
-                # Reviewer failed to edit feedback file
+                # FactChecker failed to edit fact-check file
                 return Error(
-                    message=f"Reviewer failed to edit feedback file: {feedback_file}"
+                    message=f"FactChecker failed to edit fact-check file: {fact_check_file}"
                 )
 
         except Exception as e:
-            logger.error(f"Review error: {str(e)}", exc_info=True)
+            logger.error(f"Fact-check error: {str(e)}", exc_info=True)
 
             return Error(message=str(e))
         finally:
@@ -186,66 +185,66 @@ class ReviewerAgent(BaseAgent[ReviewerConfig, ReviewerContext]):
 
             # Log session statistics
             logger.info(
-                "Review session complete - "
+                "Fact-check session complete - "
                 + f"Duration: {time.time() - start_time:.1f}s, "
                 + f"Iteration: {iteration}"
             )
 
-    def _validate_and_fix_feedback(
-        self, feedback_file: Path
+    def _validate_and_fix_fact_check(
+        self, fact_check_file: Path
     ) -> dict[str, object] | None:
-        """Validate and attempt to fix feedback JSON.
+        """Validate and attempt to fix fact-check JSON.
 
         Args:
-            feedback_file: Path to the feedback JSON file
+            fact_check_file: Path to the fact-check JSON file
 
         Returns:
-            Validated feedback dict or None if unfixable
+            Validated fact-check dict or None if unfixable
         """
         try:
-            with open(feedback_file, "r") as f:
-                feedback_json = json.load(f)  # pyright: ignore[reportAny]
+            with open(fact_check_file, "r") as f:
+                fact_check_json = json.load(f)  # pyright: ignore[reportAny]
 
-            validator = JsonResponseValidator(schema_type="reviewer")
-            is_valid, error_msg = validator.validate(feedback_json)  # pyright: ignore[reportAny]
+            validator = JsonResponseValidator(schema_type="fact_checker")
+            is_valid, error_msg = validator.validate(fact_check_json)  # pyright: ignore[reportAny]
 
             if not is_valid:
                 logger.warning(
-                    f"Feedback validation failed: {error_msg}, attempting fix"
+                    f"Fact-check validation failed: {error_msg}, attempting fix"
                 )
-                feedback_json = validator.fix_common_issues(feedback_json)  # pyright: ignore[reportAny]
-                is_valid, error_msg = validator.validate(feedback_json)
+                fact_check_json = validator.fix_common_issues(fact_check_json)  # pyright: ignore[reportAny]
+                is_valid, error_msg = validator.validate(fact_check_json)
 
                 if is_valid:
-                    # Save the fixed feedback
-                    with open(feedback_file, "w") as f:
-                        json.dump(feedback_json, f, indent=2)
-                    logger.info(f"Feedback fixed and saved to {feedback_file}")
+                    # Save the fixed fact-check
+                    with open(fact_check_file, "w") as f:
+                        json.dump(fact_check_json, f, indent=2)
+                    logger.info(f"Fact-check fixed and saved to {fact_check_file}")
                 else:
-                    logger.error(f"Invalid feedback structure: {error_msg}")
+                    logger.error(f"Invalid fact-check structure: {error_msg}")
                     return None
 
-            return feedback_json
+            return fact_check_json
 
         except (json.JSONDecodeError, OSError) as e:
-            logger.error(f"Failed to read feedback file: {e}")
+            logger.error(f"Failed to read fact-check file: {e}")
             return None
 
-    def _create_feedback_metadata(
+    def _create_fact_check_metadata(
         self,
-        feedback_json: dict[str, object],
+        fact_check_json: dict[str, object],
         iteration: int,
-        feedback_file: Path,
+        fact_check_file: Path,
     ) -> dict[str, object]:
-        """Create metadata dict from feedback JSON.
+        """Create metadata dict from fact-check JSON.
 
         Args:
-            feedback_json: Validated feedback dictionary
+            fact_check_json: Validated fact-check dictionary
             iteration: Current iteration number
-            feedback_file: Path to feedback file
+            fact_check_file: Path to fact-check file
 
         Returns:
-            Metadata dictionary for AgentResult
+            Metadata dictionary for logging
         """
 
         def safe_list_len(data: object, key: str) -> int:
@@ -255,13 +254,11 @@ class ReviewerAgent(BaseAgent[ReviewerConfig, ReviewerContext]):
 
         return {
             "iteration": iteration,
-            "feedback_file": str(feedback_file),
-            "recommendation": feedback_json.get("recommendation", "unknown"),
-            "critical_issues_count": safe_list_len(feedback_json, "critical_issues"),
-            "improvements_count": safe_list_len(feedback_json, "improvements"),
-            "minor_suggestions_count": safe_list_len(
-                feedback_json, "minor_suggestions"
+            "fact_check_file": str(fact_check_file),
+            "recommendation": fact_check_json.get(
+                "iteration_recommendation", "unknown"
             ),
+            "issues_count": safe_list_len(fact_check_json, "issues"),
         }
 
     def _validate_analysis_path(self, file_path: str) -> Path:

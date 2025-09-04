@@ -1,0 +1,80 @@
+{
+  "issues": [
+    {
+      "claim": "The global online tutoring market is experiencing explosive growth, valued at $7.69 billion in 2023 and projected to reach $21.76 billion by 2030, representing a CAGR of 16.3%",
+      "section": "Market Opportunity",
+      "severity": "High",
+      "details": {
+        "issue_type": "false_citation",
+        "citation_ref": "[1]",
+        "url_checked": "https://www.grandviewresearch.com/industry-analysis/online-tutoring-market",
+        "explanation": "The cited market size figures are incorrect. Grand View Research reports different numbers.",
+        "evidence": "Grand View Research actually reports the market reaching $23.73 billion by 2030 with a CAGR of 14.5-14.9%, and base size of $8.97 billion in 2023, not $7.69 billion.",
+        "suggestion": "Update to correct figures: market size of $8.97 billion in 2023, projected to reach $23.73 billion by 2030 with CAGR of 14.9%"
+      }
+    },
+    {
+      "claim": "Chegg (market cap: $1.2B) serves primarily high school and college students with homework help and tutoring services, generating $776 million in revenue for 2023",
+      "section": "Competition Analysis",
+      "severity": "Medium",
+      "details": {
+        "issue_type": "false_citation",
+        "citation_ref": "[5]",
+        "url_checked": "https://investor.chegg.com/financial-results",
+        "explanation": "The revenue figure is incorrect according to Chegg's actual 2023 earnings report.",
+        "evidence": "Chegg's actual 2023 annual revenue was $716.3 million, not $776 million as stated.",
+        "suggestion": "Correct to: 'generating $716.3 million in revenue for 2023'"
+      }
+    },
+    {
+      "claim": "Data security breaches could result in fines up to $43,792 per violation under COPPA",
+      "section": "Key Risks & Challenges",
+      "severity": "Medium",
+      "details": {
+        "issue_type": "outdated_citation",
+        "citation_ref": "[10]",
+        "url_checked": "https://www.ftc.gov/legal-library/browse/rules/childrens-online-privacy-protection-rule-coppa",
+        "explanation": "The COPPA fine amount appears to be outdated.",
+        "evidence": "Current COPPA penalties for 2024 were $51,744 per violation, increasing to $53,088 in 2025. The $43,792 figure appears to be from an earlier year.",
+        "suggestion": "Update to current 2024/2025 penalty amounts: $51,744 or $53,088 per violation"
+      }
+    },
+    {
+      "claim": "Age of Learning (creators of ABCmouse) targets younger learners (2-8 years) with gamified learning experiences, achieving $150 million in annual revenue with 5 million active subscriptions",
+      "section": "Competition Analysis",
+      "severity": "Medium",
+      "details": {
+        "issue_type": "unsupported_claim",
+        "citation_ref": "[6]",
+        "url_checked": "N/A",
+        "explanation": "The specific revenue and subscription figures cannot be verified from recent sources.",
+        "evidence": "Recent reports show Age of Learning's revenue at $75-100 million as of 2025. The 5 million subscription figure could not be verified in current sources.",
+        "suggestion": "Either provide a verifiable source or update with more conservative/verifiable figures"
+      }
+    },
+    {
+      "claim": "73% of parents now comfortable with online learning solutions compared to just 35% in 2019",
+      "section": "Market Opportunity",
+      "severity": "Low",
+      "details": {
+        "issue_type": "unsupported_claim",
+        "citation_ref": "[2]",
+        "url_checked": "https://www.edweek.org/technology/parent-survey-online-learning-2024",
+        "explanation": "The URL could not be accessed to verify the specific statistics cited.",
+        "evidence": "Unable to access the EdWeek Research Center report to verify the 73% vs 35% comparison.",
+        "suggestion": "Verify access to source or find alternative citation for parent comfort with online learning"
+      }
+    }
+  ],
+  
+  "statistics": {
+    "total_claims": "15",
+    "verified_claims": "10",
+    "unverified_claims": "3",
+    "false_claims": "2"
+  },
+  
+  "iteration_recommendation": "reject",
+  
+  "iteration_reason": "The analysis contains one High severity issue (incorrect market size data) and three Medium severity issues including false revenue figures for both Chegg and Age of Learning, plus outdated COPPA penalty amounts. These factual errors undermine the credibility of the market analysis and require correction before approval."
+}

@@ -9,10 +9,11 @@ import logging
 
 from ..agents.analyst import AnalystAgent
 from ..agents.reviewer import ReviewerAgent
+from ..agents.fact_checker import FactCheckerAgent
 from ..utils.text_processing import create_slug
 from ..utils.file_operations import create_file_from_template
 from ..utils.file_operations import append_metadata_to_analysis
-from .config import SystemConfig, AnalystConfig, ReviewerConfig
+from .config import SystemConfig, AnalystConfig, ReviewerConfig, FactCheckerConfig
 from .types import (
     PipelineMode,
     Success,
@@ -20,6 +21,7 @@ from .types import (
     PipelineResult,
     AnalystContext,
     ReviewerContext,
+    FactCheckContext,
 )
 from .run_analytics import RunAnalytics
 
@@ -35,6 +37,7 @@ class AnalysisPipeline:
         system_config: SystemConfig,
         analyst_config: AnalystConfig,
         reviewer_config: ReviewerConfig,
+        fact_checker_config: FactCheckerConfig,
         mode: PipelineMode = PipelineMode.ANALYZE,
         slug_suffix: str | None = None,
     ) -> None:
@@ -46,6 +49,7 @@ class AnalysisPipeline:
             system_config: System configuration
             analyst_config: Analyst agent configuration
             reviewer_config: Reviewer agent configuration
+            fact_checker_config: Fact-checker agent configuration
             mode: Pipeline execution mode
             slug_suffix: Optional suffix to append to the slug
         """
@@ -57,6 +61,7 @@ class AnalysisPipeline:
         self.system_config: SystemConfig = system_config
         self.analyst_config: AnalystConfig = analyst_config
         self.reviewer_config: ReviewerConfig = reviewer_config
+        self.fact_checker_config: FactCheckerConfig = fact_checker_config
         self.mode: PipelineMode = mode
 
         # Setup output directories
@@ -78,6 +83,7 @@ class AnalysisPipeline:
         self.iteration_count: int = 0
         self.current_analysis_file: Path | None = None
         self.last_feedback_file: Path | None = None
+        self.last_fact_check_file: Path | None = None
         self.last_feedback: dict[str, Any] | None = None  # pyright: ignore[reportExplicitAny]
         self.analytics: RunAnalytics | None = None
 
@@ -103,6 +109,7 @@ class AnalysisPipeline:
                 PipelineMode.ANALYZE: self._analyze_only,
                 PipelineMode.ANALYZE_AND_REVIEW: self._analyze_with_review,
                 PipelineMode.ANALYZE_REVIEW_AND_JUDGE: self._analyze_review_judge,
+                PipelineMode.ANALYZE_REVIEW_WITH_FACT_CHECK: self._analyze_review_with_fact_check,
                 PipelineMode.FULL_EVALUATION: self._full_evaluation,
             }
 
@@ -148,6 +155,34 @@ class AnalysisPipeline:
 
             # Run reviewer and check if should continue
             should_continue = await self._run_reviewer(reviewer)
+            if not should_continue:
+                break
+
+        return self._build_result()
+
+    async def _analyze_review_with_fact_check(self) -> PipelineResult:
+        """Run analyst with parallel reviewer and fact-checker."""
+        analyst = AnalystAgent(self.analyst_config)
+        reviewer = ReviewerAgent(self.reviewer_config)
+        fact_checker = FactCheckerAgent(self.fact_checker_config)
+
+        while self.iteration_count < self.max_iterations:
+            self.iteration_count += 1
+
+            # Run analyst (unchanged)
+            if not await self._run_analyst(analyst):
+                return self._build_result(error="Analyst failed")
+
+            # Skip review on last iteration
+            if self.iteration_count >= self.max_iterations:
+                logger.info("✅ Max iterations reached, skipping review")
+                break
+
+            # Run reviewer and fact-checker in parallel
+            should_continue = await self._run_parallel_review_fact_check(
+                reviewer, fact_checker
+            )
+
             if not should_continue:
                 break
 
@@ -206,6 +241,9 @@ class AnalysisPipeline:
             feedback_input_path=self.last_feedback_file
             if self.iteration_count > 1
             else None,
+            fact_check_input_path=self.last_fact_check_file
+            if self.iteration_count > 1
+            else None,
             iteration=self.iteration_count,
         )
         analyst_context.run_analytics = self.analytics
@@ -241,7 +279,12 @@ class AnalysisPipeline:
         return True
 
     async def _run_reviewer(self, reviewer: ReviewerAgent) -> bool:
-        """Run reviewer and process feedback. Returns True if should continue."""
+        """Run reviewer and process feedback.
+
+        Returns:
+            True if should continue iterating (needs revision)
+            False if should stop iterating (approved)
+        """
 
         # Create feedback file from template
         feedback_file = (
@@ -283,11 +326,6 @@ class AnalysisPipeline:
                 pass
 
         # Parse reviewer feedback
-        feedback_file = (
-            self.iterations_dir
-            / f"reviewer_feedback_iteration_{self.iteration_count}.json"
-        )
-
         if not feedback_file.exists():
             logger.warning(f"No feedback file found at {feedback_file}")
             return False
@@ -299,19 +337,149 @@ class AnalysisPipeline:
             self.last_feedback_file = feedback_file
 
             # Check recommendation
-            recommendation = feedback.get("recommendation", "approve")  # pyright: ignore[reportAny]
+            recommendation = feedback.get("iteration_recommendation", "reject")  # pyright: ignore[reportAny]
+            logger.debug(f"Reviewer recommendation value: '{recommendation}'")
             if recommendation == "approve":
-                logger.info(f"✅ Analysis approved at iteration {self.iteration_count}")
-                return False  # Stop iterating
+                logger.info(f"✅ Reviewer approved at iteration {self.iteration_count}")
+                return False  # Stop iterating - approved
             else:
                 logger.info(
-                    f"🔄 Analysis needs revision at iteration {self.iteration_count}"
+                    f"🔄 Reviewer requests revision at iteration {self.iteration_count}"
                 )
-                return True  # Continue iterating
+                return True  # Continue iterating - needs revision
 
         except (json.JSONDecodeError, KeyError) as e:
             logger.error(f"Failed to parse feedback: {e}")
             return False
+
+    async def _run_fact_checker(self, fact_checker: FactCheckerAgent) -> bool:
+        """Run fact-checker and process results.
+
+        Returns:
+            True if should continue iterating (not approved)
+            False if should stop iterating (approved)
+        """
+
+        # Create fact-check file from template
+        fact_check_file = (
+            self.iterations_dir / f"fact_check_iteration_{self.iteration_count}.json"
+        )
+        if not fact_check_file.exists():
+            assert self.system_config.template_dir is not None
+            template_path = (
+                self.system_config.template_dir
+                / "agents"
+                / "factchecker"
+                / "fact-check.json"
+            )
+            create_file_from_template(template_path, fact_check_file)
+            logger.debug(f"Created fact-check file from template: {fact_check_file}")
+
+        if not self.current_analysis_file:
+            logger.error("No current analysis file to fact-check")
+            return False
+
+        fact_check_context = FactCheckContext(
+            analysis_input_path=self.current_analysis_file,
+            fact_check_output_path=fact_check_file,
+            iteration=self.iteration_count,
+            max_iterations=self.max_iterations,
+        )
+        fact_check_context.run_analytics = self.analytics
+
+        logger.info(f"🔎 Running fact-checker for iteration {self.iteration_count}")
+        fact_checker_result = await fact_checker.process("", fact_check_context)
+
+        # Pattern match on result type
+        match fact_checker_result:
+            case Error(message=msg):
+                logger.error(f"Fact-checker failed: {msg}")
+                return False
+            case Success():
+                pass
+
+        # Parse fact-check results
+        if not fact_check_file.exists():
+            logger.warning(f"No fact-check file found at {fact_check_file}")
+            return False
+
+        try:
+            fact_check_text = fact_check_file.read_text()
+            fact_check = json.loads(fact_check_text)  # pyright: ignore[reportAny]
+            self.last_fact_check_file = fact_check_file
+
+            # Check recommendation (default to reject for safety)
+            recommendation = fact_check.get("iteration_recommendation", "reject")  # pyright: ignore[reportAny]
+            logger.debug(f"Fact-checker recommendation value: '{recommendation}'")
+            if recommendation == "approve":
+                logger.info(
+                    f"✅ Fact-checker approved at iteration {self.iteration_count}"
+                )
+                return False  # Stop iterating - approved
+            else:
+                logger.info(
+                    f"❌ Fact-checker requests revision at iteration {self.iteration_count}"
+                )
+                return True  # Continue iterating - needs revision
+
+        except (json.JSONDecodeError, KeyError) as e:
+            logger.error(f"Failed to parse fact-check: {e}")
+            return False
+
+    async def _run_parallel_review_fact_check(
+        self,
+        reviewer: ReviewerAgent,
+        fact_checker: FactCheckerAgent,
+    ) -> bool:
+        """
+        Run reviewer and fact-checker in parallel with veto power.
+
+        Returns:
+            True if should continue iterating, False if both approved
+        """
+        import asyncio
+
+        # Run both agents in parallel
+        try:
+            results = await asyncio.gather(
+                self._run_reviewer(reviewer),
+                self._run_fact_checker(fact_checker),
+                return_exceptions=True,
+            )
+        except Exception as e:
+            logger.error(f"Parallel execution failed: {e}")
+            return True  # Continue iterating on error
+
+        # Check for exceptions
+        for i, result in enumerate(results):
+            if isinstance(result, Exception):
+                agent_name = "Reviewer" if i == 0 else "FactChecker"
+                logger.error(f"{agent_name} failed with exception: {result}")
+                return True  # Continue iterating on error
+
+        # Unpack results (both are booleans)
+        reviewer_needs_revision, fact_checker_needs_revision = results
+
+        # Both methods now return:
+        #   True if should continue iterating (needs revision)
+        #   False if should stop iterating (approved)
+        # We continue if EITHER says continue
+        should_continue = bool(reviewer_needs_revision or fact_checker_needs_revision)
+
+        logger.debug(
+            f"Parallel decision - Reviewer needs revision: {reviewer_needs_revision}, "
+            + f"FactChecker needs revision: {fact_checker_needs_revision}, "
+            + f"Combined should_continue: {should_continue}"
+        )
+
+        if not should_continue:
+            logger.info(
+                "✅ Both reviewer and fact-checker approved - stopping iteration"
+            )
+        else:
+            logger.info("🔄 Need revision - reviewer or fact-checker requires changes")
+
+        return should_continue
 
     def _build_result(self, error: str | None = None) -> PipelineResult:
         """Build consistent result dictionary."""

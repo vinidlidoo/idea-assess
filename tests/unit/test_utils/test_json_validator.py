@@ -20,7 +20,7 @@ class TestFeedbackValidator:
     def valid_feedback(self):
         """Create valid feedback structure."""
         return {
-            "recommendation": "approve",
+            "iteration_recommendation": "approve",
             "iteration_reason": "Analysis meets quality standards",
             "critical_issues": [],
             "improvements": [],
@@ -42,12 +42,12 @@ class TestFeedbackValidator:
         }
         is_valid, error = validator.validate(feedback)
         assert is_valid is False
-        assert "recommendation" in error
+        assert "iteration_recommendation" in error.lower() or "overall_assessment" in error.lower()
 
     def test_validate_invalid_recommendation_value(self, validator):
         """Test that wrong enum value is rejected."""
         feedback = {
-            "recommendation": "maybe",  # Invalid - must be approve/reject
+            "iteration_recommendation": "maybe",  # Invalid - must be approve/reject
             "iteration_reason": "Some reason",
             "critical_issues": [],
             "improvements": [],
@@ -103,7 +103,7 @@ class TestFeedbackValidator:
     def test_fix_critical_issues_string_to_dict(self, validator):
         """Test converting string issues to proper structure."""
         feedback = {
-            "recommendation": "reject",
+            "iteration_recommendation": "reject",
             "critical_issues": [
                 "Missing market analysis",  # String format
                 {  # Already proper format
@@ -127,7 +127,7 @@ class TestFeedbackValidator:
     def test_fix_improvements_structure(self, validator):
         """Test handling section/area fields in improvements."""
         feedback = {
-            "recommendation": "reject",
+            "iteration_recommendation": "reject",
             "improvements": [
                 {
                     "area": "Market Analysis",
@@ -172,7 +172,7 @@ class TestFeedbackValidator:
     def test_complex_feedback_structure(self, validator):
         """Test validation of complex, fully-populated feedback."""
         complex_feedback = {
-            "recommendation": "reject",
+            "iteration_recommendation": "reject",
             "iteration_reason": "Multiple critical issues need addressing",
             "critical_issues": [
                 {
@@ -228,7 +228,7 @@ class TestFeedbackValidator:
 
         for input_val, expected_val in test_cases:
             feedback = {
-                "recommendation": input_val,
+                "iteration_recommendation": input_val,
                 "critical_issues": [],
             }
             fixed = validator.fix_common_issues(feedback)

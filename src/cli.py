@@ -66,6 +66,13 @@ Examples:
     )
 
     parser.add_argument(  # pyright: ignore[reportUnusedCallResult]
+        "--with-fact-check",
+        "-f",
+        action="store_true",
+        help="Enable fact-checking in parallel with review (requires --with-review)",
+    )
+
+    parser.add_argument(  # pyright: ignore[reportUnusedCallResult]
         "--max-iterations",
         "-m",
         type=int,
@@ -86,6 +93,7 @@ Examples:
     debug: bool = args.debug
     no_web_tools: bool = args.no_web_tools
     with_review: bool = args.with_review
+    with_fact_check: bool = args.with_fact_check
     max_iterations: int = args.max_iterations
     analyst_prompt: str | None = getattr(args, "analyst_prompt", None)
     reviewer_prompt: str | None = getattr(args, "reviewer_prompt", None)
@@ -107,8 +115,8 @@ Examples:
 
     # Get configurations
     project_root = Path.cwd()
-    system_config, analyst_config, reviewer_config = create_default_configs(
-        project_root
+    system_config, analyst_config, reviewer_config, fact_checker_config = (
+        create_default_configs(project_root)
     )
 
     # Apply CLI overrides directly to configs
@@ -123,10 +131,20 @@ Examples:
     if with_review and max_iterations:
         reviewer_config.max_iterations = max_iterations
 
+    # Validate flag combinations
+    if with_fact_check and not with_review:
+        print("❌ Error: --with-fact-check requires --with-review")
+        sys.exit(1)
+
     # Determine pipeline mode based on CLI flags
     if not with_review:
         mode = PipelineMode.ANALYZE
         print("\n🚀 Running analysis...")
+    elif with_fact_check:
+        mode = PipelineMode.ANALYZE_REVIEW_WITH_FACT_CHECK
+        print(
+            f"\n🔄 Running analysis with reviewer and fact-checker (max {max_iterations} iterations)..."
+        )
     else:
         mode = PipelineMode.ANALYZE_AND_REVIEW
         print(
@@ -139,6 +157,7 @@ Examples:
         system_config=system_config,
         analyst_config=analyst_config,
         reviewer_config=reviewer_config,
+        fact_checker_config=fact_checker_config,
         mode=mode,
         slug_suffix=slug_suffix,
     )

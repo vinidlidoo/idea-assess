@@ -1,9 +1,11 @@
-# Analyst User Prompt
+# Business Analysis Task
 
 Analyze this business idea: "{idea}"
 
-The file {output_file} has been created with a template structure for your analysis.
+## Output
 
-Please generate a comprehensive analysis following the structure and word limits specified in your instructions.
+Write your analysis to: {output_file}
 
-IMPORTANT: Do NOT add any metadata footer or metadata comments to the analysis. The system will automatically add metadata after you complete your work.
+The file has been created with a template structure. Follow the structure and word limits specified in your system instructions.
+
+Note: Do NOT add metadata footers - the system handles this automatically.

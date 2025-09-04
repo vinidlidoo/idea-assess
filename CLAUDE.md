@@ -10,11 +10,11 @@ Building an AI-powered business idea evaluation system using Claude SDK and MCP 
 
 ## Current Phase & Focus
 
-**Phase:** Phase 2 - COMPLETE (implementation finished, citation accuracy fixed)
-**Latest Session:** `session-logs/2025-08-27-citation-accuracy-phase2-polish.md`
-**Immediate Focus:** FactChecker agent implementation (parallel citation verification)
-**Status:** Two-phase workflow with verification, 90% citation accuracy achieved
-**Note:** Next: Add dedicated FactChecker agent before Phase 3 Judge implementation
+**Phase:** Phase 2.5 - COMPLETE (Critical pipeline bug fixed)
+**Latest Session:** `session-logs/2025-09-04-pipeline-bug-fix.md`
+**Immediate Focus:** Fix remaining unit tests, then Phase 3 Judge implementation
+**Status:** Pipeline iteration control fixed, field names standardized
+**Note:** 21 unit tests still failing - to be addressed next session
 
 ## Key Documents
 
@@ -25,8 +25,10 @@ Building an AI-powered business idea evaluation system using Claude SDK and MCP 
 ### Session History
 
 - **session-logs/** - Detailed work logs per session
-- Latest: `2025-08-26-prompt-standardization.md`
+- Latest: `2025-09-04-pipeline-bug-fix.md`
 - Key sessions:
+  - `2025-09-04-pipeline-bug-fix.md` - Fixed critical pipeline bug, standardized field names
+  - `2025-09-03-factchecker-implementation.md` - Complete FactChecker implementation, test infrastructure
   - `2025-08-26-prompt-standardization.md` - Prompt standardization, tools in system prompts, observability
   - `2025-08-26-citation-accuracy-improvements.md` - Citation accuracy 2.5x improvement, fact-checker spec
   - `2025-08-26-template-implementation.md` - Implemented template decoupling, fixed turn efficiency
@@ -55,12 +57,13 @@ The system workflow is:
 4. **Grade**: Judge agent evaluates (A-D grades)
 5. **Summarize**: Synthesizer agent creates comparative report
 
-## Four Distinct Agents
+## Five Distinct Agents
 
 - **Analyst**: Research + write full analysis from one-liner
 - **Reviewer**: Feedback to improve analysis quality
-- **Judge**: Grade based on 7 evaluation criteria
-- **Synthesizer**: Generate comparative summary reports
+- **FactChecker**: Parallel citation verification with veto power
+- **Judge**: Grade based on 7 evaluation criteria (Phase 3)
+- **Synthesizer**: Generate comparative summary reports (Phase 4)
 
 ## Technical Constraints
 
@@ -78,7 +81,7 @@ The system workflow is:
 idea-assess/
 ├── src/                     # ✅ Modularized architecture
 │   ├── core/               # BaseAgent, config, message processor
-│   ├── agents/             # AnalystAgent (+ future agents)
+│   ├── agents/             # Analyst, Reviewer, FactChecker agents
 │   ├── utils/              # Utilities extracted from monolith
 │   ├── cli.py             # Modern CLI implementation
 │   └── analyze.py         # Thin wrapper for compatibility

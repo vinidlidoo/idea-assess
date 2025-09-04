@@ -10,7 +10,7 @@ import json
 import pytest
 
 from src.core.pipeline import AnalysisPipeline
-from src.core.config import SystemConfig, AnalystConfig, ReviewerConfig
+from src.core.config import SystemConfig, AnalystConfig, ReviewerConfig, FactCheckerConfig
 from src.core.types import PipelineMode, Success, Error
 from tests.unit.base_test import BaseAgentTest
 
@@ -37,7 +37,16 @@ class TestAnalysisPipeline(BaseAgentTest):
         reviewer_template_dir.mkdir(parents=True, exist_ok=True)
         reviewer_template = reviewer_template_dir / "feedback.json"
         _ = reviewer_template.write_text(
-            '{"recommendation": "pending", "reason": "pending"}'
+            '{"iteration_recommendation": "pending", "iteration_reason": "pending"}'
+        )
+        
+        factchecker_template_dir = (
+            self.temp_dir / "config" / "templates" / "agents" / "factchecker"
+        )
+        factchecker_template_dir.mkdir(parents=True, exist_ok=True)
+        factchecker_template = factchecker_template_dir / "fact-check.json"
+        _ = factchecker_template.write_text(
+            '{"issues": [], "iteration_recommendation": "pending", "iteration_reason": "pending"}'
         )
 
         return SystemConfig(
@@ -71,12 +80,25 @@ class TestAnalysisPipeline(BaseAgentTest):
             strictness="normal",
         )
 
+
+    
+    @pytest.fixture
+    def fact_checker_config(self) -> FactCheckerConfig:
+        """Create fact-checker configuration."""
+        return FactCheckerConfig(
+            max_turns=10,
+            prompts_dir=Path("config/prompts"),
+            system_prompt="agents/fact-checker/system.md",
+            allowed_tools=["WebFetch", "Edit", "TodoWrite"],
+        )
+
     @pytest.mark.asyncio
     async def test_analyze_only_mode(
         self,
         system_config: SystemConfig,
         analyst_config: AnalystConfig,
         reviewer_config: ReviewerConfig,
+        fact_checker_config: FactCheckerConfig,
     ):
         """Test that ANALYZE mode runs only analyst, not reviewer."""
         pipeline = AnalysisPipeline(
@@ -84,6 +106,7 @@ class TestAnalysisPipeline(BaseAgentTest):
             system_config=system_config,
             analyst_config=analyst_config,
             reviewer_config=reviewer_config,
+            fact_checker_config=fact_checker_config,
             mode=PipelineMode.ANALYZE,
         )
 
@@ -119,6 +142,7 @@ class TestAnalysisPipeline(BaseAgentTest):
         system_config: SystemConfig,
         analyst_config: AnalystConfig,
         reviewer_config: ReviewerConfig,
+        fact_checker_config: FactCheckerConfig,
     ):
         """Test that pipeline stops at max_iterations even if reviewer rejects."""
         # Set max iterations to 2
@@ -129,6 +153,7 @@ class TestAnalysisPipeline(BaseAgentTest):
             system_config=system_config,
             analyst_config=analyst_config,
             reviewer_config=reviewer_config,
+            fact_checker_config=fact_checker_config,
             mode=PipelineMode.ANALYZE_AND_REVIEW,
         )
 
@@ -152,7 +177,7 @@ class TestAnalysisPipeline(BaseAgentTest):
                     pipeline.iterations_dir
                     / f"reviewer_feedback_iteration_{pipeline.iteration_count}.json"
                 )
-                _ = feedback_file.write_text(json.dumps({"recommendation": "revise"}))
+                _ = feedback_file.write_text(json.dumps({"iteration_recommendation": "revise"}))
 
             with patch.object(
                 pipeline,
@@ -173,6 +198,7 @@ class TestAnalysisPipeline(BaseAgentTest):
         system_config: SystemConfig,
         analyst_config: AnalystConfig,
         reviewer_config: ReviewerConfig,
+        fact_checker_config: FactCheckerConfig,
     ):
         """Test that pipeline stops when reviewer approves."""
         # Set max iterations to 3
@@ -183,6 +209,7 @@ class TestAnalysisPipeline(BaseAgentTest):
             system_config=system_config,
             analyst_config=analyst_config,
             reviewer_config=reviewer_config,
+            fact_checker_config=fact_checker_config,
             mode=PipelineMode.ANALYZE_AND_REVIEW,
         )
 
@@ -204,7 +231,7 @@ class TestAnalysisPipeline(BaseAgentTest):
                     pipeline.iterations_dir
                     / f"reviewer_feedback_iteration_{pipeline.iteration_count}.json"
                 )
-                _ = feedback_file.write_text(json.dumps({"recommendation": "approve"}))
+                _ = feedback_file.write_text(json.dumps({"iteration_recommendation": "approve"}))
                 return Success()
 
             mock_reviewer.process = AsyncMock(side_effect=mock_reviewer_process)
@@ -224,6 +251,7 @@ class TestAnalysisPipeline(BaseAgentTest):
         system_config: SystemConfig,
         analyst_config: AnalystConfig,
         reviewer_config: ReviewerConfig,
+        fact_checker_config: FactCheckerConfig,
     ):
         """Test that analyst errors are properly propagated."""
         pipeline = AnalysisPipeline(
@@ -231,6 +259,7 @@ class TestAnalysisPipeline(BaseAgentTest):
             system_config=system_config,
             analyst_config=analyst_config,
             reviewer_config=reviewer_config,
+            fact_checker_config=fact_checker_config,
             mode=PipelineMode.ANALYZE_AND_REVIEW,
         )
 
@@ -255,6 +284,7 @@ class TestAnalysisPipeline(BaseAgentTest):
         system_config: SystemConfig,
         analyst_config: AnalystConfig,
         reviewer_config: ReviewerConfig,
+        fact_checker_config: FactCheckerConfig,
     ):
         """Test that reviewer errors are properly handled."""
         pipeline = AnalysisPipeline(
@@ -262,6 +292,7 @@ class TestAnalysisPipeline(BaseAgentTest):
             system_config=system_config,
             analyst_config=analyst_config,
             reviewer_config=reviewer_config,
+            fact_checker_config=fact_checker_config,
             mode=PipelineMode.ANALYZE_AND_REVIEW,
         )
 
@@ -295,6 +326,7 @@ class TestAnalysisPipeline(BaseAgentTest):
         system_config: SystemConfig,
         analyst_config: AnalystConfig,
         reviewer_config: ReviewerConfig,
+        fact_checker_config: FactCheckerConfig,
     ):
         """Test that pipeline creates/updates analysis.md symlink."""
         pipeline = AnalysisPipeline(
@@ -302,6 +334,7 @@ class TestAnalysisPipeline(BaseAgentTest):
             system_config=system_config,
             analyst_config=analyst_config,
             reviewer_config=reviewer_config,
+            fact_checker_config=fact_checker_config,
             mode=PipelineMode.ANALYZE,
         )
 
@@ -334,6 +367,7 @@ class TestAnalysisPipeline(BaseAgentTest):
         system_config: SystemConfig,
         analyst_config: AnalystConfig,
         reviewer_config: ReviewerConfig,
+        fact_checker_config: FactCheckerConfig,
     ):
         """Test that pipeline mode correctly determines which agents run."""
         test_cases = [
@@ -347,6 +381,7 @@ class TestAnalysisPipeline(BaseAgentTest):
                 system_config=system_config,
                 analyst_config=analyst_config,
                 reviewer_config=reviewer_config,
+            fact_checker_config=fact_checker_config,
                 mode=mode,
             )
 
@@ -368,7 +403,7 @@ class TestAnalysisPipeline(BaseAgentTest):
                         / f"reviewer_feedback_iteration_{pipeline.iteration_count}.json"
                     )
                     _ = feedback_file.write_text(
-                        json.dumps({"recommendation": "approve"})
+                        json.dumps({"iteration_recommendation": "approve"})
                     )
                     return Success()
 

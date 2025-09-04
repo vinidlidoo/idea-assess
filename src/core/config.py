@@ -54,7 +54,7 @@ class AnalystConfig(BaseAgentConfig):
     """Configuration specific to the Analyst agent."""
 
     # Analyst-specific settings
-    max_websearches: int = 4
+    max_websearches: int = 8
     min_words: int = 800
 
     # Default tools for analyst: web research + task organization
@@ -75,9 +75,22 @@ class ReviewerConfig(BaseAgentConfig):
     allowed_tools: list[str] = field(default_factory=list)
 
 
+@dataclass
+class FactCheckerConfig(BaseAgentConfig):
+    """Configuration specific to the FactChecker agent."""
+
+    # FactChecker-specific settings
+    webfetch_per_iteration: int = 10  # WebFetch calls allowed per iteration
+
+    # FactChecker tools for verification
+    allowed_tools: list[str] = field(
+        default_factory=lambda: ["WebFetch", "Edit", "TodoWrite"]
+    )
+
+
 def create_default_configs(
     project_root: Path,
-) -> tuple[SystemConfig, AnalystConfig, ReviewerConfig]:
+) -> tuple[SystemConfig, AnalystConfig, ReviewerConfig, FactCheckerConfig]:
     """Create default configuration instances."""
     system_config = SystemConfig(
         project_root=project_root,
@@ -90,4 +103,8 @@ def create_default_configs(
 
     reviewer_config = ReviewerConfig(prompts_dir=project_root / "config" / "prompts")
 
-    return system_config, analyst_config, reviewer_config
+    fact_checker_config = FactCheckerConfig(
+        prompts_dir=project_root / "config" / "prompts"
+    )
+
+    return system_config, analyst_config, reviewer_config, fact_checker_config

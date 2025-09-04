@@ -11,8 +11,7 @@
     {
       "section": "[TODO: Section name where critical issue exists]",
       "issue": "[TODO: What's fundamentally wrong or missing that undermines credibility]",
-      "suggestion": "[TODO: Specific fix with example. E.g., 'Add bottom-up TAM: 50K restaurants × $3K/year = $150M']",
-      "priority": "critical"
+      "suggestion": "[TODO: Specific fix with example. E.g., 'Add bottom-up TAM: 50K restaurants × $3K/year = $150M']"
     },
     "[TODO: Add more critical issues if found. Critical = must fix for credibility:",
     "- Missing or weak 10x improvement claim",
@@ -26,8 +25,7 @@
     {
       "section": "[TODO: Section name]",
       "issue": "[TODO: What should be improved for completeness]",
-      "suggestion": "[TODO: Specific improvement with example]",
-      "priority": "important"
+      "suggestion": "[TODO: Specific improvement with example]"
     },
     "[TODO: Add more important improvements. Important = should address:",
     "- Missing 'Why hasn't BigCo done this?' answer",
@@ -41,8 +39,7 @@
     {
       "section": "[TODO: Section name]",
       "issue": "[TODO: What could be polished]",
-      "suggestion": "[TODO: Nice-to-have improvement]",
-      "priority": "minor"
+      "suggestion": "[TODO: Nice-to-have improvement]"
     },
     "[TODO: Add minor polish items. Minor = nice to have:",
     "- Language simplification opportunities",
@@ -51,6 +48,5 @@
     "- Formatting improvements]"
   ],
   "iteration_recommendation": "[TODO: Choose 'reject' or 'accept' based on: REJECT if any critical issues exist OR 3+ important issues. ACCEPT if no critical issues AND fewer than 3 important issues]",
-  
   "iteration_reason": "[TODO: Explain your recommendation in 1-2 sentences. If rejecting, specify the 1-2 most critical things that must be fixed. If accepting, note why the analysis meets the bar despite any remaining issues.]"
 }

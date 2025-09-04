@@ -24,6 +24,9 @@ class PipelineMode(Enum):
     ANALYZE = "analyze"  # Analyst only
     ANALYZE_AND_REVIEW = "analyze_and_review"  # Analyst + Reviewer loop
     ANALYZE_REVIEW_AND_JUDGE = "analyze_review_and_judge"  # + Judge (Phase 3)
+    ANALYZE_REVIEW_WITH_FACT_CHECK = (
+        "analyze_review_with_fact_check"  # + FactChecker parallel
+    )
     FULL_EVALUATION = "full_evaluation"  # All agents (Phase 4)
 
 
@@ -83,7 +86,8 @@ class AnalystContext(BaseContext):
     # Explicit typed paths
     analysis_output_path: Path = Path("analysis.md")
     previous_analysis_input_path: Path | None = None  # Only on iteration 2+
-    feedback_input_path: Path | None = None  # Only on iteration 2+
+    feedback_input_path: Path | None = None  # Only on iteration 2+ (reviewer)
+    fact_check_input_path: Path | None = None  # Only on iteration 2+ (fact-checker)
 
     # Analyst-specific state
     idea_slug: str = ""
@@ -97,6 +101,18 @@ class ReviewerContext(BaseContext):
     # Explicit typed paths
     analysis_input_path: Path = Path("analysis.md")
     feedback_output_path: Path = Path("feedback.md")
+
+
+@dataclass
+class FactCheckContext(BaseContext):
+    """Context specific to the FactChecker agent."""
+
+    # Explicit typed paths
+    analysis_input_path: Path = Path("analysis.md")
+    fact_check_output_path: Path = Path("fact-check.json")
+
+    # Max iterations from ReviewerConfig (shared between reviewer and fact-checker)
+    max_iterations: int = 3
 
 
 # ============================================================================
@@ -115,4 +131,5 @@ __all__ = [
     "BaseContext",
     "AnalystContext",
     "ReviewerContext",
+    "FactCheckContext",
 ]

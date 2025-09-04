@@ -1,30 +1,25 @@
-# Revision Request
+# Business Analysis Revision
 
-You previously analyzed this business idea, and a reviewer has provided feedback. Please revise your analysis to address the feedback while maintaining the strengths identified.
+Revise your analysis of this business idea: "{idea}"
 
-## Business Idea
+## Available Feedback
 
-{idea}
+- Previous analysis: {previous_analysis_file}
+- Reviewer feedback: {feedback_file}
+{fact_check_line}
 
-## Previous Work
+## Output
 
-- Your previous analysis is saved at: {previous_analysis_file}
-- The reviewer's feedback is saved at: {feedback_file}
+Write your revised analysis to: {output_file}
 
-## Instructions
+## Revision Focus
 
-Please create an improved analysis that:
+1. Address all critical issues from reviewer
+2. Correct any factual inaccuracies from fact-checker
+3. Incorporate important improvements suggested
+4. Maintain identified strengths
+5. Or pivot within the same idea space if better
 
-1. Addresses all critical issues identified by the reviewer
-2. Incorporates the important improvements suggested
-3. Maintains all the strong points that were identified
-4. Stays focused on the original business idea: "{idea}"
+The file has been created with a template structure. Follow the structure and word limits specified in your system instructions.
 
-Generate the complete revised analysis directly in markdown format, following the same structure as before.
-
-Write your complete revised analysis to the file: {output_file}
-
-The revision file has been created with a template structure.
-Follow the file operation best practices when working with this template.
-
-IMPORTANT: Do NOT add any metadata footer or metadata comments to the analysis. The system will automatically add metadata after you complete your work.
+Note: Do NOT add metadata footers - the system handles this automatically.

@@ -134,10 +134,22 @@ class AnalystAgent(BaseAgent[AnalystConfig, AnalystContext]):
                     if context.previous_analysis_input_path
                     else ""
                 )
+
+                # Build optional fact-check line
+                fact_check_line = ""
+                if (
+                    context.fact_check_input_path
+                    and context.fact_check_input_path.exists()
+                ):
+                    fact_check_line = (
+                        f"- Fact-check results: {context.fact_check_input_path}"
+                    )
+
                 user_prompt = revision_template.format(
                     idea=input_data,
                     previous_analysis_file=previous_file,
                     feedback_file=str(context.feedback_input_path),
+                    fact_check_line=fact_check_line,
                     output_file=str(output_file),
                 )
             else:

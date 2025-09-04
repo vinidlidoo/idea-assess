@@ -1,0 +1,26 @@
+{
+  "issues": [
+    {
+      "claim": "[TODO: Quote the specific claim being checked]",
+      "section": "[TODO: Section name where claim appears (e.g., 'Market Analysis', 'Competition')]",
+      "severity": "[TODO: Choose 'High', 'Medium', or 'Low']",
+      "details": {
+        "issue_type": "[TODO: Choose one: 'unsupported_claim', 'false_citation', 'outdated_citation', 'likely_hallucination']",
+        "citation_ref": "[TODO: Citation number if applicable (e.g., '[5]', '[12]'), or 'none' if uncited]",
+        "url_checked": "[TODO: URL that was checked for validation, or 'N/A' if no URL]",
+        "explanation": "[TODO: Explain why this is an issue in 1-2 sentences]",
+        "evidence": "[TODO: What you found when checking the claim/citation]",
+        "suggestion": "[TODO: Specific action to fix this issue]"
+      }
+    },
+    "[TODO: Add more issues as needed. Remove this placeholder.]"
+  ],
+  "statistics": {
+    "total_claims": "[TODO: Number of major claims identified]",
+    "verified_claims": "[TODO: Number of claims successfully verified]",
+    "unverified_claims": "[TODO: Number of claims that couldn't be verified]",
+    "false_claims": "[TODO: Number of claims found to be false]"
+  },
+  "iteration_recommendation": "[TODO: Choose 'approve' or 'reject' based on severity counts. Reject if any High severity OR 3+ Medium severity issues]",
+  "iteration_reason": "[TODO: Explain your recommendation in 2-3 sentences, focusing on the most critical issues or lack thereof]"
+}

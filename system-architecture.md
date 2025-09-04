@@ -1,8 +1,8 @@
 # System Architecture - Business Idea Evaluator
 
-**Version**: 2.2 (Tool Improvements Complete)  
-**Last Updated**: 2025-08-26  
-**Status**: Production-Ready with Enhanced Tool Integration  
+**Version**: 2.3 (FactChecker Agent Implemented)  
+**Last Updated**: 2025-09-03  
+**Status**: Production-Ready with Citation Verification  
 
 ## Table of Contents
 
@@ -35,6 +35,7 @@ The Business Idea Evaluator is an AI-powered system that transforms one-liner bu
 
 - **Idea Analysis**: Convert one-liner ideas into 1000+ word market analyses
 - **Iterative Refinement**: Reviewer feedback loop for quality improvement
+- **Citation Verification**: FactChecker agent for parallel citation validation
 - **Web Research**: Integration with WebSearch and WebFetch for comprehensive market data
 - **Task Organization**: TodoWrite tool for complex analysis planning
 - **Flexible Prompting**: Configurable system prompts for different analysis styles
@@ -115,8 +116,9 @@ Concrete agent implementations:
 
 1. **analyst.py** - Business idea analysis
 2. **reviewer.py** - Quality review and feedback
-3. *(Future: judge.py - Evaluation and grading)*
-4. *(Future: synthesizer.py - Comparative reports)*
+3. **fact_checker.py** - Citation verification and accuracy checking
+4. *(Future: judge.py - Evaluation and grading)*
+5. *(Future: synthesizer.py - Comparative reports)*
 
 ### Interface Layer (`src/`)
 
@@ -142,6 +144,7 @@ Supporting utilities:
 BaseAgent[TConfig, TContext] (Abstract)
     ├── AnalystAgent[AnalystConfig, AnalystContext]
     ├── ReviewerAgent[ReviewerConfig, ReviewerContext]
+    ├── FactCheckerAgent[FactCheckerConfig, FactCheckContext]
     ├── (Future) JudgeAgent[JudgeConfig, JudgeContext]
     └── (Future) SynthesizerAgent[SynthesizerConfig, SynthesizerContext]
 ```
@@ -208,6 +211,36 @@ class ReviewerContext(BaseContext):
     feedback_output_path: Path  # Where to write feedback
 ```
 
+### FactCheckerAgent
+
+**Purpose**: Verify citations and claims in analyses
+
+**Key Responsibilities**:
+
+- Verify citations against source material
+- Identify unsupported or questionable claims
+- Provide veto power for iteration approval
+- Run in parallel with ReviewerAgent
+
+**Configuration**:
+
+```python
+@dataclass
+class FactCheckerConfig(BaseAgentConfig):
+    max_verifications: int = 3  # Citations to verify per iteration
+    webfetch_per_iteration: int = 10  # WebFetch calls allowed
+    allowed_tools: list[str] = ["WebFetch", "Edit", "TodoWrite"]
+```
+
+**Context**:
+
+```python
+@dataclass
+class FactCheckContext(BaseContext):
+    analysis_input_path: Path  # Analysis to fact-check
+    fact_check_output_path: Path  # Where to write results
+```
+
 ## Pipeline Architecture
 
 ### Pipeline Modes
@@ -216,6 +249,7 @@ class ReviewerContext(BaseContext):
 class PipelineMode(Enum):
     ANALYZE = "analyze"  # Analyst only
     ANALYZE_AND_REVIEW = "analyze_and_review"  # With feedback loop
+    ANALYZE_REVIEW_WITH_FACT_CHECK = "analyze_review_with_fact_check"  # Parallel verification
     ANALYZE_REVIEW_AND_JUDGE = "analyze_review_and_judge"  # Phase 3
     FULL_EVALUATION = "full_evaluation"  # Phase 4
 ```
@@ -231,7 +265,12 @@ class PipelineMode(Enum):
             ↑                        |
             └────── Revision ────────┘
 
-3. Future modes add Judge and Synthesizer stages
+3. ANALYZE_REVIEW_WITH_FACT_CHECK Mode:
+   Input → Analyst → [Reviewer + FactChecker] → [Both Approve/Either Rejects]
+            ↑                                          |
+            └──────────── Revision ───────────────────┘
+
+4. Future modes add Judge and Synthesizer stages
 ```
 
 ### State Management
@@ -244,6 +283,7 @@ class AnalysisPipeline:
     system_config: SystemConfig
     analyst_config: AnalystConfig
     reviewer_config: ReviewerConfig
+    fact_checker_config: FactCheckerConfig | None = None
     
     # Runtime state
     slug: str  # Generated from idea
@@ -256,7 +296,8 @@ class AnalysisPipeline:
 ### Iteration Control
 
 - Max iterations from `ReviewerConfig.max_iterations`
-- Early termination on reviewer approval
+- Early termination on reviewer approval (or both reviewer and fact-checker in parallel mode)
+- Veto power: FactChecker can force revision even if reviewer approves
 - Automatic symlink updates to latest iteration
 
 ## Configuration System
@@ -280,9 +321,12 @@ Specific Agent Configs (Agent-specific settings)
     ├── AnalystConfig
     │   ├── max_websearches: int
     │   └── min_words: int
-    └── ReviewerConfig
-        ├── max_iterations: int
-        └── strictness: str
+    ├── ReviewerConfig
+    │   ├── max_iterations: int
+    │   └── strictness: str
+    └── FactCheckerConfig
+        ├── max_verifications: int
+        └── webfetch_per_iteration: int
 ```
 
 ### Configuration Flow
@@ -293,7 +337,7 @@ Specific Agent Configs (Agent-specific settings)
 
 ```python
 # 1. Create defaults
-system_config, analyst_config, reviewer_config = create_default_configs(Path.cwd())
+system_config, analyst_config, reviewer_config, fact_checker_config = create_default_configs(Path.cwd())
 
 # 2. Apply CLI overrides (direct modification)
 if args.no_websearch:
@@ -306,7 +350,8 @@ pipeline = AnalysisPipeline(
     idea=idea,
     system_config=system_config,
     analyst_config=analyst_config,
-    reviewer_config=reviewer_config
+    reviewer_config=reviewer_config,
+    fact_checker_config=fact_checker_config if args.with_fact_check else None
 )
 ```
 

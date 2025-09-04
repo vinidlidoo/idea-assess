@@ -87,7 +87,7 @@ class TestReviewerAgent(BaseAgentTest):
 
                 async def mock_receive():
                     # Simulate feedback file being created
-                    feedback = {"recommendation": "approve"}
+                    feedback = {"iteration_recommendation": "approve"}
                     _ = context.feedback_output_path.write_text(json.dumps(feedback))
 
                     yield self._create_result_message(is_error=False)
@@ -256,8 +256,8 @@ class TestReviewerAgent(BaseAgentTest):
 
                     async def mock_receive():
                         feedback = {
-                            "recommendation": recommendation,
-                            "reason": f"Testing {recommendation}",
+                            "iteration_recommendation": recommendation,
+                            "iteration_reason": f"Testing {recommendation}",
                         }
                         _ = context.feedback_output_path.write_text(
                             json.dumps(feedback)
