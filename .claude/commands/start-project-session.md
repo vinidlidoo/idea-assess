@@ -11,11 +11,11 @@ description: Start a new project work session with session logging
 - Latest session log: @!`ls -t session-logs/*.md 2>/dev/null | grep -v TEMPLATE | head -1`
 - Current git status: !`git status --short`
 - Current branch: !`git branch --show-current`
-- Current project file tree: !`tree -L 3`
+- Current project file tree: !`tree -L 2`
 - Project overview: @requirements.md, @implementation-plan.md, @system-architecture.md
 - Latest Claude Code session IDs: !`/Users/vincent/dotfiles/utils/claude-sessions.sh -Users-vincent-Projects-recursive-experiments-idea-assess -n 5`
 - Session objective: !`echo "${ARGUMENTS:-No specific objective provided}"`
-- Small TODOs: @TODO.md
+- TODOs: @TODO.md
 
 ## Your task
 

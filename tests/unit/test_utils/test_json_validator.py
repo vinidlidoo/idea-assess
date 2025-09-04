@@ -20,11 +20,18 @@ class TestFeedbackValidator:
     def valid_feedback(self):
         """Create valid feedback structure."""
         return {
+            "overall_assessment": "The analysis is comprehensive and well-structured.",
             "iteration_recommendation": "approve",
             "iteration_reason": "Analysis meets quality standards",
             "critical_issues": [],
             "improvements": [],
-            "minor_suggestions": ["Consider adding more metrics"],
+            "minor_suggestions": [
+                {
+                    "section": "Metrics",
+                    "issue": "Limited quantitative data",
+                    "suggestion": "Consider adding more metrics",
+                }
+            ],
         }
 
     def test_validate_correct_feedback(self, validator, valid_feedback):
@@ -36,17 +43,22 @@ class TestFeedbackValidator:
     def test_validate_missing_recommendation(self, validator):
         """Test that missing required field is caught."""
         feedback = {
+            "overall_assessment": "Test assessment",
             "iteration_reason": "Some reason",
             "critical_issues": [],
             "improvements": [],
         }
         is_valid, error = validator.validate(feedback)
         assert is_valid is False
-        assert "iteration_recommendation" in error.lower() or "overall_assessment" in error.lower()
+        assert (
+            "iteration_recommendation" in error.lower()
+            or "overall_assessment" in error.lower()
+        )
 
     def test_validate_invalid_recommendation_value(self, validator):
         """Test that wrong enum value is rejected."""
         feedback = {
+            "overall_assessment": "Test assessment",
             "iteration_recommendation": "maybe",  # Invalid - must be approve/reject
             "iteration_reason": "Some reason",
             "critical_issues": [],
@@ -92,18 +104,22 @@ class TestFeedbackValidator:
     def test_fix_iteration_to_recommendation_mapping(self, validator):
         """Test legacy field conversion."""
         feedback = {
-            "iteration_recommendation": "accept",  # Legacy field
+            "overall_assessment": "Test assessment",
+            "iteration_recommendation": "accept",  # Legacy value
+            "iteration_reason": "Test reason",
             "critical_issues": [],
         }
         fixed = validator.fix_common_issues(feedback)
 
-        assert fixed["recommendation"] == "approve"  # Mapped from accept
+        assert fixed["iteration_recommendation"] == "approve"  # Mapped from accept
         assert "iteration_reason" in fixed
 
     def test_fix_critical_issues_string_to_dict(self, validator):
         """Test converting string issues to proper structure."""
         feedback = {
+            "overall_assessment": "Test assessment",
             "iteration_recommendation": "reject",
+            "iteration_reason": "Test reason",
             "critical_issues": [
                 "Missing market analysis",  # String format
                 {  # Already proper format
@@ -127,7 +143,9 @@ class TestFeedbackValidator:
     def test_fix_improvements_structure(self, validator):
         """Test handling section/area fields in improvements."""
         feedback = {
+            "overall_assessment": "Test assessment",
             "iteration_recommendation": "reject",
+            "iteration_reason": "Test reason",
             "improvements": [
                 {
                     "area": "Market Analysis",
@@ -161,7 +179,7 @@ class TestFeedbackValidator:
 
         # Modify and validate again
         invalid_feedback = valid_feedback.copy()
-        invalid_feedback["recommendation"] = "invalid"
+        invalid_feedback["iteration_recommendation"] = "invalid"
         is_valid2, _ = validator.validate(invalid_feedback)
         assert is_valid2 is False
 
@@ -172,6 +190,7 @@ class TestFeedbackValidator:
     def test_complex_feedback_structure(self, validator):
         """Test validation of complex, fully-populated feedback."""
         complex_feedback = {
+            "overall_assessment": "The analysis has potential but needs significant improvements.",
             "iteration_recommendation": "reject",
             "iteration_reason": "Multiple critical issues need addressing",
             "critical_issues": [
@@ -195,11 +214,15 @@ class TestFeedbackValidator:
                 }
             ],
             "minor_suggestions": [
-                "Fix typo in executive summary",
+                {
+                    "section": "Executive Summary",
+                    "issue": "Typo present",
+                    "suggestion": "Fix typo in executive summary",
+                },
                 {
                     "section": "Risks",
+                    "issue": "Missing regulatory discussion",
                     "suggestion": "Add regulatory risk discussion",
-                    "priority": "minor",
                 },
             ],
             "strengths": [
@@ -228,10 +251,12 @@ class TestFeedbackValidator:
 
         for input_val, expected_val in test_cases:
             feedback = {
+                "overall_assessment": "Test assessment",
                 "iteration_recommendation": input_val,
+                "iteration_reason": "Test reason",
                 "critical_issues": [],
             }
             fixed = validator.fix_common_issues(feedback)
-            assert fixed["recommendation"] == expected_val, (
+            assert fixed["iteration_recommendation"] == expected_val, (
                 f"Failed for input: {input_val}"
             )

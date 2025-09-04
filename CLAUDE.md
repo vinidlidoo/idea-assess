@@ -10,9 +10,9 @@ Building an AI-powered business idea evaluation system using Claude SDK and MCP 
 
 ## Current Phase & Focus
 
-**Phase:** Phase 2.5 - COMPLETE (Critical pipeline bug fixed)
+**Phase:** Phase 2.5 - In Progress
 **Latest Session:** `session-logs/2025-09-04-pipeline-bug-fix.md`
-**Immediate Focus:** Fix remaining unit tests, then Phase 3 Judge implementation
+**Immediate Focus:** Fix remaining unit tests, then define what else needs to be done in Phase 2.5
 **Status:** Pipeline iteration control fixed, field names standardized
 **Note:** 21 unit tests still failing - to be addressed next session
 
@@ -26,7 +26,7 @@ Building an AI-powered business idea evaluation system using Claude SDK and MCP 
 
 - **session-logs/** - Detailed work logs per session
 - Latest: `2025-09-04-pipeline-bug-fix.md`
-- Key sessions:
+- Key sessions (some may be in archive/ subfolder):
   - `2025-09-04-pipeline-bug-fix.md` - Fixed critical pipeline bug, standardized field names
   - `2025-09-03-factchecker-implementation.md` - Complete FactChecker implementation, test infrastructure
   - `2025-08-26-prompt-standardization.md` - Prompt standardization, tools in system prompts, observability
@@ -36,11 +36,6 @@ Building an AI-powered business idea evaluation system using Claude SDK and MCP 
   - `2025-08-20-prompt-refactor-iteration-fixes.md` - Fixed iteration numbering, implemented prompt includes
   - `2025-08-19-agent-deep-dive-qa.md` - Aligned agents, fixed websearch bug, removed dead code
   - `2025-08-19-runanalytics-complete.md` - Completed RunAnalytics implementation
-  - `2025-08-19-reviewer-schema-fix.md` - Fixed reviewer feedback schema mismatch
-  - `2025-08-18-phase3-judge-architecture.md` - Q&A session, completed Phase 2 logger refactoring
-  - `2025-08-17-phase3-judge-prep.md` - Completed logger transition, removed all compatibility methods
-  - `2025-08-17-logger-refactor-complete.md` - Unified 3 logger classes into 1, added SDK error awareness
-  - `2025-08-16-phase3-judge-implementation.md` - Type safety improvements, zero errors achieved
 - **implementation-plan.md** - Phased implementation strategy (Phase 1 ✅, Phase 2 mostly complete)
 
 ### Archive
@@ -53,7 +48,7 @@ The system workflow is:
 
 1. **Input**: One-liner idea (e.g., "AI-powered fitness app")
 2. **Analyze**: Analyst agent expands to full document
-3. **Review**: Reviewer agent improves quality
+3. **Review**: Reviewer agents improves quality
 4. **Grade**: Judge agent evaluates (A-D grades)
 5. **Summarize**: Synthesizer agent creates comparative report
 
@@ -69,10 +64,8 @@ The system workflow is:
 
 - Python CLI using Claude SDK
 - Python package management via `uv`
-- API key from console.anthropic.com (pay-as-you-go)
 - MCP protocol for external tools
 - Git for version control
-- 1.5 week timeline (10 days total)
 - Sequential processing (P0), parallel later (P1)
 
 ## Current File Structure
@@ -84,7 +77,6 @@ idea-assess/
 │   ├── agents/             # Analyst, Reviewer, FactChecker agents
 │   ├── utils/              # Utilities extracted from monolith
 │   ├── cli.py             # Modern CLI implementation
-│   └── analyze.py         # Thin wrapper for compatibility
 ├── ideas/
 │   └── pending.txt          # Queue of ideas
 ├── analyses/
@@ -101,30 +93,8 @@ idea-assess/
     └── debug_{timestamp}.json  # Debug logs
 ```
 
-## CLI Commands
-
-- `analyze "<idea>"` - Convert one-liner to analysis
-- `grade <slug>` - Evaluate an analysis
-- `generate-summary` - Create comparative report
-
-## Development Timeline
-
-- **Days 1-2**: Phase 1 - Analyst-only prototype ✅ COMPLETE
-  - Analyst v1, v2, v3 prompts developed
-  - Architecture refactored to modular design
-  - BaseAgent interface implemented
-  - Ready for multi-agent system
-- **Days 3-4**: Phase 2 - Add Reviewer feedback loop ✅ COMPLETE
-  - Template decoupling system implemented
-  - Prompts simplified to focus on principles
-  - File operations consolidated
-- **Days 5-6**: Phase 3 - Add Judge evaluation
-- **Days 7-8**: Phase 4 - Add Synthesizer, full pipeline
-- **Days 9-10**: Phase 5 - Polish, documentation, testing
-
 ## Important Notes
 
-- User prefers aggressive timelines
 - Emphasis on learning Claude SDK features
 - Word limits enforce clarity
 - Evidence-based reasoning is critical
@@ -133,11 +103,8 @@ idea-assess/
 ## Owner Preferences
 
 - Direct, concise communication
-- Focus on P0 features first
 - Git-based version control essential
-- Letter grades (A-D) not numeric scores
 - Narrative quality > raw data
-- Aggressive timelines preferred
 - Emphasis on learning Claude SDK features
 
 ## Session Workflow

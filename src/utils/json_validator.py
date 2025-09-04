@@ -120,6 +120,16 @@ class JsonResponseValidator:
             if "." not in field and field not in data:
                 return False, f"Missing required field: {field}"
 
+        # Validate enum values
+        if self.schema_type == "reviewer":
+            if "iteration_recommendation" in data:
+                rec = str(data["iteration_recommendation"]).lower()
+                if rec not in ["approve", "reject", "accept", "pass", "fail", "revise"]:
+                    return (
+                        False,
+                        f"iteration_recommendation '{data['iteration_recommendation']}' is not one of the allowed values: approve, reject",
+                    )
+
         # Check basic structure matches
         structure_errors = self._validate_structure(data, self.template)
         if structure_errors:
@@ -231,28 +241,70 @@ class JsonResponseValidator:
             if field not in feedback:
                 feedback[field] = []
 
-        # Map legacy fields
-        if "iteration_recommendation" in feedback and "recommendation" not in feedback:
-            rec = feedback.get("iteration_recommendation", "").lower()
-            if rec in ["accept", "approve"]:
-                feedback["recommendation"] = "approve"
-            elif rec == "reject":
-                feedback["recommendation"] = "reject"
+        # Add default iteration_reason if missing
+        if (
+            "iteration_recommendation" in feedback
+            and "iteration_reason" not in feedback
+        ):
+            feedback["iteration_reason"] = "See detailed feedback"
 
-        # Normalize recommendation values
-        if "recommendation" in feedback:
-            rec = str(feedback["recommendation"]).lower()
+        # Normalize iteration_recommendation values
+        if "iteration_recommendation" in feedback:
+            rec = str(feedback["iteration_recommendation"]).lower()
             if rec in ["accept", "approve", "pass"]:
-                feedback["recommendation"] = "approve"
-            elif rec in ["reject", "fail"]:
-                feedback["recommendation"] = "reject"
-            elif rec == "revise":
-                feedback["recommendation"] = "revise"
+                feedback["iteration_recommendation"] = "approve"
+            elif rec in ["reject", "fail", "revise"]:
+                feedback["iteration_recommendation"] = "reject"
+
+        # Convert string items in arrays to proper dict structure
+        if "critical_issues" in feedback and isinstance(
+            feedback["critical_issues"], list
+        ):
+            feedback["critical_issues"] = [
+                {
+                    "issue": item,
+                    "suggestion": "Address this issue",
+                    "priority": "critical",
+                }
+                if isinstance(item, str)
+                else item
+                for item in feedback["critical_issues"]
+            ]
+
+        if "improvements" in feedback and isinstance(feedback["improvements"], list):
+            feedback["improvements"] = [
+                self._normalize_improvement_item(item)
+                for item in feedback["improvements"]
+            ]
+
+        if "minor_suggestions" in feedback and isinstance(
+            feedback["minor_suggestions"], list
+        ):
+            feedback["minor_suggestions"] = [
+                {"section": "General", "issue": "Minor issue", "suggestion": item}
+                if isinstance(item, str)
+                else item
+                for item in feedback["minor_suggestions"]
+            ]
 
         # Remove any TODO placeholders
         feedback = self._remove_todos(feedback)
 
         return feedback
+
+    def _normalize_improvement_item(self, item: Any) -> dict[str, Any]:
+        """Normalize an improvement item to have proper structure."""
+        if isinstance(item, str):
+            return {"section": "General", "suggestion": item}
+        elif isinstance(item, dict):
+            # Handle area → section mapping
+            if "area" in item and "section" not in item:
+                item["section"] = item["area"]
+            # Add default section if missing
+            if "section" not in item:
+                item["section"] = "General"
+            return item
+        return item
 
     def _fix_fact_check_issues(self, fact_check: dict[str, Any]) -> dict[str, Any]:
         """Fix common issues in fact-check results."""

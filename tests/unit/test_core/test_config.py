@@ -9,6 +9,7 @@ from src.core.config import (
     SystemConfig,
     AnalystConfig,
     ReviewerConfig,
+    FactCheckerConfig,
     create_default_configs,
 )
 from tests.unit.base_test import BaseAgentTest
@@ -41,7 +42,7 @@ class TestConfiguration(BaseAgentTest):
 
         # Check defaults (updated to match current config)
         assert config.max_turns == 50  # BaseAgentConfig default
-        assert config.max_websearches == 4
+        assert config.max_websearches == 8
         assert config.min_words == 800
         assert config.allowed_tools == ["WebSearch", "WebFetch", "TodoWrite"]
         assert config.system_prompt == "system.md"
@@ -62,7 +63,7 @@ class TestConfiguration(BaseAgentTest):
         """Test create_default_configs creates proper instances."""
         assert self.temp_dir is not None
 
-        system, analyst, reviewer = create_default_configs(self.temp_dir)
+        system, analyst, reviewer, fact_checker = create_default_configs(self.temp_dir)
 
         # Check system config
         assert isinstance(system, SystemConfig)
@@ -80,6 +81,10 @@ class TestConfiguration(BaseAgentTest):
         assert isinstance(reviewer, ReviewerConfig)
         assert reviewer.prompts_dir == self.temp_dir / "config" / "prompts"
         assert reviewer.allowed_tools == []
+
+        # Check fact_checker config
+        assert isinstance(fact_checker, FactCheckerConfig)
+        assert fact_checker.prompts_dir == self.temp_dir / "config" / "prompts"
 
     def test_get_allowed_tools_returns_copy(self):
         """Test that get_allowed_tools returns a copy, not original."""

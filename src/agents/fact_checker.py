@@ -145,6 +145,11 @@ class FactCheckerAgent(BaseAgent[FactCheckerConfig, FactCheckContext]):
 
                     # Process when we hit ResultMessage (end of stream)
                     if isinstance(message, ResultMessage):
+                        if message.is_error:
+                            logger.error(f"SDK returned error: {message.subtype}")
+                            return Error(
+                                message="SDK error during fact-check generation"
+                            )
                         break
 
             # Check if the fact-check file has content (not just empty template)

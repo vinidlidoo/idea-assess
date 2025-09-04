@@ -87,7 +87,11 @@ class TestReviewerAgent(BaseAgentTest):
 
                 async def mock_receive():
                     # Simulate feedback file being created
-                    feedback = {"iteration_recommendation": "approve"}
+                    feedback = {
+                        "overall_assessment": "The analysis is comprehensive and well-structured.",
+                        "iteration_recommendation": "approve",
+                        "iteration_reason": "Analysis meets all requirements",
+                    }
                     _ = context.feedback_output_path.write_text(json.dumps(feedback))
 
                     yield self._create_result_message(is_error=False)
@@ -256,6 +260,7 @@ class TestReviewerAgent(BaseAgentTest):
 
                     async def mock_receive():
                         feedback = {
+                            "overall_assessment": f"Analysis assessment for {recommendation} test.",
                             "iteration_recommendation": recommendation,
                             "iteration_reason": f"Testing {recommendation}",
                         }
@@ -270,4 +275,4 @@ class TestReviewerAgent(BaseAgentTest):
 
                     assert isinstance(result, Success)
                     feedback_data = json.loads(context.feedback_output_path.read_text())
-                    assert feedback_data["recommendation"] == recommendation
+                    assert feedback_data["iteration_recommendation"] == recommendation

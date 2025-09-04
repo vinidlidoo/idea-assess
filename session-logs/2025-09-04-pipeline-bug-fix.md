@@ -94,14 +94,10 @@ logger.debug(f"Reviewer={recommendation}, FactChecker={fc_recommendation}")
 ## Next Session Tasks
 
 1. Fix remaining 21 unit tests
-2. Test full pipeline with real ideas
-3. Consider implementing caching for WebFetch (from TODO.md)
-4. Begin Phase 3 Judge implementation
+2. Ask user for remaining tasks in this session
 
 ## Lessons Learned
 
 - Field name consistency across agents is critical for pipeline logic
 - Debug logging for decision points saves troubleshooting time
 - Making configs consistently required reduces special-case code
-- Backward compatibility can be achieved with simple fallbacks
-

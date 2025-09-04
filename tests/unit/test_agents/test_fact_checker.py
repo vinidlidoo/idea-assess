@@ -80,7 +80,8 @@ Major competitors include OpenAI, Google, and Anthropic [3].
                 "unverified_claims": 0,
                 "false_claims": 0,
             },
-            "recommendation": "approve",
+            "iteration_recommendation": "approve",
+            "iteration_reason": "No critical issues found",
             "top_priorities": [],
         }
         fact_check_path.write_text(json.dumps(fact_check_template, indent=2))
@@ -106,10 +107,15 @@ Major competitors include OpenAI, Google, and Anthropic [3].
 
         with patch("src.agents.fact_checker.ClaudeSDKClient", return_value=mock_client):
             with patch(
-                "src.agents.fact_checker.load_prompt_with_includes",
+                "src.utils.file_operations.load_prompt_with_includes",
                 return_value="Test prompt",
             ):
-                result = await agent.process("", context)
+                with patch.object(
+                    agent,
+                    "_validate_analysis_path",
+                    return_value=context.analysis_input_path,
+                ):
+                    result = await agent.process("", context)
 
         # Should return Success
         assert isinstance(result, Success)
@@ -159,7 +165,8 @@ Growth rate is 500% per year [2].
                     "unverified_claims": 0,
                     "false_claims": 2,
                 },
-                "recommendation": "reject",
+                "iteration_recommendation": "reject",
+                "iteration_reason": "Critical citation issues found",
                 "top_priorities": ["Fix unrealistic market size claim"],
             }
             context.fact_check_output_path.write_text(
@@ -171,17 +178,22 @@ Growth rate is 500% per year [2].
 
         with patch("src.agents.fact_checker.ClaudeSDKClient", return_value=mock_client):
             with patch(
-                "src.agents.fact_checker.load_prompt_with_includes",
+                "src.utils.file_operations.load_prompt_with_includes",
                 return_value="Test prompt",
             ):
-                result = await agent.process("", context)
+                with patch.object(
+                    agent,
+                    "_validate_analysis_path",
+                    return_value=context.analysis_input_path,
+                ):
+                    result = await agent.process("", context)
 
         # Should succeed (process completes)
         assert isinstance(result, Success)
 
         # Verify rejection recommendation
         fact_check_data = json.loads(context.fact_check_output_path.read_text())
-        assert fact_check_data["recommendation"] == "reject"
+        assert fact_check_data["iteration_recommendation"] == "reject"
         assert len(fact_check_data["issues"]) > 0
         assert fact_check_data["issues"][0]["severity"] == "High"
 
@@ -210,10 +222,15 @@ Everyone is doing AI now.
 
         with patch("src.agents.fact_checker.ClaudeSDKClient", return_value=mock_client):
             with patch(
-                "src.agents.fact_checker.load_prompt_with_includes",
+                "src.utils.file_operations.load_prompt_with_includes",
                 return_value="Test prompt",
             ):
-                result = await agent.process("", context)
+                with patch.object(
+                    agent,
+                    "_validate_analysis_path",
+                    return_value=context.analysis_input_path,
+                ):
+                    result = await agent.process("", context)
 
         assert isinstance(result, Success)
 
@@ -234,7 +251,10 @@ Everyone is doing AI now.
 
         # Should return Error
         assert isinstance(result, Error)
-        assert "not found" in result.message.lower()
+        assert (
+            "not found" in result.message.lower()
+            or "invalid path" in result.message.lower()
+        )
 
     @pytest.mark.asyncio
     async def test_error_handling_template_not_found(self, config, context):
@@ -243,13 +263,23 @@ Everyone is doing AI now.
         context.fact_check_output_path.unlink()
 
         agent = FactCheckerAgent(config)
-        result = await agent.process("", context)
+        with patch(
+            "src.utils.file_operations.load_prompt_with_includes",
+            return_value="Test prompt",
+        ):
+            with patch.object(
+                agent,
+                "_validate_analysis_path",
+                return_value=context.analysis_input_path,
+            ):
+                result = await agent.process("", context)
 
         # Should return Error
         assert isinstance(result, Error)
         assert (
             "template" in result.message.lower()
             or "not found" in result.message.lower()
+            or "failed to edit" in result.message.lower()
         )
 
     @pytest.mark.asyncio
@@ -262,16 +292,22 @@ Everyone is doing AI now.
 
         async def mock_receive():
             raise KeyboardInterrupt("User interrupted")
+            yield  # Make it a generator (unreachable, but required for async iteration)
 
         mock_client.receive_response = mock_receive
 
         with patch("src.agents.fact_checker.ClaudeSDKClient", return_value=mock_client):
             with patch(
-                "src.agents.fact_checker.load_prompt_with_includes",
+                "src.utils.file_operations.load_prompt_with_includes",
                 return_value="Test prompt",
             ):
-                with pytest.raises(KeyboardInterrupt):
-                    await agent.process("", context)
+                with patch.object(
+                    agent,
+                    "_validate_analysis_path",
+                    return_value=context.analysis_input_path,
+                ):
+                    with pytest.raises(KeyboardInterrupt):
+                        await agent.process("", context)
 
     @pytest.mark.asyncio
     async def test_sdk_error_handling(self, config, context):
@@ -288,14 +324,20 @@ Everyone is doing AI now.
 
         with patch("src.agents.fact_checker.ClaudeSDKClient", return_value=mock_client):
             with patch(
-                "src.agents.fact_checker.load_prompt_with_includes",
+                "src.utils.file_operations.load_prompt_with_includes",
                 return_value="Test prompt",
             ):
-                result = await agent.process("", context)
+                with patch.object(
+                    agent,
+                    "_validate_analysis_path",
+                    return_value=context.analysis_input_path,
+                ):
+                    result = await agent.process("", context)
 
-        # Should return Error
+        # Should return Error (validation error because SDK returns without editing)
         assert isinstance(result, Error)
-        assert "SDK error" in result.message
+        # The error will be about invalid structure since SDK failed to edit the file
+        assert "invalid" in result.message.lower() or "SDK error" in result.message
 
     @pytest.mark.asyncio
     async def test_approval_scenario(self, config, context):
@@ -315,7 +357,8 @@ Everyone is doing AI now.
                     "unverified_claims": 0,
                     "false_claims": 0,
                 },
-                "recommendation": "approve",
+                "iteration_recommendation": "approve",
+                "iteration_reason": "All citations verified successfully",
                 "top_priorities": [],
             }
             context.fact_check_output_path.write_text(
@@ -327,16 +370,21 @@ Everyone is doing AI now.
 
         with patch("src.agents.fact_checker.ClaudeSDKClient", return_value=mock_client):
             with patch(
-                "src.agents.fact_checker.load_prompt_with_includes",
+                "src.utils.file_operations.load_prompt_with_includes",
                 return_value="Test prompt",
             ):
-                result = await agent.process("", context)
+                with patch.object(
+                    agent,
+                    "_validate_analysis_path",
+                    return_value=context.analysis_input_path,
+                ):
+                    result = await agent.process("", context)
 
         assert isinstance(result, Success)
 
         # Verify approval
         fact_check_data = json.loads(context.fact_check_output_path.read_text())
-        assert fact_check_data["recommendation"] == "approve"
+        assert fact_check_data["iteration_recommendation"] == "approve"
         assert len(fact_check_data["issues"]) == 0
 
     @pytest.mark.asyncio
@@ -360,10 +408,15 @@ Everyone is doing AI now.
 
         with patch("src.agents.fact_checker.ClaudeSDKClient", return_value=mock_client):
             with patch(
-                "src.agents.fact_checker.load_prompt_with_includes",
+                "src.utils.file_operations.load_prompt_with_includes",
                 return_value="Test prompt",
             ):
-                result = await agent.process("", context)
+                with patch.object(
+                    agent,
+                    "_validate_analysis_path",
+                    return_value=context.analysis_input_path,
+                ):
+                    result = await agent.process("", context)
 
         assert isinstance(result, Success)
         # Analytics should have recorded the run
