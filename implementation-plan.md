@@ -1,383 +1,193 @@
-# Phased Implementation Plan
+# Implementation Plan
 
-## Overview
+## Current Status
 
-This plan follows a "start small, validate, iterate" approach. Each phase builds on the previous one, with clear validation criteria before moving forward.
+**Phase 2.5**: Extending core functionality  
+**Completed**: Analyst, Reviewer, FactChecker agents  
+**Next**: Additional Phase 2.5 features, then Judge (Phase 3)
 
-## Phase 1: Analyst-Only Prototype (Days 1-2) ✅ COMPLETE
-
-### Goals
-
-- Get a single agent working end-to-end ✅
-- Validate claude-code-sdk integration ✅
-- Test prompt engineering with real ideas ✅
-- Establish file I/O patterns ✅
+## ✅ Phase 1: Analyst Agent (COMPLETE)
 
 ### Phase 1 Deliverables
 
-1. **Minimal CLI** (`analyze.py`) ✅
-   - Single command: `python analyze.py "AI fitness app"`
-   - Argparse implementation complete
-   - Direct stdout/file output working
+- Single agent with WebSearch integration
+- Modular architecture (`src/core`, `src/agents`, `src/utils`)
+- 1000+ word analyses with market research
+- CLI with argparse
 
-2. **Basic Analyst Agent** ✅
-   - Three prompt versions created (`analyst_v1.md`, `v2`, `v3`)
-   - Produces 900-1200 word analyses with YC-style focus
-   - Structure validated across multiple test ideas
+### Phase 1 Components
 
-3. **Test Harness** ✅
-   - Tested with 10+ diverse ideas
-   - Output format validated
-   - WebSearch integration working (30-120s per search)
+- `src/agents/analyst.py` - Core analysis agent
+- `config/prompts/agents/analyst/` - System and user prompts
+- `config/templates/agents/analyst/` - Document templates
 
-### Phase 1 Validation Criteria
-
-- [x] Can process 5 different ideas without errors
-- [x] Output follows expected markdown structure
-- [x] WebSearch tool actually retrieves relevant data
-- [x] Files saved to correct locations
-- [x] Analysis makes logical sense (manual review)
-
-### Phase 1 Architecture Refactoring (2025-08-14) ✅
-
-- **Modularized monolithic code** into clean architecture:
-  - `src/utils/` - Text processing, debug logging, file operations
-  - `src/core/` - BaseAgent interface, config, message processor
-  - `src/agents/` - AnalystAgent implementation
-- **Validated by code review**: Architecture ready for Phase 2
-
-### What We're NOT Doing Yet
-
-- No reviewer feedback loop
-- No grading or evaluation
-- No comparative reports
-- No error recovery
-- No parallel processing
-
-## Phase 2: Add Reviewer Feedback Loop (Days 3-4) ✅ COMPLETE
-
-### Phase 2 Goals
-
-- Implement iterative improvement cycle ✅
-- Test Analyst-Reviewer interaction ✅
-- Refine feedback format ✅
-- Validate iteration stopping logic ✅
+## ✅ Phase 2: Reviewer Feedback (COMPLETE)
 
 ### Phase 2 Deliverables
 
-1. **Reviewer Agent** ✅
-   - Focused prompt (`prompts/reviewer_v1.md`)
-   - JSON feedback format with structured sections
-   - Clear, actionable suggestions with priorities
+- Iterative refinement with max 3 iterations
+- JSON feedback with structured recommendations
+- File-based agent communication
+- Template-prompt separation
 
-2. **Iteration Controller** ✅
-   - Max 3 iterations implemented
-   - Tracks version history with timestamped files
-   - Implements accept/reject stopping conditions
+### Phase 2 Components
 
-3. **Enhanced Analyst** ✅
-   - Accepts and incorporates feedback via file reading
-   - Shows clear improvements between versions
-   - Reads previous analysis and JSON feedback files
+- `src/agents/reviewer.py` - Review agent
+- Feedback format: `iteration_recommendation` field
+- Pipeline modes: `ANALYZE_AND_REVIEW`
 
-### Phase 2 Implementation (2025-08-14) ✅
+## ✅ Phase 2.5: Core Extensions (PARTIAL)
 
-- **File-based Communication**: Agents read/write files instead of passing content
-  - `src/agents/reviewer_file.py` - Reviewer reads analysis files
-  - `src/core/pipeline_file.py` - Pipeline manages file I/O
-- **SDK Workaround**: Avoided prompt size violations by passing filenames
-- **Permission Mode**: Using 'default' (not 'autoAllow' which is invalid)
+### Completed Features
 
-### Phase 2 Validation Criteria
+#### FactChecker Agent ✅
 
-- [x] Reviewer provides specific, actionable feedback
-- [x] Analyst successfully incorporates feedback
-- [x] Quality improves across iterations (verified with test)
-- [x] Iteration stops at appropriate point
-- [x] All versions properly saved with timestamps
+- Parallel citation verification
+- Veto power over iterations
+- WebFetch-based verification
+- Runs alongside Reviewer
 
-### Test Cases Completed
+#### Test Infrastructure ✅
 
-1. "Online tutoring platform for kids" → Iterated 2 times ✅
-2. Reviewer properly rejected first iteration with 3 critical issues ✅
-3. Analyst revised based on JSON feedback successfully ✅
+- 107 unit tests, 81% coverage
+- ~20s execution time
+- Strategic mocking at boundaries
+- Field standardization complete
 
-## Phase 2.5: Add FactChecker Agent (2025-09-03) ✅ COMPLETE
+#### Documentation ✅
 
-### Phase 2.5 Goals
+- system-architecture.md (840 lines)
+- All READMEs updated
+- Test philosophy documented
 
-- Implement parallel citation verification ✅
-- Reduce false claims and improve accuracy ✅
-- Add veto power to iteration logic ✅
+### In Progress / Planned
 
-### Phase 2.5 Deliverables
+- [ ] **Iteration Resumption**: Resume analyst-reviewer loop from previous checkpoint when re-running same idea slug instead of starting over
 
-1. **FactChecker Agent** ✅
-   - Dedicated agent for citation verification
-   - WebFetch-based verification workflow
-   - JSON output with structured feedback
+- [ ] **Human-in-the-Loop Feedback**: Allow human feedback insertion into review cycle via `human_feedback.md` file
 
-2. **Parallel Execution** ✅
-   - Runs alongside Reviewer agent
-   - Both must approve to stop iterations
-   - Veto power pattern implemented
+- [ ] **Enhanced Reviewer**: Give reviewer agent WebSearch/WebFetch capabilities to verify claims and improve feedback quality
 
-3. **Test Infrastructure** ✅
-   - Comprehensive unit tests (10 test cases)
-   - Manual test scripts for real API testing
-   - Clear separation of test types
+- [ ] **Batch Processing**: Process multiple ideas concurrently from `ideas/pending.txt` input file
 
-### Validation Complete
+- [ ] **Cost Analytics**: Track and display total API token costs per analysis in metadata and analysis footer
 
-- [x] FactChecker properly verifies citations
-- [x] Parallel execution with reviewer works
-- [x] Veto logic correctly implemented
-- [x] Test coverage comprehensive
-- [x] Integration with pipeline seamless
-
-## Phase 3: Add Judge Evaluation (Days 5-6)
+## 🚧 Phase 3: Judge Evaluation
 
 ### Phase 3 Goals
 
-- Implement grading system
-- Validate evaluation criteria
-- Test grade consistency
-- Build evaluation pipeline
+- Letter grades (A-D) on 7 criteria
+- Evidence-based scoring
+- Structured evaluation storage
 
-### Phase 3 Deliverables
+### Planned Implementation
 
-1. **Judge Agent**
-   - Comprehensive prompt (`prompts/judge_v1.md`)
-   - 7 criteria evaluation
-   - Letter grades (A-D) with justification
+1. **Judge Agent** (`src/agents/judge.py`)
+   - Evaluation prompt with criteria
+   - Grade calculation logic
+   - JSON output format
 
-2. **Evaluation Storage**
-   - JSON format for grades
+2. **CLI Extension**
+   - `--with-judge` flag
+   - Batch grading capability
+
+3. **Output**
+   - `evaluation.json` with grades
    - Detailed justifications
    - Executive summary
 
-3. **Basic CLI Extension**
-   - `grade` command
-   - Can evaluate existing analyses
-   - Batch processing capability
+### Validation Criteria
 
-### Phase 3 Validation Criteria
+- [ ] Consistent grading across similar ideas
+- [ ] Evidence-based justifications
+- [ ] All 7 criteria evaluated
+- [ ] Clear grade rationale
 
-- [ ] Grades are consistent across similar ideas
-- [ ] Justifications are evidence-based
-- [ ] All 7 criteria properly evaluated
-- [ ] JSON format is parseable
-- [ ] Executive summary is useful
-
-### Test Matrix
-
-- 10 diverse ideas
-- Manual review of grades
-- Check for grade inflation/deflation
-- Verify criteria independence
-
-## Phase 4: Add Synthesizer for Reports (Days 7-8)
+## 📅 Phase 4: Synthesizer Reports
 
 ### Phase 4 Goals
 
-- Generate comparative reports
-- Compute overall rankings
-- Create executive-friendly output
-- Complete full pipeline
+- Comparative analysis across multiple ideas
+- Executive-friendly summaries
+- Ranking algorithms
 
-### Phase 4 Deliverables
+### Planned Components
 
-1. **Synthesizer Agent**
-   - Report generation prompt
-   - Ranking algorithm
-   - Comparative analysis
+1. **Synthesizer Agent** (`src/agents/synthesizer.py`)
+2. **Report Generation** (`reports/summary_{timestamp}.md`)
+3. **Batch Processing Support**
 
-2. **Full CLI with Click**
-   - All commands integrated
-   - Proper error handling
-   - Progress indicators
-
-3. **Report Generation**
-   - Summary reports with rankings
-   - Detailed comparisons
-   - Visual formatting (tables)
-
-### Phase 4 Validation Criteria
-
-- [ ] Reports accurately reflect evaluations
-- [ ] Rankings are logical and justified
-- [ ] Comparisons highlight key differences
-- [ ] Format is professional and readable
-- [ ] Full pipeline runs end-to-end
-
-## Phase 5: Polish & Optimization (Days 9-10)
+## 📅 Phase 5: Polish & Scale
 
 ### Phase 5 Goals
 
-- Error handling and recovery
+- Production readiness
 - Performance optimization
-- Documentation
-- Testing suite
+- Comprehensive documentation
 
-### Phase 5 Deliverables
+### Focus Areas
 
-1. **Robustness**
-   - Retry logic for API failures
-   - Graceful degradation
-   - Better error messages
+- Error recovery and retry logic
+- Parallel processing for multiple ideas
+- API rate limiting and cost tracking
+- Advanced prompt engineering
 
-2. **Documentation**
-   - README with examples
-   - API documentation
-   - Troubleshooting guide
-
-3. **Testing**
-   - Unit tests for core functions
-   - Integration tests for pipeline
-   - Performance benchmarks
-
-### Phase 5 Validation Criteria
-
-- [ ] Can handle 20+ ideas in batch
-- [ ] Recovers from transient failures
-- [ ] Clear documentation
-- [ ] 80% test coverage
-- [ ] Performance within acceptable limits
-
-## Implementation Notes
-
-### Directory Structure Evolution
-
-**Phase 1 (Minimal)**:
-
-```text
-analyze.py
-prompts/
-  analyst_v1.md
-output/
-  {idea-slug}.md
-```
-
-**Phase 2 (With Reviewer)**:
-
-```text
-analyze.py
-prompts/
-  analyst_v1.md
-  reviewer_v1.md
-work/
-  {idea-slug}/
-    analysis_v1.md
-    feedback_v1.json
-    analysis_v2.md
-    ...
-```
-
-**Current Structure (Post-Refactor)**:
+## Current Architecture
 
 ```text
 src/
-  core/                 # ✅ IMPLEMENTED
-    __init__.py
-    agent_base.py       # BaseAgent interface
-    config.py          # Configuration management
-    message_processor.py # Message handling
-  agents/              # ✅ PARTIALLY IMPLEMENTED
-    __init__.py
-    analyst.py         # ✅ Complete
-    reviewer.py        # ⏳ Phase 2
-    judge.py          # ⏳ Phase 3
-    synthesizer.py    # ⏳ Phase 4
-  utils/              # ✅ IMPLEMENTED
-    __init__.py
-    debug_logging.py
-    file_operations.py
-    text_processing.py
-  cli.py             # ✅ IMPLEMENTED
-  analyze.py         # ✅ Thin wrapper
+├── core/           # BaseAgent, config, pipeline, types
+├── agents/         # analyst, reviewer, fact_checker
+├── utils/          # file_ops, logging, validation
+└── cli.py          # Main interface
+
 config/
-  prompts/
-    analyst_v1.md    # ✅
-    analyst_v2.md    # ✅
-    analyst_v3.md    # ✅
-    reviewer.md      # ⏳ Phase 2
-    judge.md        # ⏳ Phase 3
-    synthesizer.md  # ⏳ Phase 4
+├── prompts/        # Agent prompts (behavior)
+└── templates/      # Document templates (structure)
+
 analyses/
-  {idea-slug}/
-    analysis.md
-    evaluation.json  # ⏳ Phase 3
-reports/
-  summary_{timestamp}.md # ⏳ Phase 4
+└── {idea-slug}/
+    ├── analysis.md (symlink)
+    └── iterations/
 ```
 
-### Key Decisions to Make Early
+## Pipeline Modes
 
-1. **Prompt Management**: Version control strategy for prompts
-2. **State Management**: How to track pipeline state between agents
-3. **Error Recovery**: What failures to retry vs. fail fast
-4. **Output Format**: Exact markdown structure for analyses
-5. **WebSearch Fallback**: What if MCP search unavailable?
+1. `ANALYZE` - Analyst only
+2. `ANALYZE_AND_REVIEW` - With reviewer loop
+3. `ANALYZE_REVIEW_WITH_FACT_CHECK` - Parallel verification
+4. `ANALYZE_REVIEW_AND_JUDGE` - With grading (Phase 3)
+5. `FULL_EVALUATION` - All agents (Phase 4)
 
-### Risk Mitigation
+## Key Design Decisions
 
-1. **WebSearch Unavailability**
-   - Fallback: Use mock data for testing
-   - Alternative: Implement basic web scraping
-
-2. **Token Limits**
-   - Start with shorter analyses (1000 words)
-   - Implement chunking if needed
-
-3. **Iteration Loops**
-   - Hard stop at 3 iterations
-   - Time-based cutoff as backup
-
-4. **Grade Inflation**
-   - Calibrate with known good/bad examples
-   - Consider relative grading within batch
+- **Type Safety**: Generics for agents `BaseAgent[TConfig, TContext]`
+- **Field Standards**: `iteration_recommendation` (approve/revise)
+- **Template Pattern**: Structure (templates) vs behavior (prompts)
+- **Parallel Execution**: Reviewer + FactChecker concurrency
+- **File-based Communication**: Reliability over speed
 
 ## Success Metrics
 
-### Phase 1 Success
+### System Performance
 
-- Single agent works reliably
-- Output quality is reasonable
-- Development velocity established
+- Analysis time: 2-5 minutes
+- Test execution: ~20s
+- Code coverage: >80%
 
-### Phase 2 Success
+### Quality Metrics
 
-- Feedback loop demonstrably improves quality
-- Iteration count is appropriate
-- System remains stable
+- Iteration improvement rate
+- Citation accuracy
+- Grade consistency (Phase 3)
 
-### Phase 3 Success
+## Next Immediate Steps
 
-- Grades are fair and consistent
-- Evaluation adds clear value
-- Pipeline remains manageable
-
-### Phase 4 Success
-
-- Reports provide actionable insights
-- Full system works end-to-end
-- User can evaluate multiple ideas efficiently
-
-### Overall Success
-
-- System processes 10+ ideas reliably
-- Quality matches manual analysis
-- Development completed within timeline
-- Learning objectives achieved
-
-## Next Steps
-
-1. Review and refine this plan
-2. Begin Phase 1 implementation
-3. Create test ideas list
-4. Draft initial Analyst prompt
-5. Set up minimal project structure
+1. Define additional Phase 2.5 features
+2. Implement selected features
+3. Validate with real-world testing
+4. Begin Phase 3 planning
 
 ---
 
-*This is a living document. Update as we learn and adapt.*
+_Living document - updated as implementation progresses_

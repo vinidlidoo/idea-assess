@@ -1,8 +1,8 @@
-# Testing Strategy for idea-assess
+# Testing Strategy
 
 ## Overview
 
-This document outlines our testing philosophy following the comprehensive unit test implementation completed on 2025-08-26. The test suite has been significantly expanded to achieve 88% code coverage while maintaining fast execution times.
+Comprehensive test suite with behavior-focused testing and strategic mocking at integration boundaries.
 
 ## Testing Philosophy
 
@@ -34,71 +34,25 @@ This document outlines our testing philosophy following the comprehensive unit t
 - Method call counts (unless critical)
 - CLI main entry point (requires full system)
 
-## Current Test Suite (109 tests, ~0.6s, 88% coverage)
+## Current Test Suite (107 tests, ~20s, 81% coverage)
 
-### Unit Tests Structure (`tests/unit/`)
+### Test Structure
 
 ```text
 tests/unit/
-├── base_test.py                  # Base test class with temp dir management
-├── conftest.py                   # Shared pytest fixtures
-├── test_cli.py                   # 8 CLI behavior tests
-├── test_agents/
-│   ├── test_analyst.py          # 10 agent behavior tests
-│   └── test_reviewer.py         # 10 reviewer tests with helpers
-├── test_core/
-│   ├── test_config.py           # 8 configuration tests
-│   ├── test_pipeline.py         # 7 orchestration tests
-│   └── test_run_analytics.py    # 13 analytics tracking tests
-└── test_utils/
-    ├── test_file_operations.py  # 12 file handling tests
-    ├── test_json_validator.py   # 12 validation tests
-    ├── test_logger.py           # 15 logging tests
-    ├── test_result_formatter.py # 5 formatting tests
-    └── test_text_processing.py  # 9 slug generation tests
+├── test_agents/              # Agent tests (analyst, reviewer, fact_checker)
+├── test_core/                # Core logic (config, pipeline, analytics)
+├── test_utils/               # Utilities (file_ops, json, logger, etc.)
+├── test_cli.py              # CLI interface tests
+└── test_sdk_errors.py        # SDK error handling
 ```
 
-### Test Categories
+### Key Test Categories
 
-#### 1. Agent Tests (20 tests)
-
-- **Analyst**: File creation, feedback handling, tool configuration, error cases
-- **Reviewer**: Feedback JSON creation, path validation, recommendation handling
-
-#### 2. Pipeline Tests (7 tests)
-
-- Mode selection (ANALYZE vs ANALYZE_AND_REVIEW)
-- Iteration limits and early termination
-- Error propagation
-- Directory/symlink creation
-
-#### 3. CLI Tests (8 tests)
-
-- Command parsing and flag effects
-- Configuration overrides (--no-web-tools, --with-review)
-- Output formatting (success/error markers)
-- Argument validation
-
-#### 4. Configuration Tests (8 tests)
-
-- Defaults and modifications
-- Path resolution to absolute paths
-- Tool configuration and copying
-- Config factory functions
-
-#### 5. Utility Tests (49 tests)
-
-- **File Operations**: Prompt/template loading with caching
-- **JSON Validation**: Feedback schema validation and fixing
-- **Logger**: Setup, SDK error detection, message formatting
-- **Result Formatter**: Pipeline result display
-- **Text Processing**: Slug creation from ideas
-- **Run Analytics**: Agent metrics, tool tracking, cost calculation
-
-#### 6. Core Tests (17 tests)
-
-- **Run Analytics**: Message tracking, agent metrics, tool correlation
-- **Pipeline**: Orchestration, iteration control, mode handling
+- **Agents** (27 tests): Analyst, Reviewer, FactChecker behavior
+- **Core** (28 tests): Pipeline, config, analytics
+- **Utils** (45 tests): File ops, validation, logging
+- **CLI** (7 tests): Command parsing, flag effects
 
 ## Running Tests
 
@@ -250,32 +204,12 @@ async def mock_function(*_args: Any, **_kwargs: Any) -> None:
     ...
 ```
 
-## Coverage Report Interpretation
+## Coverage Report
 
-Current coverage: **88%** (1029 statements, 122 missed)
+**Current**: 81% coverage (107 tests, ~20s execution)
 
-### Well-Covered Modules (>90%)
-
-- `types.py` (100%) - Type definitions
-- `file_operations.py` (100%) - File handling utilities
-- `result_formatter.py` (100%) - Output formatting
-- `text_processing.py` (100%) - Text utilities
-- `config.py` (98%) - Configuration classes
-- `logger.py` (93%) - Logging setup
-- `pipeline.py` (91%) - Orchestration logic
-
-### Modules Needing More Coverage (<85%)
-
-- `agent_base.py` (77%) - Abstract base class
-- `json_validator.py` (80%) - Complex validation logic
-- `reviewer.py` (83%) - Reviewer agent
-
-### Uncovered Code Categories
-
-1. **Error recovery paths** - Difficult to trigger edge cases
-2. **CLI entry point** - Requires full system setup
-3. **Analytics edge cases** - Complex tool correlation scenarios
-4. **Fallback mechanisms** - Secondary error handling
+**Well-Covered** (>90%): types, file_operations, text_processing  
+**Needs Work** (<80%): agent_base, some error paths
 
 ## Anti-Patterns to Avoid
 
@@ -355,8 +289,4 @@ Update this document when:
 
 ---
 
-*Last Updated: 2025-08-26*
-*Test Count: 109 tests*
-*Coverage: 88%*
-*Execution Time: ~0.6s*
-*Focus: Comprehensive behavior testing with high coverage*
+*Test Count: 107 tests | Coverage: 81% | Execution: ~20s*

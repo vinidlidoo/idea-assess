@@ -1,8 +1,8 @@
 # System Architecture - Business Idea Evaluator
 
-**Version**: 2.3 (FactChecker Agent Implemented)  
-**Last Updated**: 2025-09-03  
-**Status**: Production-Ready with Citation Verification  
+**Version**: 2.5 (Phase 2.5 Complete)  
+**Last Updated**: 2025-09-04  
+**Status**: Production-Ready with All Tests Passing (81% Coverage)  
 
 ## Table of Contents
 
@@ -35,7 +35,8 @@ The Business Idea Evaluator is an AI-powered system that transforms one-liner bu
 
 - **Idea Analysis**: Convert one-liner ideas into 1000+ word market analyses
 - **Iterative Refinement**: Reviewer feedback loop for quality improvement
-- **Citation Verification**: FactChecker agent for parallel citation validation
+- **Citation Verification**: FactChecker agent with parallel execution and veto power
+- **Field Standardization**: Consistent field naming across all feedback systems
 - **Web Research**: Integration with WebSearch and WebFetch for comprehensive market data
 - **Task Organization**: TodoWrite tool for complex analysis planning
 - **Flexible Prompting**: Configurable system prompts for different analysis styles
@@ -145,8 +146,8 @@ BaseAgent[TConfig, TContext] (Abstract)
     ├── AnalystAgent[AnalystConfig, AnalystContext]
     ├── ReviewerAgent[ReviewerConfig, ReviewerContext]
     ├── FactCheckerAgent[FactCheckerConfig, FactCheckContext]
-    ├── (Future) JudgeAgent[JudgeConfig, JudgeContext]
-    └── (Future) SynthesizerAgent[SynthesizerConfig, SynthesizerContext]
+    ├── (Phase 3) JudgeAgent[JudgeConfig, JudgeContext]
+    └── (Phase 4) SynthesizerAgent[SynthesizerConfig, SynthesizerContext]
 ```
 
 ### AnalystAgent
@@ -227,9 +228,12 @@ class ReviewerContext(BaseContext):
 ```python
 @dataclass
 class FactCheckerConfig(BaseAgentConfig):
-    max_verifications: int = 3  # Citations to verify per iteration
-    webfetch_per_iteration: int = 10  # WebFetch calls allowed
-    allowed_tools: list[str] = ["WebFetch", "Edit", "TodoWrite"]
+    webfetch_per_iteration: int = 10  # WebFetch calls allowed per iteration
+    
+    # Default tools for fact-checking
+    allowed_tools: list[str] = field(
+        default_factory=lambda: ["WebFetch", "Edit", "TodoWrite"]
+    )
 ```
 
 **Context**:
@@ -239,6 +243,7 @@ class FactCheckerConfig(BaseAgentConfig):
 class FactCheckContext(BaseContext):
     analysis_input_path: Path  # Analysis to fact-check
     fact_check_output_path: Path  # Where to write results
+    max_iterations: int = 3  # Shared with ReviewerConfig
 ```
 
 ## Pipeline Architecture
@@ -266,9 +271,11 @@ class PipelineMode(Enum):
             └────── Revision ────────┘
 
 3. ANALYZE_REVIEW_WITH_FACT_CHECK Mode:
-   Input → Analyst → [Reviewer + FactChecker] → [Both Approve/Either Rejects]
-            ↑                                          |
-            └──────────── Revision ───────────────────┘
+   Input → Analyst → [Parallel: Reviewer + FactChecker] → [Both Approve/Either Rejects]
+            ↑                                                    |
+            └──────────────── Revision ─────────────────────────┘
+   
+   Note: FactChecker has veto power - can force revision even if Reviewer approves. And vice-versa
 
 4. Future modes add Judge and Synthesizer stages
 ```
@@ -451,31 +458,43 @@ class PipelineResult(TypedDict):
 config/prompts/
 ├── agents/
 │   ├── analyst/
-│   │   ├── system.md           # Analyst principles (73 lines)
+│   │   ├── system.md           # Analyst principles
+│   │   ├── tools_system.md     # Tool-augmented system prompt
+│   │   ├── snippets/           # Conditional content
+│   │   │   ├── web_tools_enabled.md
+│   │   │   └── web_tools_disabled.md
 │   │   └── user/               # User message templates
 │   │       ├── initial.md      # Initial analysis
-│   │       ├── revision.md     # Revision instructions
-│   │       └── constraints.md  # Consolidated constraints
+│   │       └── revision.md     # Revision instructions
 │   ├── reviewer/
-│   │   ├── system.md           # Reviewer principles (89 lines)
+│   │   ├── system.md           # Reviewer principles
+│   │   ├── tools_system.md     # Tool-augmented system prompt
 │   │   └── user/
 │   │       └── review.md       # Review instructions
+│   ├── factchecker/
+│   │   ├── system.md           # FactChecker principles
+│   │   └── user/
+│   │       └── fact-check.md   # Fact-checking instructions
 │   ├── judge/
 │   │   └── system.md           # Judge prompt (Phase 3)
 │   └── synthesizer/
 │       └── system.md           # Synthesizer prompt (Phase 4)
 ├── experimental/
-│   └── analyst/
-│       └── concise.md          # Alternative prompts
+│   ├── analyst/
+│   │   ├── citation-strict.md  # Strict citation requirements
+│   │   └── concise.md          # Concise analysis format
+│   ├── reviewer/               # Experimental reviewer prompts
+│   └── judge/                  # Future judge prompts
 ├── shared/
 │   └── file_edit_rules.md     # Shared file editing rules
 └── versions/                   # Historical prompt versions
     ├── analyst/
-    │   ├── analyst_v1.md
-    │   ├── analyst_v2.md
-    │   └── analyst_v3.md
+    │   ├── analyst_v1.md through analyst_v5_citation_strict.md
+    │   └── analyst_old.md
     └── reviewer/
-        └── reviewer_v1.md
+        ├── reviewer_v1.md
+        ├── reviewer_v1_simple.md
+        └── reviewer_old.md
 ```
 
 ### Prompt Loading
@@ -503,69 +522,13 @@ def get_system_prompt_path(self) -> str:
         return prompt
 ```
 
-## Analytics & Logging
+### Key Utilities
 
-### RunAnalytics
-
-Comprehensive telemetry system tracking:
-
-- Agent turns and messages
-- Tool usage (WebSearch counts)
-- Token consumption
-- Timing metrics
-- Error tracking
-
-### Logger
-
-Structured logging with:
-
-- Run-specific log files
-- Console output with levels
-- SDK error awareness
-- Automatic run ID generation
-
-### Output Structure
-
-```text
-logs/
-└── runs/
-    └── 20250821_121325_test-idea/
-        ├── messages.jsonl      # All Claude messages
-        ├── run_summary.json    # Analytics summary
-        └── debug.log           # Debug output
-```
-
-## Utilities
-
-### file_operations.py
-
-- `load_prompt()` - Simple prompt loading with caching
-- `load_prompt_with_includes()` - Prompt loading with include support
-- `load_template()` - Load template files
-- `create_file_from_template()` - Create file from template
-- `append_metadata_to_analysis()` - Add metadata to analysis files
-
-### text_processing.py
-
-- `create_slug()` - Generate filesystem-safe slugs from ideas
-- Text manipulation utilities
-
-### logger.py
-
-- Unified logging system
-- SDK error classification
-- Structured output formats
-
-### result_formatter.py
-
-- CLI output formatting
-- Progress indicators
-- Result display
-
-### json_validator.py
-
-- JSON schema validation
-- Error message formatting
+**file_operations.py**: Prompt loading with includes, template operations  
+**text_processing.py**: Slug generation, text manipulation  
+**logger.py**: Structured logging with SDK error awareness  
+**result_formatter.py**: CLI output formatting  
+**json_validator.py**: Schema validation for agent outputs with field normalization
 
 ## File Structure
 
@@ -575,27 +538,32 @@ idea-assess/
 │   ├── core/                  # Core system components
 │   │   ├── __init__.py
 │   │   ├── config.py          # Configuration classes
-│   │   ├── contexts.py        # Context classes
-│   │   ├── results.py         # Result types
 │   │   ├── agent_base.py      # Abstract agent
 │   │   ├── pipeline.py        # Pipeline orchestration
-│   │   ├── types.py           # Shared types
+│   │   ├── types.py           # Consolidated types (contexts, results, modes)
 │   │   └── run_analytics.py   # Analytics system
 │   ├── agents/                # Concrete agents
 │   │   ├── __init__.py
 │   │   ├── analyst.py         # Analyst implementation
-│   │   └── reviewer.py        # Reviewer implementation
+│   │   ├── reviewer.py        # Reviewer implementation
+│   │   └── fact_checker.py    # FactChecker implementation
 │   ├── utils/                 # Utilities
 │   │   ├── __init__.py
-│   │   ├── file_operations.py
-│   │   ├── text_processing.py
-│   │   ├── logger.py
-│   │   ├── result_formatter.py
-│   │   └── json_validator.py
+│   │   ├── file_operations.py # Prompt loading, template operations
+│   │   ├── text_processing.py # Slug creation, text manipulation
+│   │   ├── logger.py          # Structured logging with SDK awareness
+│   │   ├── result_formatter.py# CLI output formatting
+│   │   └── json_validator.py  # JSON validation for agent outputs
 │   └── cli.py                 # CLI interface
 ├── config/
 │   ├── prompts/               # Agent prompts (principles-focused)
+│   │   ├── agents/            # Agent-specific prompts
+│   │   ├── experimental/      # Alternative prompt versions
+│   │   ├── shared/            # Shared prompt components
+│   │   └── versions/          # Historical versions
 │   └── templates/             # File templates (structure-focused)
+│       ├── agents/            # Agent-specific templates
+│       └── shared/            # Shared templates
 ├── analyses/                  # Output directory
 │   └── {idea-slug}/
 │       ├── analysis.md        # Latest (symlink)
@@ -720,6 +688,14 @@ PipelineMode.ANALYZE_REVIEW_AND_JUDGE = "analyze_review_and_judge"
 **Problem**: Prompts contained both structure and principles, making changes difficult  
 **Solution**: Templates define structure with TODOs, prompts focus on principles only
 
+**Implementation**:
+
+- Templates in `config/templates/agents/`
+- Templates contain TODO placeholders for agents to fill
+- Pipeline pre-creates files from templates before agent runs
+- Agents read templates and replace TODOs with actual content
+- Clear separation of structure (templates) from behavior (prompts)
+
 ### Why Success/Error Instead of Booleans?
 
 **Problem**: Boolean returns lose error information  
@@ -777,15 +753,25 @@ PipelineMode.ANALYZE_REVIEW_AND_JUDGE = "analyze_review_and_judge"
 
 ## Testing Strategy
 
-### Unit Tests (✅ COMPLETE)
+### Unit Tests (✅ COMPLETE - Updated 2025-09-04)
 
-Following a comprehensive unit test implementation (2025-08-26), the test suite achieves excellent coverage:
+Following comprehensive test fixes and quality improvements:
 
-- **109 tests** covering all major components with 88% code coverage
-- **~0.6s execution time** - fast and comprehensive
+- **107 tests** covering all major components with **81% code coverage**
+- **~20s execution time** - comprehensive with real async operations
 - **Behavior-focused** - tests what agents DO, not HOW they do it
-- **Minimal mocking** - only external dependencies (SDK, filesystem for errors)
+- **Strategic mocking** - Mock at integration boundaries (SDK, file I/O)
 - **Well-organized** - tests grouped by component with shared fixtures
+- **Field standardization** - All tests updated for `iteration_recommendation` field
+- **FactChecker tests** - Complete coverage with proper mocking patterns
+
+Test files structure:
+
+- `test_agents/` - Agent implementations (analyst, reviewer, fact_checker)
+- `test_core/` - Core components (config, pipeline, run_analytics)
+- `test_utils/` - Utilities (file_ops, json_validator, logger, etc.)
+- `test_cli.py` - CLI interface tests
+- `test_sdk_errors.py` - SDK error handling tests
 
 See `tests/README.md` for detailed testing philosophy and patterns.
 
@@ -820,6 +806,17 @@ See `tests/README.md` for detailed testing philosophy and patterns.
 - Run multiple analyses concurrently
 - Batch processing mode
 - Queue management
+
+## Field Standardization (2025-09-04)
+
+Important field name changes for consistency:
+
+- Reviewer feedback: `recommendation` → `iteration_recommendation`
+- Values: "approve" or "revise"
+- Fact-checker uses same field name and values
+- `overall_assessment` field required in all feedback
+- `minor_suggestions` must be objects, not strings
+- `iteration_reason` field tracks why revision is needed
 
 ## Maintenance Notes
 

@@ -1,52 +1,24 @@
-# Prompt Templates
+# Agent Prompts
 
-This directory contains all prompt templates for the Business Idea Evaluator agents.
+Agent prompts focus on principles and behavior. Document structure is handled by templates in `config/templates/`.
 
-**Note**: After template decoupling (2025-08-26), prompts now focus solely on principles and approach. Document structure and formatting are handled by templates in `config/templates/`.
-
-## Directory Structure
+## Structure
 
 ```text
-config/prompts/
-├── agents/              # Active agent prompts (principles-focused)
-│   ├── analyst/
-│   │   ├── system.md    # Analyst principles (73 lines, no structure)
-│   │   └── user/        # User prompts for different workflows
-│   │       ├── initial.md       # Initial analysis
-│   │       ├── revision.md      # Revision workflow (iteration 2+)
-│   │       └── tools.md         # Tool usage guidance
-│   ├── reviewer/
-│   │   ├── system.md    # Reviewer principles (89 lines, no structure)
-│   │   └── user/
-│   │       └── review.md        # Review instructions
-│   ├── judge/          # Phase 3 (future)
-│   │   └── system.md
-│   └── synthesizer/    # Phase 4 (future)
-│       └── system.md
-├── shared/             # Shared components
-│   └── file_edit_rules.md  # Common file editing rules
-├── versions/           # Historical versions (for rollback)
-│   ├── analyst/
-│   │   ├── v1.md
-│   │   ├── v2.md
-│   │   └── v3.md
-│   └── reviewer/
-│       └── v1.md
-└── experimental/       # Experimental prompts (testing)
-    └── analyst/
-        ├── concise.md          # Shorter, more focused analysis
-        └── citation-strict.md  # Strict citation accuracy requirements
+agents/           # Agent-specific prompts
+  analyst/        # system.md, tools_system.md, user/, snippets/
+  reviewer/       # system.md, tools_system.md, user/
+  factchecker/    # system.md, user/
+experimental/     # Alternative prompt versions
+shared/           # Shared components
+versions/         # Historical versions
 ```
 
-## How Prompts Work After Refactoring
+## Usage
 
-### 1. Default Behavior
-
-- Each agent has a `system.md` file that is loaded by default
-- The `prompt_version` in config is currently not used (always loads system.md)
-- User prompts are loaded based on workflow needs
-
-### 2. Overriding Prompts
+- Default: Each agent loads its `system.md`
+- Override: `--analyst-prompt experimental/analyst/concise.md`
+- Includes: Supports `{{include:path}}` for shared components
 
 Prompts can be overridden via:
 

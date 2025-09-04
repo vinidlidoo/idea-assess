@@ -1,185 +1,98 @@
 # Business Idea Evaluator
 
-AI-powered business idea evaluation system using Claude SDK and MCP tools.
+AI-powered business idea evaluation system using Claude SDK.
 
 ## Overview
 
-This system transforms one-liner business ideas into comprehensive market analyses through a multi-agent pipeline:
+Transforms one-liner business ideas into comprehensive market analyses through a multi-agent pipeline:
 
-1. **Analyst Agent** - Expands ideas into full business analyses with market research
-2. **Reviewer Agent** - Provides feedback and quality improvements
-3. **Judge Agent** (Coming Soon) - Grades analyses on 7 evaluation criteria
-4. **Synthesizer Agent** (Coming Soon) - Creates comparative reports across multiple ideas
+1. **Analyst** - Expands ideas into full analyses with web research
+2. **Reviewer** - Provides structured feedback for quality improvement  
+3. **FactChecker** - Verifies citations with veto power
+4. **Judge** (Phase 3) - Grades on 7 criteria
+5. **Synthesizer** (Phase 4) - Comparative reports
 
 ## Setup
 
-1. **Install dependencies:**
+```bash
+# Install dependencies (using uv)
+uv pip install -r requirements.txt
 
-   ```bash
-   # Create virtual environment (if not exists)
-   python3 -m venv .venv
-   
-   # Install dependencies using uv (preferred)
-   uv pip install -r requirements.txt
-   
-   # Or use pip directly with venv Python
-   .venv/bin/pip install -r requirements.txt
-   ```
-
-2. **Configure API Key:**
-   - Get API key from [console.anthropic.com](https://console.anthropic.com)
-   - Set environment variable: `export ANTHROPIC_API_KEY=your-key-here`
+# Set API key
+export ANTHROPIC_API_KEY=your-key-here
+```
 
 ## Usage
 
-### Important: Python Execution
-
-**Always use the virtual environment's Python:**
-
 ```bash
-# Correct - using venv Python directly
-.venv/bin/python -m src.cli "Your business idea here"
-
-# Incorrect - may use wrong Python
-python src/cli.py "Your idea"
-```
-
-### Basic Analysis
-
-```bash
+# Basic analysis
 .venv/bin/python -m src.cli "AI-powered fitness app for seniors"
+
+# With review loop
+.venv/bin/python -m src.cli "Your idea" --with-review
+
+# With fact-checking (parallel verification)
+.venv/bin/python -m src.cli "Your idea" --with-review --with-fact-check
+
+# Without web tools (faster)
+.venv/bin/python -m src.cli "Your idea" --no-web-tools
 ```
 
-### CLI Flags
+### Key Flags
 
-- `--no-web-tools` or `-n`: Disable web search (not `--no-websearch`)
-- `--analyst-prompt PATH`: Override analyst prompt file
 - `--with-review`: Enable reviewer feedback loop
-- `--max-iterations N`: Set review iterations (1-5)
-
-### With Reviewer Feedback Loop
-
-```bash
-.venv/bin/python -m src.cli "Your idea" --with-review --max-iterations 3
-```
-
-### Debug Mode
-
-Enable detailed logging:
-
-```bash
-.venv/bin/python -m src.cli "Your idea" --debug
-```
-
-### Disable WebSearch (Faster Testing)
-
-```bash
-python src/cli.py analyze "Your idea" --no-websearch
-```
+- `--with-fact-check`: Add parallel fact-checker with veto power
+- `--no-web-tools`: Disable WebSearch/WebFetch
+- `--max-iterations N`: Set iterations (default: 3)
+- `--debug`: Detailed logging
 
 ## Output Structure
 
 ```text
 analyses/
 └── {idea-slug}/
-    ├── analysis.md              # Final analysis
-    ├── reviewer_feedback.json   # Latest feedback
+    ├── analysis.md              # Final analysis (symlink)
     ├── metadata.json           # Run metadata
-    └── iterations/             # Iteration history
-        ├── iteration_1.md
-        ├── iteration_2.md
-        └── reviewer_feedback_iteration_1.json
+    └── iterations/             # All iterations
+        ├── iteration_N.md
+        ├── reviewer_feedback_iteration_N.json
+        └── fact_check_iteration_N.json
 ```
 
 ## Architecture
 
-### Core Components
+- **Pipeline**: Orchestrates multi-agent workflow with mode routing
+- **Agents**: Type-safe generics `BaseAgent[TConfig, TContext]`
+- **Templates**: Structure (templates) separated from behavior (prompts)
+- **Parallel Execution**: Reviewer + FactChecker run concurrently
+- **Field Standards**: `iteration_recommendation` (approve/revise)
 
-- **Pipeline** (`src/core/pipeline.py`) - Orchestrates agent workflow
-- **BaseAgent** (`src/core/agent_base.py`) - Abstract base for all agents
-- **Message Processor** - Handles streaming responses with memory management
-- **Archive Manager** - Maintains analysis history with automatic rotation
+## Status
 
-### Agents
-
-- **AnalystAgent** (`src/agents/analyst.py`) - Market research and analysis
-- **ReviewerAgent** (`src/agents/reviewer.py`) - Quality assessment and feedback
-- **Judge** (Phase 3) - Grading and evaluation
-- **Synthesizer** (Phase 4) - Comparative reporting
-
-### Key Features
-
-- **File-based communication** between agents for reliability
-- **Iterative refinement** with configurable max iterations
-- **Structured logging** with JSON events and metrics
-- **Automatic archiving** of previous analyses
-- **WebSearch integration** for real-time market data
-
-## Development Status
-
-### ✅ Phase 1: Analyst Agent (Complete)
-
-- Single-agent analysis with WebSearch
-- Basic file output structure
-
-### ✅ Phase 2: Reviewer Feedback Loop (Complete)
-
-- Multi-iteration refinement
-- File-based agent communication
-- Comprehensive test coverage
-- All critical bugs fixed
-
-### 🚧 Phase 3: Judge Evaluation (Next)
-
-- Letter grade assessment (A-D)
-- 7 evaluation criteria
-- Structured scoring
-
-### 📅 Phase 4: Synthesizer Reports (Planned)
-
-- Comparative analysis across ideas
-- Batch processing support
+**✅ Complete**: Analyst, Reviewer, FactChecker agents  
+**✅ Tests**: 107 tests, 81% coverage  
+**🚧 Phase 3**: Judge agent (grading)  
+**📅 Phase 4**: Synthesizer (comparative reports)
 
 ## Testing
 
 ```bash
-# Run all tests
-pytest
+# Run tests with coverage
+.venv/bin/python -m pytest tests/unit/ -v --cov=src --cov-report=term-missing
 
-# Run unit tests only
-pytest tests/unit/
-
-# Run integration tests
-pytest tests/integration/
-
-# Run with coverage
-pytest --cov=src --cov-report=html
+# Quick run
+pytest tests/unit/ -q
 ```
 
-## Performance Notes
+## Performance
 
-- **WebSearch**: 30-120 seconds per search (normal SDK behavior)
-- **Full Analysis**: 2-5 minutes depending on iterations
-- **Memory**: Efficient streaming with rolling buffer implementation
-- **Concurrency**: Single-threaded for reliability
+- **Analysis**: 2-5 minutes with web research
+- **Tests**: ~20s for full suite
+- **Iterations**: Max 3 by default
 
 ## Documentation
 
-- `requirements.md` - Complete project requirements
-- `implementation-plan.md` - Phased development roadmap
-- `CLAUDE.md` - Project context and conventions
-- `session-logs/` - Detailed development history
-- `TODO.md` - Current task tracking
-
-## Contributing
-
-See session logs for development patterns and conventions. Key principles:
-
-1. File-based communication between agents
-2. Comprehensive error handling
-3. Structured logging for debugging
-4. Test coverage for new features
-
-## License
-
-[License information if applicable]
+- `system-architecture.md` - Technical architecture (840 lines)
+- `requirements.md` - Business requirements
+- `tests/README.md` - Testing philosophy
+- `session-logs/` - Development history
