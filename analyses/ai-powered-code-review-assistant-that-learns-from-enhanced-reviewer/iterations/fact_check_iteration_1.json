@@ -1,0 +1,77 @@
+{
+  "issues": [
+    {
+      "claim": "40% of developer time is wasted searching for context about why code was written certain ways",
+      "section": "The Problem",
+      "severity": "Medium",
+      "details": {
+        "issue_type": "false_citation",
+        "citation_ref": "[2]",
+        "url_checked": "https://www.cortex.io/report/the-2024-state-of-developer-productivity",
+        "explanation": "The citation misrepresents the source - it says 40% of developers cite finding context as a pain point, not that 40% of time is wasted.",
+        "evidence": "The Cortex report states '40% of developers cite trouble finding context as a pain point' which is a survey response frequency, not a time allocation metric.",
+        "suggestion": "Correct the claim to say '40% of developers cite finding context as their biggest pain point' to accurately reflect the source."
+      }
+    },
+    {
+      "claim": "27 million developers worldwide × $300/year average spend = $8.1 billion opportunity",
+      "section": "Market Size",
+      "severity": "Low",
+      "details": {
+        "issue_type": "outdated_citation",
+        "citation_ref": "none",
+        "url_checked": "https://www.statista.com/statistics/627312/worldwide-developer-population/",
+        "explanation": "The developer count is slightly outdated - current estimates for 2024 are 28.7 million developers worldwide.",
+        "evidence": "Statista and Evans Data Corporation report 28.7 million developers globally in 2024, not 27 million.",
+        "suggestion": "Update to '28.7 million developers worldwide' to use the most current 2024 figure."
+      }
+    },
+    {
+      "claim": "We have 10 million+ code reviews from open-source projects for training",
+      "section": "Competition & Moat",
+      "severity": "Medium",
+      "details": {
+        "issue_type": "unsupported_claim",
+        "citation_ref": "none",
+        "url_checked": "N/A",
+        "explanation": "This specific claim about having access to 10 million+ code reviews is presented as fact but lacks any supporting evidence or source.",
+        "evidence": "No citation provided for this data claim, and it's unclear how this data was obtained or if it's publicly available.",
+        "suggestion": "Either provide a source for this claim or clarify that it's an estimate/assumption about publicly available GitHub data."
+      }
+    },
+    {
+      "claim": "95% retention rate",
+      "section": "Competition & Moat",
+      "severity": "Low",
+      "details": {
+        "issue_type": "unsupported_claim",
+        "citation_ref": "none",
+        "url_checked": "N/A",
+        "explanation": "While 90-95% retention is achievable for best-in-class B2B SaaS, this specific prediction lacks supporting evidence.",
+        "evidence": "Industry benchmarks show best-in-class B2B SaaS achieves ~90% retention, with developer tools sometimes higher, but 95% is exceptional.",
+        "suggestion": "Clarify this is a target/projection based on industry benchmarks rather than stating it as fact."
+      }
+    },
+    {
+      "claim": "Engineering teams lose 8+ hours per week per developer to inefficiencies",
+      "section": "The Problem",
+      "severity": "Low",
+      "details": {
+        "issue_type": "unsupported_claim",
+        "citation_ref": "none",
+        "url_checked": "N/A",
+        "explanation": "This claim about 8+ hours lost weekly lacks any citation or supporting evidence.",
+        "evidence": "No source provided for this specific productivity loss metric.",
+        "suggestion": "Add a citation for this claim or clarify it as an estimate based on industry observations."
+      }
+    }
+  ],
+  "statistics": {
+    "total_claims": "15",
+    "verified_claims": "10",
+    "unverified_claims": "3",
+    "false_claims": "2"
+  },
+  "iteration_recommendation": "approve",
+  "iteration_reason": "The analysis is largely credible with 10 out of 15 major claims verified. Only 1 Medium severity issue was found (the Cortex citation misrepresentation), along with several Low severity issues. The core market data, competitor information, and growth statistics are accurately cited and supported by credible sources."
+}

@@ -66,7 +66,7 @@
 
 - [ ] **Human-in-the-Loop Feedback**: Allow human feedback insertion into review cycle via `human_feedback.md` file
 
-- [ ] **Enhanced Reviewer**: Give reviewer agent WebSearch/WebFetch capabilities to verify claims and improve feedback quality
+- [x] **Enhanced Reviewer**: Give reviewer agent WebSearch/WebFetch capabilities to verify claims and improve feedback quality
 
 - [ ] **Batch Processing**: Process multiple ideas concurrently from `ideas/pending.txt` input file
 

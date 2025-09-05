@@ -104,6 +104,7 @@ class ReviewerAgent(BaseAgent[ReviewerConfig, ReviewerContext]):
             user_prompt = review_template.format(
                 iteration=iteration,
                 max_iterations=self.config.max_iterations,
+                max_websearches=self.config.max_websearches,
                 analysis_path=analysis_path,
                 feedback_file=feedback_file,
             )

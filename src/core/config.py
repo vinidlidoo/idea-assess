@@ -70,9 +70,12 @@ class ReviewerConfig(BaseAgentConfig):
     # Reviewer-specific settings
     max_iterations: int = 3
     strictness: str = "normal"  # normal, strict, lenient
+    max_websearches: int = 8  # Web searches for strategic verification
 
-    # Reviewer typically doesn't need external tools
-    allowed_tools: list[str] = field(default_factory=list)
+    # Enhanced reviewer tools for verification
+    allowed_tools: list[str] = field(
+        default_factory=lambda: ["WebSearch", "WebFetch", "TodoWrite"]
+    )
 
 
 @dataclass

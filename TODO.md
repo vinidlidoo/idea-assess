@@ -15,7 +15,7 @@
 
 - [ ] Resume the analyst-reviewer loop with additional iterations when running the CLI on the same idea slug
 - [ ] Enable the insertion of human feedback into the review iteration cycle
-- [ ] Add capability for the reviewer to do WebSearch tool uses to improve feedback; improve prompt to raise quality bar
+- [x] Add capability for the reviewer to do WebSearch tool uses to improve feedback; improve prompt to raise quality bar
 - [ ] Add capability for the CLI to run multiple pipelines on different ideas at once; where each idea is loaded from a file
 - [ ] Add analysis cost in the metadata at the bottom of the analysis fie
 
