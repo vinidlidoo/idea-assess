@@ -10,11 +10,10 @@ Building an AI-powered business idea evaluation system using Claude SDK and MCP 
 
 ## Current Phase & Focus
 
-**Phase:** Phase 2.5 - Enhanced Reviewer Complete
-**Latest Session:** `session-logs/2025-09-05-enhanced-reviewer-implementation.md`
-**Immediate Focus:** Enhanced Reviewer feature implemented and tested
-**Status:** Web verification capabilities added to ReviewerAgent, successfully catching unrealistic claims
-**Note:** Ready to define remaining Phase 2.5 features or move to Phase 3
+**Phase:** Phase 2.5 - Batch Processing Complete
+**Latest Session:** `session-logs/2025-09-06-batch-processing-completion.md`
+**Immediate Focus:** All Phase 2.5 features complete, ready for Phase 3
+**Status:** Batch processing fully implemented with concurrent pipeline execution
 
 ## Key Documents
 
@@ -25,8 +24,10 @@ Building an AI-powered business idea evaluation system using Claude SDK and MCP 
 ### Session History
 
 - **session-logs/** - Detailed work logs per session
-- Latest: `2025-09-05-enhanced-reviewer-implementation.md`
-- Key sessions (some may be in archive/ subfolder):
+- Latest: `2025-09-06-batch-processing-completion.md`
+- Key sessions (may be in archive/ subfolder):
+  - `2025-09-06-batch-processing-completion.md` - Batch processing complete with fixes
+  - `2025-09-05-cli-batch-integration.md` - CLI batch integration (partial, ran out of context)
   - `2025-09-05-enhanced-reviewer-implementation.md` - Enhanced Reviewer with web verification
   - `2025-09-04-pipeline-bug-fix.md` - Fixed critical pipeline bug, standardized field names
   - `2025-09-03-factchecker-implementation.md` - Complete FactChecker implementation, test infrastructure
@@ -76,10 +77,13 @@ idea-assess/
 ├── src/                     # ✅ Modularized architecture
 │   ├── core/               # BaseAgent, config, message processor
 │   ├── agents/             # Analyst, Reviewer, FactChecker agents
+│   ├── batch/              # Batch processing components
 │   ├── utils/              # Utilities extracted from monolith
-│   ├── cli.py             # Modern CLI implementation
+│   └── cli.py             # Modern CLI implementation
 ├── ideas/
-│   └── pending.txt          # Queue of ideas
+│   ├── pending.md          # Queue of ideas to process
+│   ├── completed.md        # Successfully processed ideas
+│   └── failed.md           # Failed ideas (if any)
 ├── analyses/
 │   └── {idea-slug}/
 │       ├── analysis.md      # Full analysis
@@ -91,7 +95,8 @@ idea-assess/
 │   ├── prompts/            # Agent prompts (simplified, principles-focused)
 │   └── templates/          # File templates with structure
 └── logs/
-    └── debug_{timestamp}.json  # Debug logs
+    ├── runs/{run_id}/       # Individual pipeline runs
+    └── batch/{timestamp}_batch/  # Batch processing logs
 ```
 
 ## Important Notes

@@ -1,6 +1,7 @@
 """Batch processor for concurrent idea evaluation."""
 
 import asyncio
+import logging
 from datetime import datetime
 from pathlib import Path
 
@@ -18,8 +19,8 @@ class BatchProcessor:
         self,
         system_config: SystemConfig,
         analyst_config: AnalystConfig,
-        reviewer_config: ReviewerConfig | None = None,
-        fact_checker_config: FactCheckerConfig | None = None,
+        reviewer_config: ReviewerConfig,
+        fact_checker_config: FactCheckerConfig,
         mode: PipelineMode = PipelineMode.ANALYZE,
         max_concurrent: int = 3,
     ):
@@ -28,15 +29,15 @@ class BatchProcessor:
         Args:
             system_config: System configuration
             analyst_config: Analyst agent configuration
-            reviewer_config: Reviewer agent configuration (optional)
-            fact_checker_config: Fact-checker agent configuration (optional)
+            reviewer_config: Reviewer agent configuration
+            fact_checker_config: Fact-checker agent configuration
             mode: Pipeline execution mode
             max_concurrent: Maximum concurrent pipelines (default 3)
         """
         self.system_config: SystemConfig = system_config
         self.analyst_config: AnalystConfig = analyst_config
-        self.reviewer_config: ReviewerConfig | None = reviewer_config
-        self.fact_checker_config: FactCheckerConfig | None = fact_checker_config
+        self.reviewer_config: ReviewerConfig = reviewer_config
+        self.fact_checker_config: FactCheckerConfig = fact_checker_config
         self.mode: PipelineMode = mode
         self.max_concurrent: int = max_concurrent
         self.semaphore: asyncio.Semaphore = asyncio.Semaphore(max_concurrent)
@@ -45,6 +46,10 @@ class BatchProcessor:
         self.results: dict[str, PipelineResult] = {}
         self.start_times: dict[str, datetime] = {}
         self.end_times: dict[str, datetime] = {}
+        self.progress: dict[str, str] = {}  # Track progress by idea slug
+        
+        # Get logger for batch orchestration
+        self.logger: logging.Logger = logging.getLogger(__name__)
         
     async def process_with_semaphore(
         self, 
@@ -70,23 +75,33 @@ class BatchProcessor:
             # Create pipeline
             slug = create_slug(title)
             self.start_times[slug] = datetime.now()
+            self.progress[slug] = "running"
+            
+            self.logger.info(f"Starting pipeline for {slug}")
             
             try:
                 pipeline = AnalysisPipeline(
                     idea=idea,
                     system_config=self.system_config,
                     analyst_config=self.analyst_config,
-                    reviewer_config=self.reviewer_config or ReviewerConfig(),
-                    fact_checker_config=self.fact_checker_config or FactCheckerConfig(),
+                    reviewer_config=self.reviewer_config,
+                    fact_checker_config=self.fact_checker_config,
                     mode=self.mode,
                 )
                 
                 result = await pipeline.process()
                 self.end_times[slug] = datetime.now()
+                self.progress[slug] = "completed"
+                self.logger.info(f"Pipeline {slug} completed: success={result['success']}")
                 return slug, result
                 
             except Exception as e:
                 self.end_times[slug] = datetime.now()
+                self.progress[slug] = "failed"
+                self.logger.error(f"Pipeline {slug} failed: {e}")
+                # Log full traceback in debug mode
+                self.logger.debug(f"Full traceback for {slug}:", exc_info=True)
+                
                 # Create error result as PipelineResult TypedDict
                 error_result: PipelineResult = {
                     "success": False,
@@ -117,7 +132,13 @@ class BatchProcessor:
             Dictionary mapping slugs to results
         """
         if not ideas:
+            self.logger.warning("No ideas to process in batch")
             return {}
+        
+        # Log batch start
+        self.logger.info(f"Starting batch processing of {len(ideas)} ideas")
+        self.logger.info(f"Max concurrent pipelines: {self.max_concurrent}")
+        self.logger.info(f"Pipeline mode: {self.mode.value}")
         
         # Create tasks for all ideas
         tasks = [
@@ -148,27 +169,37 @@ class BatchProcessor:
                 self.results[slug] = error_result
                 
                 if pending_file and failed_file:
+                    self.logger.error(f"Unexpected exception for {slug}: {result_tuple}")
                     move_idea_to_failed(
                         title, description, pending_file, failed_file,
                         error_message=str(result_tuple)
                     )
             else:
-                slug, result = result_tuple  # type: ignore
+                # result_tuple is a tuple[str, PipelineResult] from process_with_semaphore
+                assert isinstance(result_tuple, tuple)
+                slug, result = result_tuple
                 self.results[slug] = result
                 
                 # Move to appropriate file
                 if pending_file:
                     if result["success"]:
                         if completed_file:
+                            self.logger.info(f"Moving {slug} to completed file")
                             move_idea_to_completed(
                                 title, description, pending_file, completed_file
                             )
                     elif failed_file:
                         error_msg = result.get("message") or "Unknown error"
+                        self.logger.info(f"Moving {slug} to failed file: {error_msg[:100]}")
                         move_idea_to_failed(
                             title, description, pending_file, failed_file,
                             error_message=error_msg
                         )
+        
+        # Log batch completion
+        successful = sum(1 for r in self.results.values() if r["success"])
+        failed = len(self.results) - successful
+        self.logger.info(f"Batch processing complete: {successful}/{len(self.results)} successful, {failed} failed")
         
         # Display summary
         self.display_summary()
@@ -219,3 +250,28 @@ class BatchProcessor:
         print(f"Failed: {failed}")
         print(f"Total time: {total_time:.1f}s")
         print("=" * 60)
+
+
+async def show_progress(batch_processor: BatchProcessor, update_interval: float = 2.0) -> None:
+    """Display progress for batch processing.
+    
+    Args:
+        batch_processor: The BatchProcessor instance to monitor
+        update_interval: How often to update the display (seconds)
+    """
+    while True:
+        await asyncio.sleep(update_interval)
+        
+        # Count statuses
+        running = sum(1 for s in batch_processor.progress.values() if s == "running")
+        completed = sum(1 for s in batch_processor.progress.values() if s == "completed")
+        failed = sum(1 for s in batch_processor.progress.values() if s == "failed")
+        total = len(batch_processor.progress)
+        
+        # Display to console only (no logging every 2 seconds)
+        status_msg = f"[Batch Progress] Running: {running}, Completed: {completed}, Failed: {failed}, Total: {total}"
+        print(f"\r{status_msg}", end="", flush=True)
+        
+        if running == 0 and total > 0:
+            print()  # New line after progress
+            break

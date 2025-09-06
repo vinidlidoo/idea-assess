@@ -16,8 +16,11 @@
 - [ ] Resume the analyst-reviewer loop with additional iterations when running the CLI on the same idea slug
 - [ ] Enable the insertion of human feedback into the review iteration cycle
 - [x] Add capability for the reviewer to do WebSearch tool uses to improve feedback; improve prompt to raise quality bar
-- [ ] Add capability for the CLI to run multiple pipelines on different ideas at once; where each idea is loaded from a file
+- [x] Add capability for the CLI to run multiple pipelines on different ideas at once; where each idea is loaded from a file ✅ COMPLETE
 - [ ] Add analysis cost in the metadata at the bottom of the analysis fie
+- [ ] Add retry logic for failed ideas in batch processing
+- [ ] Generate batch processing statistics/summary report
+- [ ] Consider adding a --continue flag to resume interrupted batch processing
 
 ## Bugs
 
