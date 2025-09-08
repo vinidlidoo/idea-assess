@@ -47,7 +47,11 @@ def setup_logging(
     run_id = f"{timestamp}_{idea_slug}"
 
     # Create log directory with subfolder for this run
-    log_dir = Path("logs") / f"{run_type}s" / run_id
+    # Special case for batch logging - needs its own timestamped subdirectory
+    if idea_slug == "batch":
+        log_dir = Path("logs") / "batch" / run_id
+    else:
+        log_dir = Path("logs") / f"{run_type}s" / run_id
     log_dir.mkdir(parents=True, exist_ok=True)
 
     # Create log file path with simple name

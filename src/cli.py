@@ -19,6 +19,7 @@ from src.core.types import PipelineMode
 from src.utils.text_processing import create_slug
 from src.utils.logger import setup_logging
 from src.utils.result_formatter import format_pipeline_result
+from src.batch import BatchProcessor, show_progress, parse_ideas_file
 
 
 async def main():
@@ -35,7 +36,34 @@ Examples:
         """,
     )
 
-    parser.add_argument("idea", help="One-liner business idea to analyze")  # pyright: ignore[reportUnusedCallResult]
+    # Make idea positional argument optional when using --batch
+    parser.add_argument(  # pyright: ignore[reportUnusedCallResult]
+        "idea", 
+        nargs="?",  # Make optional
+        help="One-liner business idea to analyze (or use --batch for multiple ideas)"
+    )
+
+    # Batch processing arguments
+    parser.add_argument(  # pyright: ignore[reportUnusedCallResult]
+        "--batch",
+        "-b",
+        action="store_true",
+        help="Process multiple ideas from ideas/pending.md"
+    )
+    
+    parser.add_argument(  # pyright: ignore[reportUnusedCallResult]
+        "--ideas-file",
+        default="ideas/pending.md",
+        help="Path to ideas markdown file (default: ideas/pending.md)"
+    )
+    
+    parser.add_argument(  # pyright: ignore[reportUnusedCallResult]
+        "--max-concurrent",
+        type=int,
+        default=3,
+        choices=range(1, 6),
+        help="Maximum concurrent analyses for batch mode (default: 3, max: 5)"
+    )
 
     parser.add_argument(  # pyright: ignore[reportUnusedCallResult]
         "--debug", action="store_true", help="Enable debug logging to logs/ directory"
@@ -89,7 +117,10 @@ Examples:
     args = parser.parse_args()
 
     # Extract values from args with proper typing
-    idea: str = args.idea
+    idea: str | None = args.idea
+    batch: bool = args.batch
+    ideas_file: str = args.ideas_file
+    max_concurrent: int = args.max_concurrent
     debug: bool = args.debug
     no_web_tools: bool = args.no_web_tools
     with_review: bool = args.with_review
@@ -99,12 +130,25 @@ Examples:
     reviewer_prompt: str | None = getattr(args, "reviewer_prompt", None)
     slug_suffix: str | None = getattr(args, "slug_suffix", None)
 
-    # Setup logging
-    idea_slug = create_slug(idea)
-    # Apply suffix to slug if provided (must match pipeline behavior)
-    if slug_suffix:
-        idea_slug = f"{idea_slug}-{slug_suffix}"
-    log_file = setup_logging(debug=debug, idea_slug=idea_slug, run_type="run")
+    # Validate arguments
+    if not batch and not idea:
+        parser.error("Either provide an idea or use --batch flag")
+    
+    if batch and idea:
+        parser.error("Cannot specify both an idea and --batch flag")
+
+    # Setup logging based on mode
+    if batch:
+        # Batch mode logging - creates logs/batch/*/ via special handling in logger
+        log_file = setup_logging(debug=debug, idea_slug="batch", run_type="run")
+    else:
+        # Single idea mode logging
+        assert idea is not None  # We've validated this above
+        idea_slug = create_slug(idea)
+        # Apply suffix to slug if provided (must match pipeline behavior)
+        if slug_suffix:
+            idea_slug = f"{idea_slug}-{slug_suffix}"
+        log_file = setup_logging(debug=debug, idea_slug=idea_slug, run_type="run")
 
     # Run the analysis
     print("\n" + "=" * 60)
@@ -139,37 +183,101 @@ Examples:
     # Determine pipeline mode based on CLI flags
     if not with_review:
         mode = PipelineMode.ANALYZE
-        print("\n🚀 Running analysis...")
+        mode_desc = "analysis"
     elif with_fact_check:
         mode = PipelineMode.ANALYZE_REVIEW_WITH_FACT_CHECK
-        print(
-            f"\n🔄 Running analysis with reviewer and fact-checker (max {max_iterations} iterations)..."
-        )
+        mode_desc = f"analysis with reviewer and fact-checker (max {max_iterations} iterations)"
     else:
         mode = PipelineMode.ANALYZE_AND_REVIEW
-        print(
-            f"\n🔄 Running analysis with reviewer feedback (max {max_iterations} iterations)..."
+        mode_desc = f"analysis with reviewer feedback (max {max_iterations} iterations)"
+
+    # Process based on batch or single mode
+    if batch:
+        # Batch processing mode
+        ideas_path = Path(ideas_file)
+        if not ideas_path.exists():
+            print(f"❌ Ideas file not found: {ideas_path}")
+            sys.exit(1)
+        
+        # Parse ideas from file
+        try:
+            ideas = parse_ideas_file(ideas_path)
+        except Exception as e:
+            print(f"❌ Error parsing ideas file: {e}")
+            sys.exit(1)
+        
+        if not ideas:
+            print(f"❌ No ideas found in {ideas_path}")
+            sys.exit(1)
+        
+        print(f"\n🚀 Processing {len(ideas)} ideas from {ideas_path}")
+        print(f"   Mode: {mode_desc}")
+        print(f"   Max concurrent: {max_concurrent}")
+        
+        # Create batch processor
+        processor = BatchProcessor(
+            system_config=system_config,
+            analyst_config=analyst_config,
+            reviewer_config=reviewer_config,
+            fact_checker_config=fact_checker_config,
+            mode=mode,
+            max_concurrent=max_concurrent
+        )
+        
+        # Determine file paths for management
+        pending_file = ideas_path
+        completed_file = ideas_path.parent / "completed.md"
+        failed_file = ideas_path.parent / "failed.md"
+        
+        # Start progress reporter
+        progress_task = asyncio.create_task(show_progress(processor))
+        
+        # Process batch
+        results = await processor.process_batch(
+            ideas,
+            pending_file=pending_file,
+            completed_file=completed_file,
+            failed_file=failed_file
+        )
+        
+        # Wait for progress to finish
+        await progress_task
+        
+        # Display final summary
+        successful = sum(1 for r in results.values() if r["success"])
+        failed = len(results) - successful
+        
+        print(f"\n✅ Batch processing complete: {successful}/{len(results)} successful")
+        if failed > 0:
+            print(f"❌ Failed: {failed} ideas")
+        
+        # Exit with appropriate code
+        sys.exit(0 if failed == 0 else 1)
+    
+    else:
+        # Single idea processing mode
+        assert idea is not None  # We've validated this above
+        print(f"\n🚀 Running {mode_desc}...")
+        
+        # Create pipeline with configurations
+        pipeline = AnalysisPipeline(
+            idea=idea,
+            system_config=system_config,
+            analyst_config=analyst_config,
+            reviewer_config=reviewer_config,
+            fact_checker_config=fact_checker_config,
+            mode=mode,
+            slug_suffix=slug_suffix,
         )
 
-    # Create pipeline with configurations
-    pipeline = AnalysisPipeline(
-        idea=idea,
-        system_config=system_config,
-        analyst_config=analyst_config,
-        reviewer_config=reviewer_config,
-        fact_checker_config=fact_checker_config,
-        mode=mode,
-        slug_suffix=slug_suffix,
-    )
+        # Run the pipeline (no parameters needed!)
+        result = await pipeline.process()
 
-    # Run the pipeline (no parameters needed!)
-    result = await pipeline.process()
+        # Format and display the result
+        format_pipeline_result(result, with_review)
 
-    # Format and display the result
-    format_pipeline_result(result, with_review)
-
-    # Exit with appropriate code
-    sys.exit(0 if result.get("success", False) else 1)
+        # Exit with appropriate code
+        sys.exit(0 if result.get("success", False) else 1)
 
 
 if __name__ == "__main__":

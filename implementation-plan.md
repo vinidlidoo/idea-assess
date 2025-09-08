@@ -36,7 +36,7 @@
 - Feedback format: `iteration_recommendation` field
 - Pipeline modes: `ANALYZE_AND_REVIEW`
 
-## ✅ Phase 2.5: Core Extensions (PARTIAL)
+## ✅ Phase 2.5: Core Extensions (COMPLETE)
 
 ### Completed Features
 
@@ -56,11 +56,19 @@
 
 #### Documentation ✅
 
-- system-architecture.md (840 lines)
+- system-architecture.md (923 lines, updated with batch processing)
 - All READMEs updated
 - Test philosophy documented
 
-### In Progress / Planned
+#### Batch Processing ✅
+
+- Concurrent processing of 2-5 ideas
+- Markdown-based input parsing
+- Atomic file management (pending/completed/failed)
+- CLI integration with --batch flag
+- Successfully tested with 4 ideas
+
+### Remaining Phase 2.5 Items (Optional)
 
 - [ ] **Iteration Resumption**: Resume analyst-reviewer loop from previous checkpoint when re-running same idea slug instead of starting over
 
@@ -68,7 +76,7 @@
 
 - [x] **Enhanced Reviewer**: Give reviewer agent WebSearch/WebFetch capabilities to verify claims and improve feedback quality
 
-- [ ] **Batch Processing**: Process multiple ideas concurrently from `ideas/pending.txt` input file
+- [x] **Batch Processing**: Process multiple ideas concurrently from `ideas/pending.txt` input file (✅ COMPLETE 2025-09-06)
 
 - [ ] **Cost Analytics**: Track and display total API token costs per analysis in metadata and analysis footer
 

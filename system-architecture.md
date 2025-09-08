@@ -1,8 +1,8 @@
 # System Architecture - Business Idea Evaluator
 
-**Version**: 2.5 (Phase 2.5 Complete)  
-**Last Updated**: 2025-09-04  
-**Status**: Production-Ready with All Tests Passing (81% Coverage)  
+**Version**: 2.6 (Batch Processing Complete)  
+**Last Updated**: 2025-09-06  
+**Status**: Production-Ready with Batch Processing Support  
 
 ## Table of Contents
 
@@ -15,8 +15,8 @@
 7. [Context System](#context-system)
 8. [Result Patterns](#result-patterns)
 9. [Prompt System](#prompt-system)
-10. [Analytics & Logging](#analytics--logging)
-11. [Utilities](#utilities)
+10. [Logging and Analytics](#logging-and-analytics)
+11. [Batch Processing](#batch-processing)
 12. [File Structure](#file-structure)
 13. [Data Flow](#data-flow)
 14. [Extension Points](#extension-points)
@@ -530,6 +530,76 @@ def get_system_prompt_path(self) -> str:
 **result_formatter.py**: CLI output formatting  
 **json_validator.py**: Schema validation for agent outputs with field normalization
 
+## Logging and Analytics
+
+### Structured Logging System
+
+The system uses a comprehensive logging architecture that supports both individual pipeline runs and batch processing:
+
+- **Individual Runs**: Logs stored in `logs/runs/{run_id}/`
+- **Batch Processing**: Orchestration logs in `logs/batch/{timestamp}_batch/`
+- **Dual Logging**: Batch mode maintains separate logs for orchestration and individual pipelines
+- **SDK Error Awareness**: Special handling for Claude SDK errors and rate limits
+- **JSON-based Debug Logs**: Structured logs for detailed debugging
+
+### RunAnalytics System
+
+Provides comprehensive telemetry for analysis runs:
+
+- **Turn Tracking**: Monitors API calls and interactions per agent
+- **Timing Metrics**: Captures duration for each processing stage
+- **Token Usage**: Tracks input/output tokens for cost analysis
+- **WebSearch Metrics**: Counts and categorizes external tool usage
+- **Iteration Tracking**: Records revision cycles and approvals
+
+## Batch Processing
+
+### Batch Processing Architecture
+
+Batch processing enables concurrent evaluation of multiple business ideas with configurable parallelism:
+
+- **Concurrent Execution**: Process 2-5 ideas simultaneously (configurable)
+- **Markdown-based Input**: Ideas parsed from markdown files using H1 headers as delimiters
+- **Atomic File Management**: Safe movement of ideas between pending/completed/failed states
+- **Progress Tracking**: Real-time console display of batch progress
+- **Error Resilience**: Individual pipeline failures don't stop the batch
+
+### Implementation
+
+```python
+class BatchProcessor:
+    async def process_batch(self, ideas_file: Path, max_concurrent: int = 3):
+        # Parse ideas from markdown
+        ideas = await self.file_manager.parse_ideas_file(ideas_file)
+        
+        # Process with semaphore for concurrency control
+        semaphore = asyncio.Semaphore(max_concurrent)
+        tasks = [self._process_with_semaphore(idea, semaphore) for idea in ideas]
+        
+        # Gather results with error handling
+        results = await asyncio.gather(*tasks, return_exceptions=True)
+```
+
+### CLI Integration
+
+```bash
+# Process ideas from pending.md with 2 concurrent pipelines
+python -m src.cli --batch --max-concurrent 2
+
+# Process from custom file
+python -m src.cli --batch --ideas-file custom-ideas.md
+```
+
+### File Management
+
+The FileManager handles atomic operations for idea files:
+
+- **Pending**: Ideas waiting to be processed (`ideas/pending.md`)
+- **Completed**: Successfully processed ideas (`ideas/completed.md`)
+- **Failed**: Ideas that encountered errors (`ideas/failed.md`)
+
+Each idea is moved atomically after processing to prevent data loss.
+
 ## File Structure
 
 ```text
@@ -547,6 +617,10 @@ idea-assess/
 │   │   ├── analyst.py         # Analyst implementation
 │   │   ├── reviewer.py        # Reviewer implementation
 │   │   └── fact_checker.py    # FactChecker implementation
+│   ├── batch/                 # Batch processing components
+│   │   ├── __init__.py
+│   │   ├── processor.py       # Batch orchestration with concurrency
+│   │   └── file_manager.py    # Atomic file operations for ideas
 │   ├── utils/                 # Utilities
 │   │   ├── __init__.py
 │   │   ├── file_operations.py # Prompt loading, template operations
@@ -554,7 +628,7 @@ idea-assess/
 │   │   ├── logger.py          # Structured logging with SDK awareness
 │   │   ├── result_formatter.py# CLI output formatting
 │   │   └── json_validator.py  # JSON validation for agent outputs
-│   └── cli.py                 # CLI interface
+│   └── cli.py                 # CLI interface with batch support
 ├── config/
 │   ├── prompts/               # Agent prompts (principles-focused)
 │   │   ├── agents/            # Agent-specific prompts
@@ -564,12 +638,20 @@ idea-assess/
 │   └── templates/             # File templates (structure-focused)
 │       ├── agents/            # Agent-specific templates
 │       └── shared/            # Shared templates
+├── ideas/                     # Idea management files
+│   ├── pending.md             # Ideas waiting to be processed
+│   ├── completed.md           # Successfully processed ideas
+│   └── failed.md              # Ideas that encountered errors
 ├── analyses/                  # Output directory
 │   └── {idea-slug}/
 │       ├── analysis.md        # Latest (symlink)
 │       ├── metadata.json      # Metadata
 │       └── iterations/        # All iterations
 ├── logs/                      # Logging directory
+│   ├── runs/                  # Individual pipeline runs
+│   │   └── {run_id}/          # Timestamped run directory
+│   └── batch/                 # Batch processing logs
+│       └── {timestamp}_batch/ # Batch orchestration logs
 ├── docs/                      # Documentation
 ├── session-logs/              # Development logs
 └── test_locally.sh           # Test harness
