@@ -22,12 +22,23 @@ ENV/
 .DS_Store
 Thumbs.db
 
-# Project specific
+# User specific
+docs/
+archive/
+session-logs/
 logs/
 *.log
+
+# Claude settings 
+CLAUDE.md
+.claude/
 
 # Testing
 .coverage
 htmlcov/
 *.coverage*
+
+# Tool caches
 .pytest_cache/
+.ruff_cache/
+.basedpyright/
