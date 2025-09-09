@@ -54,6 +54,6 @@
     "- Checked 'B2B SaaS growth benchmarks' - typical timeline to $1M ARR is significantly longer than claimed",
     "- Market size search confirmed the general market size range cited]"
   ],
-  "iteration_recommendation": "[TODO: Choose 'reject' or 'accept' based on: REJECT if any critical issues exist OR 3+ important issues. ACCEPT if no critical issues AND fewer than 3 important issues]",
+  "iteration_recommendation": "[TODO: Choose 'reject' or 'approve' based on: REJECT if any critical issues exist OR 3+ important issues. ACCEPT if no critical issues AND fewer than 3 important issues]",
   "iteration_reason": "[TODO: Explain your recommendation in 1-2 sentences. If rejecting, specify the 1-2 most critical things that must be fixed. If accepting, note why the analysis meets the bar despite any remaining issues.]"
 }

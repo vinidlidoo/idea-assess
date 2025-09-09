@@ -1,0 +1,116 @@
+{
+  "issues": [
+    {
+      "claim": "The sushi restaurant market is growing to $14.36 billion by 2031",
+      "section": "The Problem",
+      "severity": "High",
+      "details": {
+        "issue_type": "false_citation",
+        "citation_ref": "[8]",
+        "url_checked": "https://www.globalgrowthinsights.com/market-reports/sushi-restaurants-market-102106",
+        "explanation": "The cited source shows completely different figures than claimed. This is a major market sizing error that affects the entire business case.",
+        "evidence": "Source states market value is $20.04B in 2024 growing to $24.75B by 2034, not $7.7B in 2024 to $14.36B by 2031 as claimed",
+        "suggestion": "Update market size to reflect actual source data: $20.04B in 2024 growing to $24.75B by 2034"
+      }
+    },
+    {
+      "claim": "15,000 Japanese restaurants in the US alone",
+      "section": "Market Size",
+      "severity": "Medium",
+      "details": {
+        "issue_type": "false_citation",
+        "citation_ref": "[4]",
+        "url_checked": "https://www.ibisworld.com/united-states/market-research-reports/japanese-restaurants-industry/",
+        "explanation": "The source reports 22,837 businesses, not 15,000. This affects TAM calculations by underestimating the market by 52%.",
+        "evidence": "IBISWorld reports 22,837 Japanese restaurant businesses in the US as of 2025",
+        "suggestion": "Update to 22,837 restaurants and recalculate TAM accordingly"
+      }
+    },
+    {
+      "claim": "61% of restaurants can't find qualified kitchen staff",
+      "section": "The Problem",
+      "severity": "Medium",
+      "details": {
+        "issue_type": "unsupported_claim",
+        "citation_ref": "none",
+        "url_checked": "N/A",
+        "explanation": "This important labor shortage statistic lacks any citation or source to verify its accuracy.",
+        "evidence": "No citation provided for this key problem statement",
+        "suggestion": "Add citation from reputable industry source or remove specific percentage"
+      }
+    },
+    {
+      "claim": "Labor costs have increased 25% since 2022",
+      "section": "The Problem",
+      "severity": "Medium",
+      "details": {
+        "issue_type": "unsupported_claim",
+        "citation_ref": "none",
+        "url_checked": "N/A",
+        "explanation": "Critical cost driver claim lacks supporting evidence or citation.",
+        "evidence": "No citation provided for labor cost increase statistic",
+        "suggestion": "Provide citation from labor statistics bureau or industry report"
+      }
+    },
+    {
+      "claim": "AUTEC (90% market share)",
+      "section": "Competition & Moat",
+      "severity": "Medium",
+      "details": {
+        "issue_type": "unsupported_claim",
+        "citation_ref": "none",
+        "url_checked": "N/A",
+        "explanation": "Market share claim for key competitor lacks citation and seems extremely high.",
+        "evidence": "No source provided for AUTEC's 90% market share claim",
+        "suggestion": "Add citation or qualify as estimate if data unavailable"
+      }
+    },
+    {
+      "claim": "CAC is $15,000 (3-month sales cycle), while LTV exceeds $400,000",
+      "section": "Business Model",
+      "severity": "Low",
+      "details": {
+        "issue_type": "unsupported_claim",
+        "citation_ref": "none",
+        "url_checked": "N/A",
+        "explanation": "Key unit economics lack supporting evidence or methodology.",
+        "evidence": "No citations or calculations shown for CAC/LTV figures",
+        "suggestion": "Provide methodology or mark as projections/estimates"
+      }
+    },
+    {
+      "claim": "52% of restaurant operators plan to invest in kitchen automation in 2025",
+      "section": "Market Size",
+      "severity": "Low",
+      "details": {
+        "issue_type": "unsupported_claim",
+        "citation_ref": "[5]",
+        "url_checked": "https://www.restaurantbusinessonline.com/technology",
+        "explanation": "Citation links to general technology page, not specific survey or article.",
+        "evidence": "URL leads to general technology section, not specific 2024 survey as claimed",
+        "suggestion": "Link to specific survey article or report page"
+      }
+    },
+    {
+      "claim": "45% of professional kitchens will integrate AI tools by 2025",
+      "section": "Why Now?",
+      "severity": "Low",
+      "details": {
+        "issue_type": "unsupported_claim",
+        "citation_ref": "[6]",
+        "url_checked": "https://www.restroworks.com/blog/restaurant-automation-statistics/",
+        "explanation": "Citation links to general blog page that may not contain the specific statistic.",
+        "evidence": "URL structure suggests blog post but cannot verify specific statistic",
+        "suggestion": "Verify exact statistic exists on page or find alternative source"
+      }
+    }
+  ],
+  "statistics": {
+    "total_claims": "15",
+    "verified_claims": "4",
+    "unverified_claims": "9",
+    "false_claims": "2"
+  },
+  "iteration_recommendation": "reject",
+  "iteration_reason": "Found 1 High severity issue (false market size claim) and 4 Medium severity issues including incorrect restaurant counts and unsupported labor statistics. The analysis needs revision to correct factual errors in market sizing and add citations for key claims about labor shortages and competitor market share."
+}

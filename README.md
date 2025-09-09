@@ -18,7 +18,7 @@ Transforms one-liner business ideas into comprehensive market analyses through a
 # Install dependencies (using uv)
 uv pip install -r requirements.txt
 
-# Set API key (can alternatively login Claude Code)
+# Set API key (alternatively, directly login to Claude Code)
 export ANTHROPIC_API_KEY=your-key-here
 
 # Activate virtual environment

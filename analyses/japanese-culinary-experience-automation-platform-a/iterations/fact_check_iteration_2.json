@@ -1,0 +1,77 @@
+{
+  "issues": [
+    {
+      "claim": "70% of restaurant operators can't fill critical positions",
+      "section": "The Problem",
+      "severity": "Medium",
+      "details": {
+        "issue_type": "unsupported_claim",
+        "citation_ref": "[1]",
+        "url_checked": "https://restaurant.org/research-and-media/research/restaurant-economic-insights/economic-indicators/total-restaurant-industry-jobs/",
+        "explanation": "The citation does not contain the 70% statistic claimed. The source only confirms the 222,000 jobs shortage figure.",
+        "evidence": "The source confirms fullservice restaurants are 222,000 jobs below pre-pandemic levels but does not provide the 70% operator difficulty statistic.",
+        "suggestion": "Either find a source that supports the 70% claim or remove this specific percentage and focus on the verified job shortage data."
+      }
+    },
+    {
+      "claim": "52% of restaurant operators plan automation investments in 2025",
+      "section": "Market Size",
+      "severity": "Low",
+      "details": {
+        "issue_type": "unsupported_claim",
+        "citation_ref": "[5]",
+        "url_checked": "https://restaurant.org/research-and-media/research/reports/state-of-the-industry",
+        "explanation": "The URL provided returns a 404 error, making the citation unverifiable. However, this is a forward-looking projection typical of industry reports.",
+        "evidence": "Could not access the cited source to verify the 52% automation investment claim.",
+        "suggestion": "Update the citation URL or find an alternative source for restaurant automation investment statistics."
+      }
+    },
+    {
+      "claim": "Robot costs dropped 50% from $46,000 to $23,000 since 2019",
+      "section": "Why Now?",
+      "severity": "Low",
+      "details": {
+        "issue_type": "unsupported_claim",
+        "citation_ref": "[7]",
+        "url_checked": "https://www.ark-invest.com/articles/analyst-research/industrial-robot-costs",
+        "explanation": "The ARK Invest URL returns a 403 Forbidden error, preventing verification of the cost reduction claim.",
+        "evidence": "Could not access the cited source due to 403 error.",
+        "suggestion": "Find an alternative source for industrial robot cost trends or use publicly accessible research data."
+      }
+    },
+    {
+      "claim": "Global RaaS market hit $1.96 billion in 2024",
+      "section": "Market Size",
+      "severity": "Low",
+      "details": {
+        "issue_type": "unsupported_claim",
+        "citation_ref": "[6]",
+        "url_checked": "https://www.technavio.com/report/robotics-as-a-service-raas-market-industry-analysis",
+        "explanation": "The source confirms the 23.47% CAGR but does not explicitly state the $1.96B figure for 2024, only growth projections.",
+        "evidence": "Source confirms market will grow by USD 2.49 billion at 23.47% CAGR between 2024-2028 but doesn't specify the 2024 baseline.",
+        "suggestion": "Clarify that the $1.96B is an extrapolation or find a source that explicitly states the 2024 market size."
+      }
+    },
+    {
+      "claim": "Miso Robotics targeting $4B annual revenue",
+      "section": "Business Model",
+      "severity": "Low",
+      "details": {
+        "issue_type": "unsupported_claim",
+        "citation_ref": "none",
+        "url_checked": "N/A",
+        "explanation": "No citation provided for Miso Robotics' revenue target claim, though funding amount was verified.",
+        "evidence": "Web search confirmed $96.9M funding but found no evidence of $4B revenue target.",
+        "suggestion": "Add a citation for the $4B revenue target or remove this specific claim."
+      }
+    }
+  ],
+  "statistics": {
+    "total_claims": "12",
+    "verified_claims": "7",
+    "unverified_claims": "5",
+    "false_claims": "0"
+  },
+  "iteration_recommendation": "approve",
+  "iteration_reason": "The analysis has no High severity issues and only one Medium severity issue (the unsupported 70% operator statistic). Most key market data and technical specifications are accurately cited and verified. The unverifiable claims are mostly due to access issues or missing baseline data rather than false information."
+}

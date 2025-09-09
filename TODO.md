@@ -24,4 +24,5 @@
 
 ## Bugs
 
+- [ ] **WebFetch timeout issue**: WebFetch tool calls can hang indefinitely, blocking pipeline progress. Need to implement timeout mechanism or async handling
 - [ ] The allowed-tools Claude Code Options field doesn't seem to work as expected. Investigate and adjust as appropriate
