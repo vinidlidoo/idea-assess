@@ -94,10 +94,10 @@ Examples:
     )
 
     parser.add_argument(  # pyright: ignore[reportUnusedCallResult]
-        "--with-fact-check",
-        "-f",
+        "--with-review-and-fact-check",
+        "-rf",
         action="store_true",
-        help="Enable fact-checking in parallel with review (requires --with-review)",
+        help="Enable both reviewer feedback and fact-checking in parallel",
     )
 
     parser.add_argument(  # pyright: ignore[reportUnusedCallResult]
@@ -124,7 +124,7 @@ Examples:
     debug: bool = args.debug
     no_web_tools: bool = args.no_web_tools
     with_review: bool = args.with_review
-    with_fact_check: bool = args.with_fact_check
+    with_review_and_fact_check: bool = args.with_review_and_fact_check
     max_iterations: int = args.max_iterations
     analyst_prompt: str | None = getattr(args, "analyst_prompt", None)
     reviewer_prompt: str | None = getattr(args, "reviewer_prompt", None)
@@ -172,24 +172,19 @@ Examples:
         # Remove only web tools, keep TodoWrite
         analyst_config.allowed_tools = ["TodoWrite"]
         analyst_config.max_websearches = 0  # No searches when web tools disabled
-    if with_review and max_iterations:
+    if (with_review or with_review_and_fact_check) and max_iterations:
         reviewer_config.max_iterations = max_iterations
 
-    # Validate flag combinations
-    if with_fact_check and not with_review:
-        print("❌ Error: --with-fact-check requires --with-review")
-        sys.exit(1)
-
     # Determine pipeline mode based on CLI flags
-    if not with_review:
-        mode = PipelineMode.ANALYZE
-        mode_desc = "analysis"
-    elif with_fact_check:
+    if with_review_and_fact_check:
         mode = PipelineMode.ANALYZE_REVIEW_WITH_FACT_CHECK
         mode_desc = f"analysis with reviewer and fact-checker (max {max_iterations} iterations)"
-    else:
+    elif with_review:
         mode = PipelineMode.ANALYZE_AND_REVIEW
         mode_desc = f"analysis with reviewer feedback (max {max_iterations} iterations)"
+    else:
+        mode = PipelineMode.ANALYZE
+        mode_desc = "analysis"
 
     # Process based on batch or single mode
     if batch:

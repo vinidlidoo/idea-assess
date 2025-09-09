@@ -70,7 +70,7 @@ class TestPipelineLive:
 
         This test simulates running the pipeline from the point where the Analyst
         has already created the first draft. Everything else is identical to a real
-        CLI run with --with-review --with-fact-check flags.
+        CLI run with --with-review-and-fact-check flag.
         """
         # Unpack configs
         system_config, analyst_config, reviewer_config, fact_checker_config = (
@@ -110,9 +110,9 @@ class TestPipelineLive:
         run_id = f"{timestamp_analytics}_{pipeline.slug}"
         pipeline.analytics = RunAnalytics(run_id=run_id, output_dir=Path("logs/runs"))
 
-        # Create symlink
-        symlink = output_dir / "analysis.md"
-        symlink.symlink_to(analysis_path.relative_to(output_dir))
+        # Copy to analysis.md
+        analysis_md = output_dir / "analysis.md"
+        _ = shutil.copy2(analysis_path, analysis_md)
 
         # Create agents
         reviewer = ReviewerAgent(reviewer_config)
@@ -316,10 +316,11 @@ class TestPipelineLive:
         assert len(revised_content) > 1000, "Revised analysis too short"
         assert "market" in revised_content.lower(), "Should address market feedback"
 
-        # Check symlink was updated
-        symlink = output_dir / "analysis.md"
-        assert symlink.exists(), "Analysis symlink not created"
-        assert symlink.resolve() == iteration2_path.resolve(), "Symlink not updated"
+        # Check analysis.md was updated
+        analysis_md = output_dir / "analysis.md"
+        assert analysis_md.exists(), "Analysis.md not created"
+        # Check content matches iteration 2
+        assert analysis_md.read_text() == iteration2_path.read_text(), "Analysis.md not updated"
 
         print("\n✅ Analyst revision test passed")
         print(f"  - Original: {iteration1_path.stat().st_size} bytes")
