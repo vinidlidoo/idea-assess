@@ -25,6 +25,7 @@ Thumbs.db
 # User specific
 docs/
 archive/
+analyses/.archive
 session-logs/
 logs/
 *.log

@@ -7,7 +7,7 @@ Output directory for business idea analyses.
 ```text
 analyses/
 └── {idea-slug}/
-    ├── analysis.md              # Final analysis (symlink to latest)
+    ├── analysis.md              # Final analysis (copy of latest iteration)
     ├── metadata.json           # Run metadata and statistics
     └── iterations/             # All iteration files
         ├── iteration_N.md

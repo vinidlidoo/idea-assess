@@ -155,7 +155,7 @@ config/
 
 analyses/
 └── {idea-slug}/
-    ├── analysis.md (symlink)
+    ├── analysis.md
     └── iterations/
 ```
 

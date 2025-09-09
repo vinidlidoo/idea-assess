@@ -1,6 +1,7 @@
 """Pipeline orchestration for business idea analysis."""
 
 import json
+import shutil
 from datetime import datetime
 from pathlib import Path
 from typing import Any
@@ -511,14 +512,13 @@ class AnalysisPipeline:
         }
 
     def _save_analysis_iteration(self) -> None:
-        """Save the current analysis iteration and update symlink."""
+        """Save the current analysis iteration and copy to analysis.md."""
         analysis_file_path = (
             self.iterations_dir / f"iteration_{self.iteration_count}.md"
         )
         self.current_analysis_file = analysis_file_path
 
-        # Update symlink to latest iteration
-        symlink = self.output_dir / "analysis.md"
-        if symlink.exists() or symlink.is_symlink():
-            symlink.unlink()
-        symlink.symlink_to(analysis_file_path.relative_to(self.output_dir))
+        # Copy latest iteration to analysis.md
+        analysis_md = self.output_dir / "analysis.md"
+        if analysis_file_path.exists():
+            _ = shutil.copy2(analysis_file_path, analysis_md)

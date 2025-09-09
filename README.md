@@ -51,7 +51,7 @@ export ANTHROPIC_API_KEY=your-key-here
 ```text
 analyses/
 └── {idea-slug}/
-    ├── analysis.md              # Final analysis (symlink)
+    ├── analysis.md              # Final analysis
     ├── metadata.json           # Run metadata
     └── iterations/             # All iterations
         ├── iteration_N.md

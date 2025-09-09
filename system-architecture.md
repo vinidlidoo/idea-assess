@@ -305,7 +305,7 @@ class AnalysisPipeline:
 - Max iterations from `ReviewerConfig.max_iterations`
 - Early termination on reviewer approval (or both reviewer and fact-checker in parallel mode)
 - Veto power: FactChecker can force revision even if reviewer approves
-- Automatic symlink updates to latest iteration
+- Automatic file copy to latest iteration
 
 ## Configuration System
 
@@ -644,7 +644,7 @@ idea-assess/
 │   └── failed.md              # Ideas that encountered errors
 ├── analyses/                  # Output directory
 │   └── {idea-slug}/
-│       ├── analysis.md        # Latest (symlink)
+│       ├── analysis.md        # Latest (copy of current iteration)
 │       ├── metadata.json      # Metadata
 │       └── iterations/        # All iterations
 ├── logs/                      # Logging directory
@@ -678,7 +678,7 @@ idea-assess/
 1. Initial Analysis
    ├─> Pipeline creates iteration_1.md from template with TODO instructions
    ├─> Analyst agent reads template and replaces TODO sections
-   └─> Pipeline updates analysis.md symlink
+   └─> Pipeline copies to analysis.md
 
 2. Review Cycle
    ├─> Pipeline creates reviewer_feedback_iteration_1.json from template
@@ -690,7 +690,7 @@ idea-assess/
    ├─> Pipeline creates iteration_2.md from template
    ├─> Analyst reads previous analysis and reviewer feedback
    ├─> Analyst replaces TODO sections with revised content
-   └─> Pipeline updates analysis.md symlink
+   └─> Pipeline copies to analysis.md
 
 4. Repeat until approved or max_iterations
 ```
