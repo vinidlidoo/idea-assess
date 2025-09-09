@@ -3,48 +3,69 @@
 import pytest
 import json
 from pathlib import Path
-from unittest.mock import Mock, AsyncMock, patch
+from unittest.mock import AsyncMock, patch
 
 from src.core.pipeline import AnalysisPipeline
-from src.core.config import AnalysisConfig, PipelineConfig
-from src.core.types import PipelineMode, AgentResult
+from src.core.config import SystemConfig, AnalystConfig, ReviewerConfig, FactCheckerConfig
+from src.core.types import PipelineMode, Success
 
 
 class TestPipelineIntegration:
     """Test the full analysis pipeline flow."""
 
     @pytest.fixture
-    def config(self, tmp_path):
-        """Create a test configuration."""
-        config = Mock(spec=AnalysisConfig)
-        config.prompts_dir = Path("config/prompts")
-        config.analyses_dir = tmp_path / "analyses"
-        config.logs_dir = tmp_path / "logs"
-
-        # Add pipeline config
-        config.pipeline = PipelineConfig()
-        config.default_pipeline_mode = PipelineMode.ANALYZE_AND_REVIEW
-
-        # Add agent configs
-        config.analyst = Mock()
-        config.analyst.prompts_dir = config.prompts_dir
-        config.reviewer = Mock()
-        config.reviewer.prompts_dir = config.prompts_dir
-
+    def system_config(self, tmp_path):
+        """Create a test system configuration."""
+        project_root = Path(__file__).parent.parent.parent
+        config = SystemConfig(
+            project_root=project_root,
+            analyses_dir=tmp_path / "analyses",
+            config_dir=project_root / "config",
+            logs_dir=tmp_path / "logs"
+        )
+        
         # Create directories
         config.analyses_dir.mkdir(parents=True, exist_ok=True)
         config.logs_dir.mkdir(parents=True, exist_ok=True)
-
+        
+        return config
+    
+    @pytest.fixture
+    def analyst_config(self):
+        """Create test analyst configuration."""
+        config = AnalystConfig()
+        config.prompts_dir = Path("config/prompts")
+        return config
+    
+    @pytest.fixture
+    def reviewer_config(self):
+        """Create test reviewer configuration."""
+        config = ReviewerConfig()
+        config.prompts_dir = Path("config/prompts")
+        return config
+    
+    @pytest.fixture
+    def fact_checker_config(self):
+        """Create test fact checker configuration."""
+        config = FactCheckerConfig()
+        config.prompts_dir = Path("config/prompts")
         return config
 
     @pytest.fixture
-    def pipeline(self, config):
+    def pipeline(self, system_config, analyst_config, reviewer_config, fact_checker_config):
         """Create a pipeline instance."""
-        return AnalysisPipeline(config)
+        return AnalysisPipeline(
+            idea="Test business idea",
+            system_config=system_config,
+            analyst_config=analyst_config,
+            reviewer_config=reviewer_config,
+            fact_checker_config=fact_checker_config,
+            mode=PipelineMode.ANALYZE_AND_REVIEW
+        )
 
     @pytest.mark.asyncio
     @pytest.mark.integration
-    async def test_basic_pipeline_flow(self, pipeline, config, tmp_path):
+    async def test_basic_pipeline_flow(self, pipeline, system_config, tmp_path):
         """Test basic pipeline execution with mocked agents."""
         # Create analysis file
         analysis_file = (
@@ -60,11 +81,7 @@ class TestPipelineIntegration:
         # Mock the analyst agent
         mock_analyst = AsyncMock()
         mock_analyst.process = AsyncMock(
-            return_value=AgentResult(
-                success=True,
-                content=str(analysis_file),
-                metadata={"duration": 1.0},
-            )
+            return_value=Success()
         )
 
         # Create feedback file that reviewer will return (accept)
@@ -92,12 +109,10 @@ class TestPipelineIntegration:
         # Mock the reviewer agent
         mock_reviewer = AsyncMock()
         mock_reviewer.process = AsyncMock(
-            return_value=AgentResult(
-                success=True,
+            return_value=Success(
                 content=str(feedback_file),
-                metadata={"duration": 0.5},
+                # metadata removed - Success() doesn't take metadata={"duration": 0.5},
             )
-        )
 
         # Run the pipeline with mocked agents
         with (
@@ -134,12 +149,10 @@ class TestPipelineIntegration:
         # Mock the analyst agent
         mock_analyst = AsyncMock()
         mock_analyst.process = AsyncMock(
-            return_value=AgentResult(
-                success=True,
+            return_value=Success(
                 content=str(analysis_file),
-                metadata={"duration": 1.0},
+                # metadata removed - Success() doesn't take metadata={"duration": 1.0},
             )
-        )
 
         # Run the pipeline in analyze-only mode
         with patch("src.core.pipeline.AnalystAgent", return_value=mock_analyst):
@@ -178,12 +191,12 @@ class TestPipelineIntegration:
                 AgentResult(
                     success=True,
                     content=str(analysis1),
-                    metadata={"duration": 1.0},
+                    # metadata removed - Success() doesn't take metadata={"duration": 1.0},
                 ),
                 AgentResult(
                     success=True,
                     content=str(analysis2),
-                    metadata={"duration": 1.5},
+                    # metadata removed - Success() doesn't take metadata={"duration": 1.5},
                 ),
             ]
         )
@@ -215,7 +228,6 @@ class TestPipelineIntegration:
                     "metadata": {},
                 }
             )
-        )
 
         feedback2 = (
             tmp_path
@@ -236,7 +248,6 @@ class TestPipelineIntegration:
                     "metadata": {},
                 }
             )
-        )
 
         # Mock reviewer that rejects first, accepts second
         mock_reviewer = AsyncMock()
@@ -285,12 +296,10 @@ class TestPipelineIntegration:
         # Mock analyst
         mock_analyst = AsyncMock()
         mock_analyst.process = AsyncMock(
-            return_value=AgentResult(
-                success=True,
+            return_value=Success(
                 content=str(analysis_file),
-                metadata={"duration": 1.0},
+                # metadata removed - Success() doesn't take metadata={"duration": 1.0},
             )
-        )
 
         # Create feedback that always rejects
         reject_feedback = (
@@ -320,17 +329,14 @@ class TestPipelineIntegration:
                     "metadata": {},
                 }
             )
-        )
 
         # Mock reviewer that always rejects
         mock_reviewer = AsyncMock()
         mock_reviewer.process = AsyncMock(
-            return_value=AgentResult(
-                success=True,
+            return_value=Success(
                 content=str(reject_feedback),
-                metadata={"duration": 0.5},
+                # metadata removed - Success() doesn't take metadata={"duration": 0.5},
             )
-        )
 
         # Run the pipeline with max 2 iterations
         with (
@@ -362,9 +368,8 @@ class TestPipelineIntegration:
                 success=False,
                 content="",
                 error="API rate limit exceeded",
-                metadata={"duration": 0.1},
+                # metadata removed - Success() doesn't take metadata={"duration": 0.1},
             )
-        )
 
         # Run the pipeline and expect failure in result
         with patch("src.core.pipeline.AnalystAgent", return_value=mock_analyst):

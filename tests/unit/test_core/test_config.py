@@ -56,7 +56,7 @@ class TestConfiguration(BaseAgentTest):
         assert config.max_turns == 50  # BaseAgentConfig default
         assert config.max_iterations == 3
         assert config.strictness == "normal"
-        assert config.allowed_tools == []
+        assert config.allowed_tools == ["WebSearch", "WebFetch", "TodoWrite"]  # Enhanced reviewer has web tools
         assert config.system_prompt == "system.md"
 
     def test_create_default_configs(self):
@@ -80,7 +80,7 @@ class TestConfiguration(BaseAgentTest):
         # Check reviewer config
         assert isinstance(reviewer, ReviewerConfig)
         assert reviewer.prompts_dir == self.temp_dir / "config" / "prompts"
-        assert reviewer.allowed_tools == []
+        assert reviewer.allowed_tools == ["WebSearch", "WebFetch", "TodoWrite"]  # Enhanced reviewer has web tools
 
         # Check fact_checker config
         assert isinstance(fact_checker, FactCheckerConfig)

@@ -1,0 +1,51 @@
+{
+  "issues": [
+    {
+      "claim": "Nala Robotics just deployed fully autonomous kitchens at universities",
+      "section": "Why Now?",
+      "severity": "Medium",
+      "details": {
+        "issue_type": "false_citation",
+        "citation_ref": "[9]",
+        "url_checked": "https://www.globenewswire.com/news-release/2024/11/12/2979481/0/en/Nala-Robotics-Unveils-BIRYANIMAN.html",
+        "explanation": "The analysis claims deployments are complete, but the source indicates they are still 'in process' of setting up.",
+        "evidence": "Press release states they are 'in the process of setting its first 24-hour multicuisine fully robotic campus restaurant' at UNT, not that it's already deployed.",
+        "suggestion": "Change 'just deployed' to 'is deploying' or 'plans to deploy' to accurately reflect the in-progress status."
+      }
+    },
+    {
+      "claim": "hospitality maintaining 80% annual turnover",
+      "section": "The Problem",
+      "severity": "Low",
+      "details": {
+        "issue_type": "unsupported_claim",
+        "citation_ref": "none",
+        "url_checked": "https://www.7shifts.com/blog/true-cost-of-employee-turnover/",
+        "explanation": "Minor discrepancy: cited source states 79.6% turnover, analysis rounds to 80%.",
+        "evidence": "Source actually states 79.6% average turnover rate for restaurants, with QSR at 123%.",
+        "suggestion": "Either cite the exact 79.6% figure or add citation [3] to support this claim."
+      }
+    },
+    {
+      "claim": "18,000 California restaurant jobs disappeared in six months post-wage hike",
+      "section": "Why Now?",
+      "severity": "Low",
+      "details": {
+        "issue_type": "unsupported_claim",
+        "citation_ref": "[8]",
+        "url_checked": "https://www.city-journal.org/article/california-fast-food-minimum-wage-jobs",
+        "explanation": "Minor wording issue: source says 'reduced employment' not 'disappeared', though the number is correct.",
+        "evidence": "Article confirms 18,000 job reduction but frames it as employment reduction, not jobs disappearing.",
+        "suggestion": "Rephrase to 'employment reduced by 18,000' for more accurate representation."
+      }
+    }
+  ],
+  "statistics": {
+    "total_claims": "12",
+    "verified_claims": "6",
+    "unverified_claims": "3",
+    "false_claims": "1"
+  },
+  "iteration_recommendation": "approve",
+  "iteration_reason": "The analysis contains mostly accurate citations with only one medium-severity issue (Nala Robotics deployment status) and two minor discrepancies. The core market data, financial projections, and competitive analysis are well-supported. The issues found are easily correctable and don't undermine the fundamental business case."
+}

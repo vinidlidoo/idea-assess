@@ -311,6 +311,7 @@ class AnalysisPipeline:
             analysis_input_path=self.current_analysis_file,
             feedback_output_path=feedback_file,
             iteration=self.iteration_count,
+            previous_feedback_path=self.last_feedback_file,  # Pass previous feedback for iterations 2+
         )
         reviewer_context.run_analytics = self.analytics
 

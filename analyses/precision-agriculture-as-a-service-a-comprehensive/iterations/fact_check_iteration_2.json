@@ -1,0 +1,90 @@
+{
+  "issues": [
+    {
+      "claim": "Hardware components represent 60% of system cost",
+      "section": "The Solution",
+      "severity": "Low",
+      "details": {
+        "issue_type": "unsupported_claim",
+        "citation_ref": "[5]",
+        "url_checked": "https://www.marketsandmarkets.com/Market-Reports/agricultural-robot-market-173601759.html",
+        "explanation": "The cited source does not contain the specific 60% hardware cost claim. The report mentions hardware components but does not provide percentage breakdown.",
+        "evidence": "The MarketsandMarkets report lists hardware components but does not quantify their percentage of total system cost.",
+        "suggestion": "Either find a source that supports the 60% claim or remove this specific percentage from the analysis."
+      }
+    },
+    {
+      "claim": "60+ commercial robots available",
+      "section": "Competition & Moat",
+      "severity": "Low",
+      "details": {
+        "issue_type": "unsupported_claim",
+        "citation_ref": "[8]",
+        "url_checked": "https://www.mixingbowlhub.com/landscape/the-expanding-2024-crop-robotics-landscape-navigating-to-commercialization",
+        "explanation": "The source mentions 330+ companies but does not explicitly state 60+ commercial robots are available. It mentions 'a handful' have deployed thousands of machines.",
+        "evidence": "The article confirms 330+ companies in development but doesn't provide specific count of commercial robots available.",
+        "suggestion": "Adjust claim to match source: '330+ companies developing crop robotic systems' without specific commercial robot count."
+      }
+    },
+    {
+      "claim": "John Deere's See & Spray that achieved 59% herbicide reduction across 1 million acres in 2024",
+      "section": "The Solution",
+      "severity": "Low",
+      "details": {
+        "issue_type": "unsupported_claim",
+        "citation_ref": "[4]",
+        "url_checked": "https://www.croplife.com/iron/see-spray-customers-see-59-average-herbicide-savings-in-2024/",
+        "explanation": "Unable to verify due to 403 access error on the CropLife website. The claim is specific and detailed but cannot be independently verified.",
+        "evidence": "Website returned 403 Forbidden error when attempting to verify the claim.",
+        "suggestion": "Consider finding an alternative source for this statistic or marking it as unverified."
+      }
+    },
+    {
+      "claim": "89,000 US farms between 50-500 acres grow specialty crops",
+      "section": "Market Size",
+      "severity": "Medium",
+      "details": {
+        "issue_type": "unsupported_claim",
+        "citation_ref": "none",
+        "url_checked": "N/A",
+        "explanation": "This specific statistic about farm count and size range lacks a citation. It's a critical number for TAM calculation.",
+        "evidence": "No source provided for this market sizing data point despite it being central to the business case.",
+        "suggestion": "Add USDA Census of Agriculture citation or other authoritative source for this farm count statistic."
+      }
+    },
+    {
+      "claim": "We left 30% of strawberries rotting in the field - couldn't find pickers at any price",
+      "section": "The Problem",
+      "severity": "Low",
+      "details": {
+        "issue_type": "unsupported_claim",
+        "citation_ref": "none",
+        "url_checked": "N/A",
+        "explanation": "This quote from a 'Watsonville grower' lacks attribution or source. While illustrative, unverified anecdotes weaken credibility.",
+        "evidence": "No source or specific grower identified for this quote.",
+        "suggestion": "Either provide a source for this quote or clearly mark it as an illustrative example rather than a direct quote."
+      }
+    },
+    {
+      "claim": "Universal Robots (proven 50,000 units/year capacity)",
+      "section": "Key Risks & Mitigation",
+      "severity": "Low",
+      "details": {
+        "issue_type": "unsupported_claim",
+        "citation_ref": "none",
+        "url_checked": "N/A",
+        "explanation": "The specific production capacity claim for Universal Robots lacks citation.",
+        "evidence": "No source provided for Universal Robots' production capacity figure.",
+        "suggestion": "Add source for Universal Robots production capacity or remove specific number."
+      }
+    }
+  ],
+  "statistics": {
+    "total_claims": "15",
+    "verified_claims": "7",
+    "unverified_claims": "8",
+    "false_claims": "0"
+  },
+  "iteration_recommendation": "approve",
+  "iteration_reason": "The analysis has strong factual foundation with most key claims verified. Issues found are primarily minor (missing citations for supporting details) with only one medium severity issue about farm count statistics. No false claims or high severity issues were identified, and the core business case statistics are accurate."
+}

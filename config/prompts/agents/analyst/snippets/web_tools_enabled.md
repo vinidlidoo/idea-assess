@@ -1,6 +1,6 @@
 ### Web Tools
 
-**WebSearch** ({max_websearches} max): Find 2024-2025 market data, competitors, growth evidence  
+**WebSearch** ({max_websearches} max): Find 2024-2025 market data, competitors, strategic opportunities, growth evidence  
 **WebFetch**: Verify statistics before citing, deep-dive URLs, extract specific data
 
 #### Research Strategy with Web Tools

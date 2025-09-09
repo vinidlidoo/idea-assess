@@ -25,3 +25,5 @@
 ## Bugs
 
 - [ ] The allowed-tools Claude Code Options field doesn't seem to work as expected. Investigate and adjust as appropriate
+- [ ] WebFetch hangs indefinitely on non-existent URLs - add timeout mechanism
+- [ ] Fact-checker should validate URLs before attempting fetch (check for future dates, malformed URLs)

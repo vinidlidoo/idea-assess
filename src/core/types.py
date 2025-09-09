@@ -101,6 +101,7 @@ class ReviewerContext(BaseContext):
     # Explicit typed paths
     analysis_input_path: Path = Path("analysis.md")
     feedback_output_path: Path = Path("feedback.md")
+    previous_feedback_path: Path | None = None  # Path to previous iteration's feedback
 
 
 @dataclass

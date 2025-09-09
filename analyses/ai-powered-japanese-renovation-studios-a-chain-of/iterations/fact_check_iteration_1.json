@@ -1,0 +1,77 @@
+{
+  "issues": [
+    {
+      "claim": "traditional designers charge $150-450/hour",
+      "section": "The Problem",
+      "severity": "Low",
+      "details": {
+        "issue_type": "unsupported_claim",
+        "citation_ref": "[2]",
+        "url_checked": "https://homeguide.com/costs/interior-designer-cost",
+        "explanation": "The source states average rates are $50-200/hour with top professionals up to $450, not $150-450 as claimed.",
+        "evidence": "Source shows average rates $50-200/hour, with only top professionals reaching $450",
+        "suggestion": "Correct to: 'traditional designers charge $50-200/hour on average, with top professionals up to $450'"
+      }
+    },
+    {
+      "claim": "The AI-interior design segment alone reaches $1.39 billion in 2025, growing to $3.59 billion by 2034",
+      "section": "Market Size",
+      "severity": "High",
+      "details": {
+        "issue_type": "false_citation",
+        "citation_ref": "[4]",
+        "url_checked": "https://www.nssmag.com/en/lifestyle/41602/ai-interior-design-2025-digital-transformation",
+        "explanation": "The cited URL does not contain any market size statistics - it appears to be mostly CSS/HTML code.",
+        "evidence": "WebFetch returned no market statistics from the provided URL, only webpage styling code",
+        "suggestion": "Find a legitimate source for AI-interior design market statistics or remove this claim"
+      }
+    },
+    {
+      "claim": "Biophilic integration and textured minimalism leading trends",
+      "section": "Why Now?",
+      "severity": "Medium",
+      "details": {
+        "issue_type": "false_citation",
+        "citation_ref": "[5]",
+        "url_checked": "https://theartofzen.org/key-new-trends-in-japandi-interior-design-for-2025/",
+        "explanation": "The cited URL does not contain any content about Japandi design trends - appears to be website code.",
+        "evidence": "WebFetch returned only CSS/JavaScript code, no design trend information",
+        "suggestion": "Find a working source for Japandi design trends or remove specific trend claims"
+      }
+    },
+    {
+      "claim": "Japandi searches increased 150% year-over-year",
+      "section": "Market Size",
+      "severity": "Medium",
+      "details": {
+        "issue_type": "unsupported_claim",
+        "citation_ref": "none",
+        "url_checked": "N/A",
+        "explanation": "This specific statistic lacks any citation to support it.",
+        "evidence": "No citation provided for this search trend statistic",
+        "suggestion": "Add a citation from Google Trends or similar search analytics source"
+      }
+    },
+    {
+      "claim": "52% of homeowners planning renovations this year",
+      "section": "Market Size",
+      "severity": "Low",
+      "details": {
+        "issue_type": "unsupported_claim",
+        "citation_ref": "none",
+        "url_checked": "N/A",
+        "explanation": "This statistic lacks a citation to verify the claim.",
+        "evidence": "No source provided for homeowner renovation planning percentage",
+        "suggestion": "Add citation from a home improvement industry report"
+      }
+    }
+  ],
+  "statistics": {
+    "total_claims": "12",
+    "verified_claims": "4",
+    "unverified_claims": "3",
+    "false_claims": "2"
+  },
+  "iteration_recommendation": "reject",
+  "iteration_reason": "Found 1 High severity issue (false citation for AI market size) and 2 Medium severity issues (false citation for design trends, unsupported Japandi search claim). The analysis needs legitimate sources for key market claims before approval."
+}

@@ -28,7 +28,7 @@
 - Walk through the "magic moment" when users first get value
 - Why it's 10x better than alternatives (fundamental improvement, not features)
 - Proof it works: early validation, pilot results, or comparable successes
-- Simple explanation of how it actually works (no hand-waving)
+- Technical explanation of how it actually works (no hand-waving, be rigorous)
 - Specific metrics: time saved (e.g., "2 hours → 5 minutes"), cost reduced (e.g., "80% cheaper"), revenue increased
 - Make the improvement tangible and undeniable]
 

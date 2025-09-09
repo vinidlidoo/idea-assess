@@ -1,0 +1,77 @@
+{
+  "issues": [
+    {
+      "claim": "US restaurants waste 4-10% of food purchases, costing the industry $30 billion annually",
+      "section": "The Problem",
+      "severity": "Medium",
+      "details": {
+        "issue_type": "false_citation",
+        "citation_ref": "[1]",
+        "url_checked": "https://www.rts.com/resources/guides/food-waste-america/",
+        "explanation": "The cited URL does not contain the claimed statistics about restaurant food waste percentages or $30 billion figure.",
+        "evidence": "WebFetch of the URL returned CSS/JavaScript content rather than an article about food waste statistics.",
+        "suggestion": "Find and cite a valid source that actually contains these statistics, such as a USDA report or industry study."
+      }
+    },
+    {
+      "claim": "grocery stores lost $162 billion to food waste in 2023",
+      "section": "The Problem",
+      "severity": "High",
+      "details": {
+        "issue_type": "unsupported_claim",
+        "citation_ref": "none",
+        "url_checked": "N/A",
+        "explanation": "The $162 billion figure is actually for restaurant industry waste costs, not grocery stores. Grocery stores lose approximately $18.2 billion annually.",
+        "evidence": "Web search revealed the $162 billion refers to restaurant industry food waste costs, while grocery stores specifically lose about $18.2 billion per year.",
+        "suggestion": "Correct the figure to approximately $18.2 billion for grocery stores, or cite the $162 billion correctly as restaurant industry costs."
+      }
+    },
+    {
+      "claim": "Plenty filed bankruptcy after raising $1.9B",
+      "section": "Competition & Moat",
+      "severity": "Medium",
+      "details": {
+        "issue_type": "false_citation",
+        "citation_ref": "[7]",
+        "url_checked": "https://techcrunch.com/2025/03/24/vertical-farming-company-plenty-files-for-bankruptcy-after-raising-nearly-1b/",
+        "explanation": "Plenty raised nearly $1 billion, not $1.9 billion. The $1.9B figure was their valuation, not funding raised.",
+        "evidence": "TechCrunch article states Plenty raised 'nearly $1 billion' and was valued at $1.9 billion in January 2022.",
+        "suggestion": "Correct to: 'Plenty's $1.9 billion valuation collapsed into bankruptcy after raising nearly $1 billion.'"
+      }
+    },
+    {
+      "claim": "LED costs dropped 85% since 2020 while efficiency improved dramatically, making small farms finally profitable",
+      "section": "Why Now?",
+      "severity": "Medium",
+      "details": {
+        "issue_type": "unsupported_claim",
+        "citation_ref": "[6]",
+        "url_checked": "https://www.ceagworld.com/vertical-farming/vertical-farmings-paradox-growth-in-demand-decline-in-investment/",
+        "explanation": "The cited source does not contain specific data about LED cost reduction percentages or the change in energy costs from 65% to 25% of operating costs.",
+        "evidence": "WebFetch found no mention of 85% LED cost reduction or specific energy cost percentages in the article.",
+        "suggestion": "Either find a source that supports these specific statistics or remove/qualify the unsupported claims."
+      }
+    },
+    {
+      "claim": "flooding destroyed 30% of California's lettuce crop in January 2025 alone",
+      "section": "The Problem",
+      "severity": "High",
+      "details": {
+        "issue_type": "unsupported_claim",
+        "citation_ref": "none",
+        "url_checked": "N/A",
+        "explanation": "This specific claim about January 2025 flooding destroying 30% of California's lettuce crop lacks any citation and appears unverifiable.",
+        "evidence": "No citation provided for this specific and recent claim about crop destruction.",
+        "suggestion": "Either provide a credible source for this claim or remove it as it appears to be speculation."
+      }
+    }
+  ],
+  "statistics": {
+    "total_claims": "12",
+    "verified_claims": "5",
+    "unverified_claims": "3",
+    "false_claims": "4"
+  },
+  "iteration_recommendation": "reject",
+  "iteration_reason": "The analysis contains 2 High severity issues (incorrect $162B grocery store figure and unsupported California lettuce claim) and 3 Medium severity issues with citations that don't support the claims made. These fundamental accuracy problems undermine the credibility of the business case and require revision before approval."
+}

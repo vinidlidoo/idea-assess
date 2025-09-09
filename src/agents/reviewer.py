@@ -91,6 +91,11 @@ class ReviewerAgent(BaseAgent[ReviewerConfig, ReviewerContext]):
 
             # Load the reviewer prompt with includes
             system_prompt = self.load_system_prompt()
+            
+            # Log the system prompt if analytics available
+            if context and context.run_analytics:
+                context.run_analytics.log_system_prompt("reviewer", iteration, system_prompt)
+            
             # Use feedback output path from context
             feedback_file = context.feedback_output_path
 
@@ -101,12 +106,18 @@ class ReviewerAgent(BaseAgent[ReviewerConfig, ReviewerContext]):
                 "agents/reviewer/user/review.md",
                 self.config.prompts_dir,
             )
+            # Pass previous feedback path or "None" if not available
+            previous_feedback_path = "None"
+            if context.previous_feedback_path and context.previous_feedback_path.exists():
+                previous_feedback_path = str(context.previous_feedback_path)
+            
             user_prompt = review_template.format(
                 iteration=iteration,
                 max_iterations=self.config.max_iterations,
                 max_websearches=self.config.max_websearches,
                 analysis_path=analysis_path,
                 feedback_file=feedback_file,
+                previous_feedback_path=previous_feedback_path,
             )
 
             # Configure options

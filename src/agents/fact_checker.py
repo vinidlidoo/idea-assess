@@ -91,6 +91,11 @@ class FactCheckerAgent(BaseAgent[FactCheckerConfig, FactCheckContext]):
 
             # Load the fact-checker prompt with includes
             system_prompt = self.load_system_prompt()
+            
+            # Log the system prompt if analytics available
+            if context and context.run_analytics:
+                context.run_analytics.log_system_prompt("factchecker", iteration, system_prompt)
+            
             # Use fact-check output path from context
             fact_check_file = context.fact_check_output_path
 

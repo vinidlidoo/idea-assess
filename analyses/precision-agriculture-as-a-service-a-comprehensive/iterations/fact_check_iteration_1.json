@@ -1,0 +1,77 @@
+{
+  "issues": [
+    {
+      "claim": "John Deere's See & Spray saving farmers 59% on chemicals",
+      "section": "The Solution",
+      "severity": "High",
+      "details": {
+        "issue_type": "false_citation",
+        "citation_ref": "[3]",
+        "url_checked": "https://agfundernews.com/us-agrifoodtech-funding-up-14-driven-by-investment-in-ai",
+        "explanation": "The cited article does not mention John Deere's See & Spray technology or any 59% herbicide reduction claim.",
+        "evidence": "The article discusses weeding robots and herbicide costs ($33B annually) but makes no reference to John Deere See & Spray or specific percentage reductions.",
+        "suggestion": "Find a proper source for the John Deere See & Spray claim or remove the specific percentage."
+      }
+    },
+    {
+      "claim": "Agricultural robots specifically reach $25B in 2025, exploding to $75B by 2030 at 24.6% CAGR",
+      "section": "Market Size",
+      "severity": "High",
+      "details": {
+        "issue_type": "false_citation",
+        "citation_ref": "[5]",
+        "url_checked": "https://www.futuredatastats.com/agricultural-robotics-as-a-service-raas-market",
+        "explanation": "The cited source contains placeholder values ('xx') instead of actual market size figures.",
+        "evidence": "The source shows 'USD xx Billion in 2024' and 'USD xx Billion by 2032' with 'CAGR of xx%' - no actual numbers provided.",
+        "suggestion": "Find a credible source with actual market size projections or remove these specific figures."
+      }
+    },
+    {
+      "claim": "Labor represents 38% of specialty crop production expenses",
+      "section": "The Problem",
+      "severity": "Low",
+      "details": {
+        "issue_type": "unsupported_claim",
+        "citation_ref": "[7]",
+        "url_checked": "https://www.ers.usda.gov/topics/farm-economy/farm-labor",
+        "explanation": "The actual figures are 40% for fruit/tree nut operations and 42% for greenhouse/nursery, not 38%.",
+        "evidence": "USDA states: '40 percent for fruit and tree nut operations' and '42 percent for greenhouse and nursery operations'.",
+        "suggestion": "Update to the accurate 40-42% range from the USDA source."
+      }
+    },
+    {
+      "claim": "250,000 US farms between 10-500 acres growing specialty crops",
+      "section": "Market Size",
+      "severity": "Medium",
+      "details": {
+        "issue_type": "unsupported_claim",
+        "citation_ref": "none",
+        "url_checked": "N/A",
+        "explanation": "No citation provided for this specific farm count which is critical for TAM calculation.",
+        "evidence": "No source verification available for this claim.",
+        "suggestion": "Add a citation from USDA Census of Agriculture or similar authoritative source."
+      }
+    },
+    {
+      "claim": "384,900 H2A positions certified in 2024, up 30% from 2020",
+      "section": "Why Now?",
+      "severity": "Medium",
+      "details": {
+        "issue_type": "unsupported_claim",
+        "citation_ref": "none",
+        "url_checked": "N/A",
+        "explanation": "No citation for H2A position growth statistics which supports the labor shortage argument.",
+        "evidence": "No source verification available for this claim.",
+        "suggestion": "Add citation from Department of Labor H2A certification data."
+      }
+    }
+  ],
+  "statistics": {
+    "total_claims": "12",
+    "verified_claims": "5",
+    "unverified_claims": "5",
+    "false_claims": "2"
+  },
+  "iteration_recommendation": "reject",
+  "iteration_reason": "Two high-severity citation issues were found where sources do not support the claims made, particularly the John Deere herbicide reduction and agricultural robotics market size figures. These false citations undermine credibility and require correction before approval."
+}

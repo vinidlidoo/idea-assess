@@ -1,0 +1,90 @@
+{
+  "issues": [
+    {
+      "claim": "spectrum-tuned LEDs cut energy use by 40% while producing 3x yields per square foot versus traditional farming",
+      "section": "The Solution",
+      "severity": "High",
+      "details": {
+        "issue_type": "false_citation",
+        "citation_ref": "[4]",
+        "url_checked": "https://farmonaut.com/precision-farming/vertical-farming-hydroponics-7-breakthroughs-2025",
+        "explanation": "Citation [4] URL does not contain any content about LED efficiency or energy savings - page appears to be broken or incorrect.",
+        "evidence": "WebFetch returned only CSS styling code with no substantive content about vertical farming or LED technology.",
+        "suggestion": "Find a valid source that supports the 40% energy savings claim or remove/modify this specific statistic."
+      }
+    },
+    {
+      "claim": "vertical farming cuts these emissions by up to 70%",
+      "section": "The Problem",
+      "severity": "High",
+      "details": {
+        "issue_type": "false_citation",
+        "citation_ref": "[1]",
+        "url_checked": "https://green.org/2024/01/30/vertical-farmings-role-in-reducing-food-waste/",
+        "explanation": "Citation [1] URL does not contain the claimed 70% emissions reduction statistic.",
+        "evidence": "WebFetch found only CSS styling and metadata with no substantive content about emissions reductions or vertical farming statistics.",
+        "suggestion": "Find a valid source for the 70% emissions reduction claim or remove this specific percentage."
+      }
+    },
+    {
+      "claim": "30% of urban restaurants will operate vertical farms by 2026",
+      "section": "Market Size",
+      "severity": "Medium",
+      "details": {
+        "issue_type": "false_citation",
+        "citation_ref": "[3]",
+        "url_checked": "https://www.euronews.com/green/2024/09/15/meet-swegreen-this-swedish-vertical-farm-start-up-grows-vegetables-inside-of-supermarkets",
+        "explanation": "Citation [3] does not mention the 30% urban restaurants statistic anywhere in the article.",
+        "evidence": "The article discusses SweGreen's operations in supermarkets but makes no predictions about restaurant adoption rates by 2026.",
+        "suggestion": "Remove the unsupported 30% statistic or find a valid source for this claim."
+      }
+    },
+    {
+      "claim": "Transportation accounts for 20% of food system emissions",
+      "section": "References",
+      "severity": "Medium",
+      "details": {
+        "issue_type": "false_citation",
+        "citation_ref": "[2]",
+        "url_checked": "https://www.foodnavigator.com/Article/2024/10/02/vertical-farming-new-research-lowers-energy-usage-and-costs/",
+        "explanation": "Citation [2] does not mention transportation accounting for 20% of food system emissions.",
+        "evidence": "The article focuses on energy optimization algorithms (12% electricity cost reduction) but does not discuss transportation emissions percentages.",
+        "suggestion": "Either find a source for the 20% transportation emissions claim or remove it from the citation description."
+      }
+    },
+    {
+      "claim": "The Swedish chain ICA started building farms inside stores",
+      "section": "The Problem",
+      "severity": "Low",
+      "details": {
+        "issue_type": "unsupported_claim",
+        "citation_ref": "[3]",
+        "url_checked": "https://www.euronews.com/green/2024/09/15/meet-swegreen-this-swedish-vertical-farm-start-up-grows-vegetables-inside-of-supermarkets",
+        "explanation": "The article discusses SweGreen but does not specifically mention ICA chain.",
+        "evidence": "Article covers SweGreen's operations in Swedish and German supermarkets but doesn't name ICA specifically.",
+        "suggestion": "Either verify ICA's involvement separately or change to 'Swedish supermarkets' more generally."
+      }
+    },
+    {
+      "claim": "North America commands 41% market share",
+      "section": "Market Size",
+      "severity": "Low",
+      "details": {
+        "issue_type": "unsupported_claim",
+        "citation_ref": "[2]",
+        "url_checked": "https://www.marketsandmarkets.com/Market-Reports/vertical-farming-market-221795343.html",
+        "explanation": "Citation mentions North America as a key region but doesn't provide the specific 41% figure.",
+        "evidence": "MarketsandMarkets report lists North America as important but WebFetch didn't find the 41% statistic.",
+        "suggestion": "Either find source for 41% or state more generally that North America is a leading market."
+      }
+    }
+  ],
+  "statistics": {
+    "total_claims": "12",
+    "verified_claims": "3",
+    "unverified_claims": "3",
+    "false_claims": "6"
+  },
+  "iteration_recommendation": "reject",
+  "iteration_reason": "The analysis contains 2 High severity issues where critical citations do not support the claims made, and 2 Medium severity issues with false citations. Multiple key environmental and efficiency claims lack proper substantiation. These citation accuracy problems undermine the credibility of the core value proposition."
+}

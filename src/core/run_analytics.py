@@ -434,23 +434,27 @@ class RunAnalytics:
 
     def log_system_prompt(self, agent_name: str, iteration: int, prompt: str) -> None:
         """
-        Log the formatted system prompt for an agent.
+        Log the formatted system prompt for an agent (only once per agent per run).
 
         Args:
             agent_name: Name of the agent (e.g., "analyst")
-            iteration: Current iteration number
+            iteration: Current iteration number (kept for API compatibility but not used in filename)
             prompt: The fully formatted system prompt
         """
         from datetime import datetime
 
-        # Create filename with agent and iteration
-        prompt_file = self.output_dir / f"{agent_name}_system_prompt_iter{iteration}.md"
+        # Create filename without iteration (one per agent per run)
+        prompt_file = self.output_dir / f"{agent_name}_system_prompt.md"
+
+        # Skip if already logged for this agent in this run
+        if prompt_file.exists():
+            logger.debug(f"System prompt already logged for {agent_name}, skipping")
+            return
 
         try:
             with open(prompt_file, "w") as f:
-                # Write header with metadata
+                # Write header with metadata (no iteration)
                 _ = f.write(f"# {agent_name.title()} System Prompt\n\n")
-                _ = f.write(f"**Iteration:** {iteration}\n")
                 _ = f.write(f"**Timestamp:** {datetime.now().isoformat()}\n")
                 _ = f.write(f"**Run ID:** {self.run_id}\n\n")
                 _ = f.write("---\n\n")

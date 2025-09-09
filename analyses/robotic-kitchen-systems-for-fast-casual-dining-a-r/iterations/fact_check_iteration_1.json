@@ -1,0 +1,77 @@
+{
+  "issues": [
+    {
+      "claim": "The California $20 minimum wage hike pushed labor costs to 36% of revenue",
+      "section": "The Problem",
+      "severity": "Medium",
+      "details": {
+        "issue_type": "unsupported_claim",
+        "citation_ref": "[2]",
+        "url_checked": "https://www.gov.ca.gov/2024/10/03/californias-20-fast-food-minimum-wage-is-a-win-win-win-research-says/",
+        "explanation": "The cited source page could not be accessed properly to verify the 36% labor cost claim. The $20 minimum wage is well-documented but the specific 36% figure needs verification.",
+        "evidence": "WebFetch returned no article content, only CSS and metadata from the page",
+        "suggestion": "Find an alternative source that specifically documents labor costs as percentage of revenue post-wage increase"
+      }
+    },
+    {
+      "claim": "858,000 open positions nationally",
+      "section": "The Problem",
+      "severity": "Medium",
+      "details": {
+        "issue_type": "unsupported_claim",
+        "citation_ref": "none",
+        "url_checked": "https://www.dailypay.com/resource-center/blog/qsr-and-restaurant-turnover-rates/",
+        "explanation": "This specific statistic appears twice in the document but lacks any citation. The source [3] mentions 62% staffing issues but not the 858,000 figure.",
+        "evidence": "No reference found in citation [3] or elsewhere for this specific number",
+        "suggestion": "Add proper citation for the 858,000 open positions claim or remove if unverifiable"
+      }
+    },
+    {
+      "claim": "Ghost kitchen market hit $70.4 billion in 2023, racing toward $142.5 billion by 2029",
+      "section": "Market Size",
+      "severity": "Low",
+      "details": {
+        "issue_type": "unsupported_claim",
+        "citation_ref": "[6]",
+        "url_checked": "N/A",
+        "explanation": "Citation links to Research and Markets report but couldn't verify exact figures. Market research reports typically require purchase.",
+        "evidence": "Unable to verify specific numbers without accessing paid market research report",
+        "suggestion": "Consider adding 'according to Research and Markets' to make source clearer"
+      }
+    },
+    {
+      "claim": "Miso Robotics just raised at $266M valuation... with just $492K revenue",
+      "section": "Competition & Moat",
+      "severity": "Low",
+      "details": {
+        "issue_type": "unsupported_claim",
+        "citation_ref": "[7]",
+        "url_checked": "N/A",
+        "explanation": "Unable to verify these specific financial figures from Kingscrowd source",
+        "evidence": "Citation appears valid but couldn't access full content to verify exact numbers",
+        "suggestion": "Ensure these numbers are current and accurately sourced from Kingscrowd report"
+      }
+    },
+    {
+      "claim": "80% of restaurant jobs are automatable",
+      "section": "Why Now",
+      "severity": "Low",
+      "details": {
+        "issue_type": "false_citation",
+        "citation_ref": "[4]",
+        "url_checked": "https://www.adeccogroup.com/future-of-work/latest-insights/80-of-restaurant-jobs-could-be-taken-over-by-robots",
+        "explanation": "The source says 'More than 80% of restaurant positions could be automated' which aligns with the claim, though the analysis says '80% of those positions are automatable' which is slightly different phrasing.",
+        "evidence": "Source confirmed: 'More than 80% of restaurant positions could be automated'",
+        "suggestion": "Consider using exact quote from source for precision"
+      }
+    }
+  ],
+  "statistics": {
+    "total_claims": "12",
+    "verified_claims": "7",
+    "unverified_claims": "5",
+    "false_claims": "0"
+  },
+  "iteration_recommendation": "revise",
+  "iteration_reason": "Two medium severity issues were identified: the unverifiable 36% labor cost claim and the completely unsupported 858,000 open positions statistic. These are significant factual claims that affect the credibility of the problem statement. The analysis would benefit from finding proper citations or adjusting these claims."
+}
