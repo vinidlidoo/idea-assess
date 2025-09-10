@@ -10,6 +10,7 @@
 - [ ] Consider mutation testing to verify test quality
 - [ ] Add caching for WebFetch calls to avoid repeated verifications
 - [ ] Reduce duplicative code by consolidating shared modules (e.g., reviewer.py and fact_checker.py share a lot of the same code)
+- [ ] Migrate project constants to centralized `src/core/constants.py` file
 
 ## Features
 
@@ -24,5 +25,5 @@
 
 ## Bugs
 
-- [ ] **WebFetch timeout issue**: WebFetch tool calls can hang indefinitely, blocking pipeline progress. Need to implement timeout mechanism or async handling
+- [ ] **WebFetch timeout issue** (IN PROGRESS): WebFetch tool calls can hang indefinitely, blocking pipeline progress. Implementation plan complete, ready to implement timeout with recovery mechanism
 - [ ] The allowed-tools Claude Code Options field doesn't seem to work as expected. Investigate and adjust as appropriate
