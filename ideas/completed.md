@@ -43,3 +43,9 @@ A software platform that coordinates networks of small US manufacturers to compe
 # consultancy to deploy AI to increases productivity in corporate Japan
 
 *Processed: 2025-09-10 17:21:06*
+
+# Limited-run Japanese design apparel
+
+*Processed: 2025-09-11 10:46:26*
+
+Japanese apparel design-inspired company with unique designs leveraging AI for creativity and built with the know-how and quality of the best Japanese manufacturers. Drop model with small-batch production, increasing perceived value. I like it cause it combines fashion, Japan, and AI. I thought of Nakamura-ya, who sells cool Japanese streetwear in a small store in Portland, OR. Target market would be worldwide through e-commerce. Manufacturing could be anywhere, but would need to credibly match the Japanese apparel quality.

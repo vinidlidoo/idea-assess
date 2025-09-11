@@ -14,6 +14,7 @@
 
 ## Features
 
+- [ ] Revise prompts and templates to enable different types on analysis by swapping template in CLI (e.g, lifestyle business instead of 100M USD idea)
 - [ ] Resume the analyst-reviewer loop with additional iterations when running the CLI on the same idea slug
 - [ ] Enable the insertion of human feedback into the review iteration cycle
 - [x] Add capability for the reviewer to do WebSearch tool uses to improve feedback; improve prompt to raise quality bar
@@ -21,7 +22,7 @@
 - [ ] Add analysis cost in the metadata at the bottom of the analysis fie
 - [ ] Add retry logic for failed ideas in batch processing
 - [ ] Generate batch processing statistics/summary report
-- [ ] Consider adding a --continue flag to resume interrupted batch processing
+- [ ] Add a --continue flag to resume interrupted batch processing
 
 ## Bugs
 

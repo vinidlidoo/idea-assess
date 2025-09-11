@@ -1,0 +1,77 @@
+{
+  "issues": [
+    {
+      "claim": "Japanese fashion searches surged 178% year-over-year",
+      "section": "Why Now?",
+      "severity": "Low",
+      "details": {
+        "issue_type": "unsupported_claim",
+        "citation_ref": "[4]",
+        "url_checked": "https://www.accio.com/business/japanese-youth-trends",
+        "explanation": "The source shows streetwear search growth from 36 to 100 but doesn't explicitly state 178%.",
+        "evidence": "Source shows Google Trends data with streetwear searches increasing from 36 (Aug 2024) to 100 (Aug 2025), which calculates to ~178% but this percentage is not stated in the source.",
+        "suggestion": "Either cite the actual numbers from the source or clarify this is a calculated percentage."
+      }
+    },
+    {
+      "claim": "anime generated $19.8 billion globally in 2023",
+      "section": "Why Now?",
+      "severity": "Low",
+      "details": {
+        "issue_type": "false_citation",
+        "citation_ref": "[5]",
+        "url_checked": "https://www.parrotanalytics.com/announcements/japanese-anime-captured-dollar198-billion-in-2023-global-revenue-cementing-japans-role-as-a-global-entertainment-leader/",
+        "explanation": "The cited URL did not load proper content for verification.",
+        "evidence": "WebFetch returned only CSS/JavaScript code without the actual article content, making the claim unverifiable through the provided source.",
+        "suggestion": "Find an alternative reliable source for this statistic or remove if unverifiable."
+      }
+    },
+    {
+      "claim": "15 million Western anime/manga consumers spending $3.5 billion annually",
+      "section": "Market Size",
+      "severity": "Medium",
+      "details": {
+        "issue_type": "unsupported_claim",
+        "citation_ref": "none",
+        "url_checked": "N/A",
+        "explanation": "This specific market sizing claim lacks any citation to support the consumer count and spending figures.",
+        "evidence": "No source provided for this key market sizing assumption that forms the basis of the TAM calculation.",
+        "suggestion": "Add credible source for Western anime/manga consumer numbers and spending data."
+      }
+    },
+    {
+      "claim": "anime viewership hit 100 million Western users in 2024",
+      "section": "Market Size",
+      "severity": "Medium",
+      "details": {
+        "issue_type": "unsupported_claim",
+        "citation_ref": "none",
+        "url_checked": "N/A",
+        "explanation": "No citation provided for this significant viewership claim that's repeated multiple times.",
+        "evidence": "Claim appears twice in the document without any supporting source.",
+        "suggestion": "Provide source for Western anime viewership statistics from a credible industry report."
+      }
+    },
+    {
+      "claim": "Netflix captured 38% of global anime streaming revenue",
+      "section": "Why Now?",
+      "severity": "Low",
+      "details": {
+        "issue_type": "unsupported_claim",
+        "citation_ref": "none",
+        "url_checked": "N/A",
+        "explanation": "Specific market share claim lacks citation.",
+        "evidence": "No source provided for Netflix's anime streaming market share.",
+        "suggestion": "Add source or remove specific percentage if unverifiable."
+      }
+    }
+  ],
+  "statistics": {
+    "total_claims": "12",
+    "verified_claims": "6",
+    "unverified_claims": "5",
+    "false_claims": "1"
+  },
+  "iteration_recommendation": "approve",
+  "iteration_reason": "The analysis has only 2 medium severity issues (missing citations for market sizing) and 3 low severity issues. The core business model claims are well-supported with accurate citations [1][2][3][6]. While some supporting statistics need better sourcing, the fundamental market opportunity and business economics are properly validated."
+}
