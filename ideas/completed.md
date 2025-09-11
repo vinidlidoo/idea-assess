@@ -39,3 +39,7 @@ An AI-powered platform that combines computer vision with deep cultural knowledg
 *Processed: 2025-09-09 16:36:45*
 
 A software platform that coordinates networks of small US manufacturers to compete with overseas production by optimizing job routing, quality control, and logistics using multi-agent AI systems. The platform would use advanced systems thinking to decompose complex products into distributed manufacturing tasks, automatically matching them with specialized local shops. Manufacturers pay $500-5K/month based on volume, while buyers get competitive pricing with 70% shorter lead times than overseas options. This addresses the reshoring trend and YC's manufacturing focus while building resilient supply chains that can scale from prototype to production runs of 10,000+ units.
+
+# consultancy to deploy AI to increases productivity in corporate Japan
+
+*Processed: 2025-09-10 17:21:06*

@@ -27,3 +27,4 @@
 
 - [ ] **WebFetch timeout issue** (IN PROGRESS): WebFetch tool calls can hang indefinitely, blocking pipeline progress. Implementation plan complete, ready to implement timeout with recovery mechanism
 - [ ] The allowed-tools Claude Code Options field doesn't seem to work as expected. Investigate and adjust as appropriate
+- [ ] Failed to parse search results JSON error in run_analytics - add better error handling for malformed JSON

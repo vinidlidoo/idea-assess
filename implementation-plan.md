@@ -3,8 +3,9 @@
 ## Current Status
 
 **Phase 2.5**: Extending core functionality  
-**Completed**: Analyst, Reviewer, FactChecker agents  
-**Next**: Additional Phase 2.5 features, then Judge (Phase 3)
+**Completed**: Analyst, Reviewer, FactChecker agents, Batch Processing  
+**In Progress**: WebFetch timeout mechanism (plan complete, ready to implement)  
+**Next**: Complete timeout implementation, then Judge (Phase 3)
 
 ## ✅ Phase 1: Analyst Agent (COMPLETE)
 
@@ -191,10 +192,10 @@ analyses/
 
 ## Next Immediate Steps
 
-1. Define additional Phase 2.5 features
-2. Implement selected features
-3. Validate with real-world testing
-4. Begin Phase 3 planning
+1. Implement WebFetch timeout mechanism (src/core/constants.py + wrapper)
+2. Test timeout with slow URLs
+3. Roll out to all agents
+4. Begin Phase 3 Judge implementation
 
 ---
 

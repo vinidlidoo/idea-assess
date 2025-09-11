@@ -1,0 +1,90 @@
+{
+  "issues": [
+    {
+      "claim": "Rakuten AI for Business ($500/month, requires extensive training)",
+      "section": "Competition & Moat",
+      "severity": "High",
+      "details": {
+        "issue_type": "false_citation",
+        "citation_ref": "[6]",
+        "url_checked": "https://rakuten.today/blog/introducing-rakuten-ai-for-business-a-genai-solution-empowering-japanese-businesses.html",
+        "explanation": "The analysis claims Rakuten AI costs $500/month and requires extensive training, but the source directly contradicts both claims.",
+        "evidence": "Source shows pricing is 1,100 yen (~$7 USD) per month, not $500. The service is designed to be accessible without extensive training, offering prompt templates and browser-based access.",
+        "suggestion": "Correct pricing to $7/month and remove claim about extensive training requirement, or find accurate competitive information."
+      }
+    },
+    {
+      "claim": "AI adoption among Japanese businesses jumped from 33.5% to 42.5% in one year",
+      "section": "Why Now?",
+      "severity": "High",
+      "details": {
+        "issue_type": "unsupported_claim",
+        "citation_ref": "[2]",
+        "url_checked": "https://global.rakuten.com/corp/news/press/2025/0129_01.html",
+        "explanation": "The cited source does not contain these statistics about overall Japanese business AI adoption growth.",
+        "evidence": "The Rakuten survey only mentions 16% SME adoption and does not reference any 33.5% to 42.5% jump in overall business adoption.",
+        "suggestion": "Either find the correct source for this statistic or remove the unsupported claim."
+      }
+    },
+    {
+      "claim": "tsuzumi launched on Azure in November 2024, providing accurate Japanese processing at 1/10th the cost of GPT-4",
+      "section": "Why Now?",
+      "severity": "Medium",
+      "details": {
+        "issue_type": "unsupported_claim",
+        "citation_ref": "[5]",
+        "url_checked": "https://www.nttdata.com/global/en/news/press-release/2024/november/ntt-data-and-microsoft-accelerate-business-innovation-with-ai-driven-solutions",
+        "explanation": "While the November 2024 launch is verified, the source does not mention any cost comparison to GPT-4.",
+        "evidence": "Source confirms tsuzumi launched November 20, 2024 on Azure, but only states it's 'cost-effective' without specific comparison to GPT-4 pricing.",
+        "suggestion": "Remove the unsupported '1/10th the cost of GPT-4' claim or find supporting evidence."
+      }
+    },
+    {
+      "claim": "Median growth 30-35% annually... proven B2B SaaS growth rates",
+      "section": "Business Model",
+      "severity": "Low",
+      "details": {
+        "issue_type": "unsupported_claim",
+        "citation_ref": "[4]",
+        "url_checked": "https://www.saas-capital.com/blog-posts/growth-benchmarks-for-private-saas-companies/",
+        "explanation": "The source mentions 30% overall median but doesn't specifically confirm this rate for <$10M ARR companies.",
+        "evidence": "Source states 30% overall median growth across all companies but doesn't break down by ARR size as claimed.",
+        "suggestion": "Clarify that 30% is overall median, not specifically for <$10M ARR segment."
+      }
+    },
+    {
+      "claim": "Japan's Act on Promotion of AI Technologies in May 2025",
+      "section": "Why Now?",
+      "severity": "Medium",
+      "details": {
+        "issue_type": "unsupported_claim",
+        "citation_ref": "none",
+        "url_checked": "N/A",
+        "explanation": "A future government act (May 2025) is claimed without citation, making it impossible to verify this forward-looking statement.",
+        "evidence": "No citation provided for this government initiative that supposedly launched in May 2025.",
+        "suggestion": "Add credible source for this government initiative or remove the unsupported claim."
+      }
+    },
+    {
+      "claim": "Japan's AI market... 25% CAGR",
+      "section": "Market Size",
+      "severity": "Low",
+      "details": {
+        "issue_type": "unsupported_claim",
+        "citation_ref": "[3]",
+        "url_checked": "https://www.trade.gov/market-intelligence/japan-artificial-intelligence",
+        "explanation": "The source doesn't explicitly state the CAGR percentage, though the growth figures are correct.",
+        "evidence": "Source confirms $8.9B to $27.9B growth but doesn't mention 25% CAGR specifically (though it can be calculated).",
+        "suggestion": "Either cite the CAGR calculation or remove the specific percentage."
+      }
+    }
+  ],
+  "statistics": {
+    "total_claims": "15",
+    "verified_claims": "9",
+    "unverified_claims": "4",
+    "false_claims": "2"
+  },
+  "iteration_recommendation": "reject",
+  "iteration_reason": "The analysis contains 2 High severity issues with false information about competitors and unsupported growth statistics, plus 2 Medium severity issues with unverified claims. The false Rakuten pricing ($500 vs actual $7) and fabricated AI adoption jump statistics significantly undermine the credibility of the competitive analysis and market opportunity assessment."
+}
