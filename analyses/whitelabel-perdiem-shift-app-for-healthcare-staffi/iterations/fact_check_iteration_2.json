@@ -1,0 +1,64 @@
+{
+  "issues": [
+    {
+      "claim": "45% planning to leave nursing altogether due to inflexibility",
+      "section": "Why Now?",
+      "severity": "Medium",
+      "details": {
+        "issue_type": "unsupported_claim",
+        "citation_ref": "[1]",
+        "url_checked": "https://www.intelycare.com/facilities/resources/nursing-trends-report-for-healthcare-employers/",
+        "explanation": "The analysis claims 45% plan to leave due to inflexibility, but the source only states 45% plan to leave nursing in 2024 without attributing it specifically to inflexibility.",
+        "evidence": "Source states '45% plan to leave nursing altogether in 2024' but does not specifically link this to inflexibility as the cause.",
+        "suggestion": "Correct the claim to remove the unsupported causal link, stating '45% plan to leave nursing' without attributing it solely to inflexibility."
+      }
+    },
+    {
+      "claim": "Wolf charges $50K+ setup fees targeting enterprise",
+      "section": "Competition & Moat",
+      "severity": "Medium",
+      "details": {
+        "issue_type": "unsupported_claim",
+        "citation_ref": "[7]",
+        "url_checked": "https://www.wolf.xyz/labor-marketplaces/healthcare-staffing-platform",
+        "explanation": "The cited source does not provide any specific pricing information, only stating pricing is available upon request.",
+        "evidence": "Wolf website states 'Pricing quotes are available on a per-account basis following our deep dive call' with no specific amounts mentioned.",
+        "suggestion": "Remove or qualify the specific $50K+ claim as this information is not publicly available on the cited source."
+      }
+    },
+    {
+      "claim": "80% not answering their phones",
+      "section": "The Problem",
+      "severity": "Low",
+      "details": {
+        "issue_type": "unsupported_claim",
+        "citation_ref": "none",
+        "url_checked": "N/A",
+        "explanation": "This operational statistic lacks a citation despite being presented as a fact.",
+        "evidence": "No citation provided for this specific statistic about phone response rates.",
+        "suggestion": "Add a citation for this claim or clearly mark it as an estimate based on industry reports."
+      }
+    },
+    {
+      "claim": "23% of shifts go unfilled entirely",
+      "section": "The Problem",
+      "severity": "Low",
+      "details": {
+        "issue_type": "unsupported_claim",
+        "citation_ref": "none",
+        "url_checked": "N/A",
+        "explanation": "This significant operational claim about unfilled shifts lacks supporting evidence.",
+        "evidence": "No citation provided for the 23% unfilled shifts statistic.",
+        "suggestion": "Provide a source for this statistic or clarify if it's based on industry estimates."
+      }
+    }
+  ],
+  "statistics": {
+    "total_claims": "12",
+    "verified_claims": "6",
+    "unverified_claims": "4",
+    "false_claims": "2"
+  },
+  "iteration_recommendation": "approve",
+  "iteration_reason": "The analysis is largely accurate with only 2 medium-severity issues found. The key market data, regulatory information, and most statistical claims are verified. The issues identified are relatively minor and can be addressed with simple clarifications rather than requiring substantial revisions."
+}

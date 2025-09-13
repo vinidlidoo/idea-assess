@@ -1,0 +1,116 @@
+{
+  "issues": [
+    {
+      "claim": "91% of diners rely on reviews to choose restaurants",
+      "section": "The Problem",
+      "severity": "Medium",
+      "details": {
+        "issue_type": "false_citation",
+        "citation_ref": "[2]",
+        "url_checked": "https://trends.yelp.com/state-of-the-restaurant-industry-2025.html",
+        "explanation": "The cited Yelp report does not contain this statistic. The source discusses trends but lacks the specific 91% figure claimed.",
+        "evidence": "WebFetch of the Yelp report found no mention of 91% of diners relying on reviews. The report focuses on dining habits and affordability but doesn't provide review usage statistics.",
+        "suggestion": "Find an alternative source for this statistic or remove the specific percentage claim."
+      }
+    },
+    {
+      "claim": "308 million reviews on Yelp and 21 million new reviews added in 2025",
+      "section": "Market Size",
+      "severity": "Medium",
+      "details": {
+        "issue_type": "false_citation",
+        "citation_ref": "[2]",
+        "url_checked": "https://trends.yelp.com/state-of-the-restaurant-industry-2025.html",
+        "explanation": "The cited Yelp report does not contain these review count statistics.",
+        "evidence": "The Yelp report checked does not mention total review counts or new reviews added. These statistics may exist elsewhere but are not in the cited source.",
+        "suggestion": "Update citation to a source that actually contains Yelp review statistics or find the correct Yelp report."
+      }
+    },
+    {
+      "claim": "Yelp alone earned $1.28 billion in ad revenue in 2023",
+      "section": "Market Size",
+      "severity": "Low",
+      "details": {
+        "issue_type": "unsupported_claim",
+        "citation_ref": "[3]",
+        "url_checked": "https://www.wallstreetzen.com/stocks/us/nyse/yelp/statistics",
+        "explanation": "The WallStreetZen page didn't load properly to verify this statistic.",
+        "evidence": "Unable to verify the revenue figure from the cited source due to page loading issues. The claim may be accurate but couldn't be confirmed.",
+        "suggestion": "Consider using Yelp's official investor relations page or SEC filings as a more reliable source."
+      }
+    },
+    {
+      "claim": "Average person spends 23 minutes researching restaurants online",
+      "section": "The Problem",
+      "severity": "Medium",
+      "details": {
+        "issue_type": "false_citation",
+        "citation_ref": "[5]",
+        "url_checked": "https://www.touchbistro.com/blog/diner-trends-report/",
+        "explanation": "The TouchBistro report does not contain this specific 23-minute statistic.",
+        "evidence": "WebFetch of the TouchBistro report found no mention of average research time. The report discusses deterrents like negative feedback but not research duration.",
+        "suggestion": "Remove the specific time claim or find a source that actually contains this data."
+      }
+    },
+    {
+      "claim": "The FTC just banned fake reviews in September 2024 with $43,792 per violation penalties",
+      "section": "Why Now?",
+      "severity": "Medium",
+      "details": {
+        "issue_type": "unsupported_claim",
+        "citation_ref": "[1]",
+        "url_checked": "N/A",
+        "explanation": "This significant regulatory claim uses citation [1] (Invesp) which is about fake review statistics, not FTC regulations. The FTC penalty amount is very specific but lacks proper citation.",
+        "evidence": "Citation [1] is about fake review statistics from Invesp, not FTC regulations. Unable to verify FTC website directly due to access restrictions.",
+        "suggestion": "Add a proper citation to the official FTC announcement or press release about the fake review ban."
+      }
+    },
+    {
+      "claim": "AI-generated fake reviews exploded 557% since 2019 - from 3.6% to 24% of all reviews in 2025",
+      "section": "Why Now?",
+      "severity": "High",
+      "details": {
+        "issue_type": "unsupported_claim",
+        "citation_ref": "[6]",
+        "url_checked": "N/A",
+        "explanation": "This dramatic claim about AI-generated reviews growing from 3.6% to 24% is not supported by citation [6], which is about TripAdvisor's review aggregation tool.",
+        "evidence": "Citation [6] is about TripAdvisor's review aggregation tool, not about AI-generated fake review statistics. This appears to be a significant unsupported claim.",
+        "suggestion": "Either find a credible source for this statistic or remove this claim entirely as it's a key argument without evidence."
+      }
+    },
+    {
+      "claim": "The broader $4.03 trillion restaurant industry",
+      "section": "Market Size",
+      "severity": "High",
+      "details": {
+        "issue_type": "false_citation",
+        "citation_ref": "none",
+        "url_checked": "https://restaurant.org/research-and-media/research/research-reports/state-of-the-industry/",
+        "explanation": "The analysis claims $4.03 trillion for the restaurant industry, but the NRA report states $1.5 trillion for 2025.",
+        "evidence": "NRA State of the Industry report clearly states $1.5 trillion in restaurant sales for 2025, not $4.03 trillion. This is a 2.7x discrepancy.",
+        "suggestion": "Correct the industry size to $1.5 trillion based on the NRA report, or clarify if this refers to global vs US market."
+      }
+    },
+    {
+      "claim": "178 million monthly Yelp visitors",
+      "section": "Market Size",
+      "severity": "Low",
+      "details": {
+        "issue_type": "unsupported_claim",
+        "citation_ref": "[3]",
+        "url_checked": "https://www.wallstreetzen.com/stocks/us/nyse/yelp/statistics",
+        "explanation": "Unable to verify this visitor count from the cited source.",
+        "evidence": "The WallStreetZen page didn't load properly to verify this statistic.",
+        "suggestion": "Use a more reliable source for Yelp visitor statistics."
+      }
+    }
+  ],
+  "statistics": {
+    "total_claims": "25",
+    "verified_claims": "5",
+    "unverified_claims": "12",
+    "false_claims": "8"
+  },
+  "iteration_recommendation": "reject",
+  "iteration_reason": "The analysis contains 2 high severity issues including a major discrepancy in market size ($4.03T vs $1.5T actual) and unsupported AI fake review growth claims. Additionally, there are 4 medium severity issues where citations don't contain the claimed data. These citation accuracy problems undermine the credibility of the analysis."
+}

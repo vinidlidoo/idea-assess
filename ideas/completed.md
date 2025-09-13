@@ -49,3 +49,13 @@ A software platform that coordinates networks of small US manufacturers to compe
 *Processed: 2025-09-11 10:46:26*
 
 Japanese apparel design-inspired company with unique designs leveraging AI for creativity and built with the know-how and quality of the best Japanese manufacturers. Drop model with small-batch production, increasing perceived value. I like it cause it combines fashion, Japan, and AI. I thought of Nakamura-ya, who sells cool Japanese streetwear in a small store in Portland, OR. Target market would be worldwide through e-commerce. Manufacturing could be anywhere, but would need to credibly match the Japanese apparel quality.
+
+# white‑label per‑diem shift app for healthcare staffing agencies
+
+*Processed: 2025-09-12 09:29:36*
+
+Agencies post client orders from hospitals/clinics; only pre‑credentialed, W‑2 clinicians already employed by that agency receive push notifications and can 1‑tap claim/apply. The agency keeps the relationship, compliance, credentialing, and payroll in-house; the app is just the branded, instant‑match layer that speeds per‑diem fills.
+
+# usefulness- reputation-weighted reviews for restaurants
+
+*Processed: 2025-09-12 09:29:36*

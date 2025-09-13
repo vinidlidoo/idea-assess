@@ -1,0 +1,116 @@
+{
+  "issues": [
+    {
+      "claim": "30% of online reviews are now fake [1], up from 4% in 2021",
+      "section": "The Problem",
+      "severity": "High",
+      "details": {
+        "issue_type": "false_citation",
+        "citation_ref": "[1]",
+        "url_checked": "https://shapo.io/blog/fake-review-statistics/",
+        "explanation": "The cited source page does not contain the actual statistics claimed. The webpage appears to be incomplete or the content is not accessible.",
+        "evidence": "WebFetch of the Shapo URL returned no statistical content, only page template and metadata.",
+        "suggestion": "Find an alternative credible source for fake review statistics or remove this specific claim."
+      }
+    },
+    {
+      "claim": "82% of consumers encountered fake reviews last year [1]",
+      "section": "The Problem",
+      "severity": "High",
+      "details": {
+        "issue_type": "false_citation",
+        "citation_ref": "[1]",
+        "url_checked": "https://shapo.io/blog/fake-review-statistics/",
+        "explanation": "Same source citation that lacks actual content to verify this claim.",
+        "evidence": "WebFetch could not find this statistic in the cited source.",
+        "suggestion": "Provide a different verifiable source for this consumer statistic."
+      }
+    },
+    {
+      "claim": "Restaurants lose $180 billion annually to fake review manipulation [1]",
+      "section": "The Problem",
+      "severity": "High",
+      "details": {
+        "issue_type": "false_citation",
+        "citation_ref": "[1]",
+        "url_checked": "https://shapo.io/blog/fake-review-statistics/",
+        "explanation": "This massive financial claim cannot be verified from the cited source.",
+        "evidence": "The cited Shapo page does not contain this $180B figure when accessed.",
+        "suggestion": "Either find a credible source for this claim or remove it as it's a critical business justification."
+      }
+    },
+    {
+      "claim": "23.7% of agent reviews are now AI-generated, up from 3.6% in 2019 [6]",
+      "section": "Why Now?",
+      "severity": "Medium",
+      "details": {
+        "issue_type": "false_citation",
+        "citation_ref": "[6]",
+        "url_checked": "https://capitaloneshopping.com/research/fake-review-statistics/",
+        "explanation": "The specific 23.7% statistic about Zillow agent reviews could not be found in the cited source.",
+        "evidence": "WebFetch of Capital One Shopping page did not return this specific statistic.",
+        "suggestion": "Verify this statistic from the original source or clarify if it's specific to Zillow vs restaurants."
+      }
+    },
+    {
+      "claim": "92% of diners read reviews before choosing where to eat [2]",
+      "section": "The Problem",
+      "severity": "Medium",
+      "details": {
+        "issue_type": "unsupported_claim",
+        "citation_ref": "[2]",
+        "url_checked": "https://pos.toasttab.com/blog/on-the-line/restaurant-reviews-and-ratings-data",
+        "explanation": "Cannot verify due to access restrictions on the Toast website.",
+        "evidence": "WebFetch returned 403 error when attempting to access Toast's data study.",
+        "suggestion": "Consider using an alternative public source for restaurant review reading statistics."
+      }
+    },
+    {
+      "claim": "Yelp alone generated $1.41 billion [4]",
+      "section": "Market Size",
+      "severity": "Low",
+      "details": {
+        "issue_type": "unsupported_claim",
+        "citation_ref": "[4]",
+        "url_checked": "https://www.yelp-ir.com/news/press-releases/news-release-details/2025/Growth-in-Services-Drove-Yelps-2024-Results/",
+        "explanation": "Cannot access Yelp investor relations page to verify 2024 revenue figure.",
+        "evidence": "WebFetch returned 403 error for Yelp IR site.",
+        "suggestion": "This is likely accurate based on public financial data but couldn't be directly verified."
+      }
+    },
+    {
+      "claim": "FTC just imposed penalties up to $51,744 per fake review [3]",
+      "section": "The Problem",
+      "severity": "Low",
+      "details": {
+        "issue_type": "unsupported_claim",
+        "citation_ref": "[3]",
+        "url_checked": "https://www.ftc.gov/news-events/news/press-releases/2024/08/federal-trade-commission-announces-final-rule-banning-fake-reviews-testimonials",
+        "explanation": "Cannot verify the exact penalty amount due to FTC website access restrictions.",
+        "evidence": "WebFetch returned 403 error when accessing FTC press release.",
+        "suggestion": "This is a widely reported figure that's likely accurate but couldn't be verified from primary source."
+      }
+    },
+    {
+      "claim": "TripAdvisor ($1.8B revenue)",
+      "section": "Competition & Moat",
+      "severity": "Medium",
+      "details": {
+        "issue_type": "unsupported_claim",
+        "citation_ref": "none",
+        "url_checked": "N/A",
+        "explanation": "TripAdvisor revenue claim has no citation provided.",
+        "evidence": "No source cited for this financial figure about a competitor.",
+        "suggestion": "Add a citation for TripAdvisor's revenue figure or remove the specific number."
+      }
+    }
+  ],
+  "statistics": {
+    "total_claims": "15",
+    "verified_claims": "1",
+    "unverified_claims": "11",
+    "false_claims": "3"
+  },
+  "iteration_recommendation": "reject",
+  "iteration_reason": "The analysis contains three High severity issues where critical statistics about fake reviews cannot be verified from the cited sources. The $180B loss claim, 30% fake review rate, and 82% consumer encounter rate are foundational to the business case but lack verifiable citations. Additionally, several Medium severity issues indicate poor citation quality overall."
+}

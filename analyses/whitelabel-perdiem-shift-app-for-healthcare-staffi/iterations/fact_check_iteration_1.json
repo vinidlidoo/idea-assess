@@ -1,0 +1,90 @@
+{
+  "issues": [
+    {
+      "claim": "Text messaging has overtaken phone calls as the dominant professional communication channel in staffing",
+      "section": "Why Now?",
+      "severity": "Medium",
+      "details": {
+        "issue_type": "unsupported_claim",
+        "citation_ref": "[1]",
+        "url_checked": "https://www.staffersinc.com/2024/01/09/embracing-the-shift-text-messaging-trends-in-the-staffing-industry/",
+        "explanation": "The source makes broad assertions about text messaging trends but provides no concrete data or statistics to support the claim that texts have 'overtaken' phone calls.",
+        "evidence": "Article states 'Gone are the days when phone calls were the primary means of communication!' but offers no statistical evidence, surveys, or research data to substantiate this claim.",
+        "suggestion": "Either find a source with actual data on communication channel usage in staffing or soften the claim to 'text messaging is increasingly important in staffing'"
+      }
+    },
+    {
+      "claim": "78,610 full-time RN positions will be unfilled by 2025",
+      "section": "Market Size",
+      "severity": "High",
+      "details": {
+        "issue_type": "false_citation",
+        "citation_ref": "[6]",
+        "url_checked": "https://www.precedenceresearch.com/us-healthcare-staffing-market",
+        "explanation": "The cited source does not contain this specific statistic about 78,610 unfilled RN positions.",
+        "evidence": "The Precedence Research report discusses healthcare staffing trends but does not mention the 78,610 figure or specific RN shortage numbers for 2025.",
+        "suggestion": "Find a different source that supports this claim or remove the specific number"
+      }
+    },
+    {
+      "claim": "67% of nurses prefer flexible per-diem work over permanent positions",
+      "section": "Why Now?",
+      "severity": "High",
+      "details": {
+        "issue_type": "false_citation",
+        "citation_ref": "[6]",
+        "url_checked": "https://www.precedenceresearch.com/us-healthcare-staffing-market",
+        "explanation": "The cited source does not contain this 67% statistic about nurse work preferences.",
+        "evidence": "The report mentions travel nursing's popularity but provides no statistics about 67% of nurses preferring flexible work arrangements.",
+        "suggestion": "Find a credible source for this statistic or remove the specific percentage claim"
+      }
+    },
+    {
+      "claim": "The DOL's 2024 enforcement actions against 1099 nursing apps like ShiftKey",
+      "section": "Why Now?",
+      "severity": "High",
+      "details": {
+        "issue_type": "false_citation",
+        "citation_ref": "[7]",
+        "url_checked": "https://www.bosmedicalstaffing.com/2024/11/19/w2-nursing-agency-vs-1099-nursing-agency-key-differences-explained/",
+        "explanation": "The cited article does not mention any DOL enforcement actions against 1099 apps.",
+        "evidence": "The BOS Medical article only discusses general differences between W2 and 1099 employment models without mentioning regulatory enforcement or DOL actions.",
+        "suggestion": "Find evidence of actual DOL enforcement actions or remove this claim"
+      }
+    },
+    {
+      "claim": "Hospitals pay $51.1 billion annually on contracted staff",
+      "section": "The Problem",
+      "severity": "Low",
+      "details": {
+        "issue_type": "unsupported_claim",
+        "citation_ref": "[3]",
+        "url_checked": "https://www.aha.org/costs-of-caring",
+        "explanation": "The AHA URL returns a 404 error, making the claim unverifiable.",
+        "evidence": "Could not access the source to verify the $51.1 billion figure. The URL appears to be incorrect or the page has been moved.",
+        "suggestion": "Find the correct URL for the AHA report or use an alternative source for hospital contract staffing expenditure data"
+      }
+    },
+    {
+      "claim": "14,000 healthcare staffing agencies in the US",
+      "section": "Market Size",
+      "severity": "Low",
+      "details": {
+        "issue_type": "unsupported_claim",
+        "citation_ref": "none",
+        "url_checked": "N/A",
+        "explanation": "This specific claim about the number of healthcare staffing agencies lacks a citation.",
+        "evidence": "No source provided for the 14,000 agencies figure used in TAM calculations.",
+        "suggestion": "Add a citation from a credible industry source to support this market sizing claim"
+      }
+    }
+  ],
+  "statistics": {
+    "total_claims": "15",
+    "verified_claims": "3",
+    "unverified_claims": "6",
+    "false_claims": "3"
+  },
+  "iteration_recommendation": "reject",
+  "iteration_reason": "The analysis contains 3 High severity issues where cited sources do not support the claims made, particularly around nursing shortage statistics and regulatory enforcement. These false citations significantly undermine the credibility of the market opportunity assessment and competitive landscape analysis."
+}
