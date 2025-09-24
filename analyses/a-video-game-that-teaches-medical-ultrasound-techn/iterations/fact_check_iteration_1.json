@@ -1,0 +1,117 @@
+{
+  "issues": [
+    {
+      "claim": "National sonography vacancies exploded from 6.9% to 16.7% between 2021-2023",
+      "section": "The Problem",
+      "severity": "High",
+      "details": {
+        "issue_type": "unsupported_claim",
+        "citation_ref": "[1]",
+        "url_checked": "BLS website blocked automated access",
+        "explanation": "Critical vacancy rate claim could not be verified. This is foundational to the problem statement.",
+        "evidence": "BLS website returned 403 error; no alternative source provided for these specific vacancy statistics",
+        "suggestion": "Provide verifiable source for vacancy rate statistics or use publicly accessible data"
+      }
+    },
+    {
+      "claim": "75% experience occupational burnout and 64% scan in pain from repetitive stress injuries",
+      "section": "The Problem",
+      "severity": "High",
+      "details": {
+        "issue_type": "false_citation",
+        "citation_ref": "[2]",
+        "url_checked": "https://sonosim.com/blog/addressing-the-growing-sonographer-shortage-a-call-to-action",
+        "explanation": "Citation does NOT contain these specific statistics. Source discusses burnout conceptually but provides no percentages.",
+        "evidence": "WebFetch found no mention of 75% burnout or 64% pain statistics in the cited source",
+        "suggestion": "Either find correct source for these statistics or remove unsupported claims"
+      }
+    },
+    {
+      "claim": "Ultrasound exams surged 55% to nearly 60 million annually",
+      "section": "The Problem",
+      "severity": "Low",
+      "details": {
+        "issue_type": "incomplete_citation",
+        "citation_ref": "[2]",
+        "url_checked": "https://sonosim.com/blog/addressing-the-growing-sonographer-shortage-a-call-to-action",
+        "explanation": "Citation supports 55.1% growth and 60 million exams, but timeframe specified differently",
+        "evidence": "Source states 'From 2011 to 2021: Ultrasound exams increased by 55.1%, reaching nearly 60 million annually'",
+        "suggestion": "Specify the 2011-2021 timeframe for clarity"
+      }
+    },
+    {
+      "claim": "150,000 medical students globally requiring ultrasound competency annually",
+      "section": "Market Size",
+      "severity": "Medium",
+      "details": {
+        "issue_type": "unsupported_claim",
+        "citation_ref": "none",
+        "url_checked": "N/A",
+        "explanation": "No citation provided for key TAM calculation input",
+        "evidence": "Claim lacks any supporting citation or source",
+        "suggestion": "Provide credible source for global medical student ultrasound training requirements"
+      }
+    },
+    {
+      "claim": "500,000 nursing students now required to learn point-of-care ultrasound",
+      "section": "Market Size",
+      "severity": "Medium",
+      "details": {
+        "issue_type": "unsupported_claim",
+        "citation_ref": "none",
+        "url_checked": "N/A",
+        "explanation": "No citation for major market expansion claim affecting TAM",
+        "evidence": "Claim lacks any supporting citation",
+        "suggestion": "Provide source for nursing ultrasound training requirements"
+      }
+    },
+    {
+      "claim": "Level Ex validated the model—750,000 healthcare professionals actively played their medical games",
+      "section": "Market Size",
+      "severity": "Medium",
+      "details": {
+        "issue_type": "broken_citation",
+        "citation_ref": "[6]",
+        "url_checked": "https://matter.health/posts/level-ex-acquired-by-brainlab",
+        "explanation": "Citation URL returns 404 error, cannot verify claim",
+        "evidence": "WebFetch returned 404 error for the cited URL",
+        "suggestion": "Find alternative source for Level Ex user statistics"
+      }
+    },
+    {
+      "claim": "A 2024 emergency medicine study proved gamification improves both theoretical knowledge and practical skills with 15% better retention",
+      "section": "The Solution",
+      "severity": "Medium",
+      "details": {
+        "issue_type": "inaccessible_citation",
+        "citation_ref": "[4]",
+        "url_checked": "https://brieflands.com/articles/jme-150614",
+        "explanation": "Cannot verify the specific 15% improvement claim due to access restrictions",
+        "evidence": "WebFetch returned 403 error when attempting to access the journal article",
+        "suggestion": "Provide open-access source or quote specific findings if proprietary"
+      }
+    },
+    {
+      "claim": "Training simulator segment at $215M expanding 8.5% yearly to $420M by 2033",
+      "section": "Market Size",
+      "severity": "Medium",
+      "details": {
+        "issue_type": "unsupported_claim",
+        "citation_ref": "[5]",
+        "url_checked": "https://www.marketsandmarkets.com/Market-Reports/ultrasound-market-467.html",
+        "explanation": "Citation verifies overall market size but does NOT mention training simulator segment",
+        "evidence": "WebFetch confirmed $9.32B market growing to $13.87B but found no mention of training simulator segment",
+        "suggestion": "Provide separate source for training simulator market segment data"
+      }
+    }
+  ],
+  "statistics": {
+    "total_claims": "15",
+    "verified_claims": "4",
+    "unverified_claims": "8",
+    "false_claims": "2",
+    "broken_citations": "1"
+  },
+  "iteration_recommendation": "revise",
+  "iteration_reason": "Analysis contains 2 high severity issues (false burnout statistics claim and unverifiable vacancy rates) plus 5 medium severity issues including unsupported market sizing assumptions and broken citations. The core business case remains sound but requires accurate citations and removal of unsupported claims to maintain credibility."
+}

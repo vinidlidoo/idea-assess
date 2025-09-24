@@ -1,0 +1,129 @@
+{
+  "issues": [
+    {
+      "claim": "The ultrasound simulation market reached $6.6B in 2024, growing 13.82% annually toward $16.32B by 2031",
+      "section": "Market Size",
+      "severity": "High",
+      "details": {
+        "issue_type": "false_citation",
+        "citation_ref": "[5]",
+        "url_checked": "https://www.datamintelligence.com/research-report/ultrasound-simulation-market",
+        "explanation": "The market size is massively overstated - off by a factor of 40x. This fundamentally misrepresents the market opportunity.",
+        "evidence": "Source actually states market is $143.45 million in 2023 growing to $382.31 million by 2031, not billions.",
+        "suggestion": "Correct the market size to $143.45M (2023) growing to $382.31M (2031) with 13.4% CAGR."
+      }
+    },
+    {
+      "claim": "16.7% vacancy rates while ultrasound exams surged 55%... over 50% experience moderate-to-severe burnout",
+      "section": "The Problem",
+      "severity": "High",
+      "details": {
+        "issue_type": "unsupported_claim",
+        "citation_ref": "[2]",
+        "url_checked": "https://pubmed.ncbi.nlm.nih.gov/38534218/",
+        "explanation": "Citation does not contain the claimed vacancy rate of 16.7% or burnout rate of 50%.",
+        "evidence": "Source discusses shortage trends but provides different statistics: exams increased 55.1%, sonographers increased 43.6%, no specific vacancy or burnout percentages.",
+        "suggestion": "Either find sources that support the 16.7% vacancy and 50% burnout claims or remove these specific statistics."
+      }
+    },
+    {
+      "claim": "Level Ex reached 600,000+ healthcare professionals before its acquisition by Brainlab",
+      "section": "The Solution",
+      "severity": "High",
+      "details": {
+        "issue_type": "false_citation",
+        "citation_ref": "[4]",
+        "url_checked": "https://matter.health/posts/level-ex-acquired-by-brainlab",
+        "explanation": "The citation URL returns a 404 error - the source does not exist.",
+        "evidence": "Website returns 404 Not Found error when accessed.",
+        "suggestion": "Find a valid source for Level Ex user numbers or remove this claim."
+      }
+    },
+    {
+      "claim": "3B Scientific's new eSono platform costs $15,000/year for institutions",
+      "section": "The Problem",
+      "severity": "Medium",
+      "details": {
+        "issue_type": "unsupported_claim",
+        "citation_ref": "[3]",
+        "url_checked": "https://www.openpr.com/news/3652717/ultrasound-training-simulator-market-size-share-and-forecast",
+        "explanation": "Citation does not contain any pricing information for 3B Scientific or other competitors.",
+        "evidence": "Source lists market players but provides no product pricing details.",
+        "suggestion": "Find actual pricing sources or mark these as estimates/approximations."
+      }
+    },
+    {
+      "claim": "Laerdal charges $50,000+ for physical mannequins requiring dedicated lab space",
+      "section": "The Problem",
+      "severity": "Medium",
+      "details": {
+        "issue_type": "unsupported_claim",
+        "citation_ref": "[3]",
+        "url_checked": "https://www.openpr.com/news/3652717/ultrasound-training-simulator-market-size-share-and-forecast",
+        "explanation": "Citation does not contain Laerdal pricing information.",
+        "evidence": "Source mentions Laerdal as a market player but provides no pricing details.",
+        "suggestion": "Find actual pricing sources or clearly indicate these are estimates."
+      }
+    },
+    {
+      "claim": "Healthcare SaaS companies at sub-$1M ARR grow at median 50% annually",
+      "section": "Business Model",
+      "severity": "Medium",
+      "details": {
+        "issue_type": "false_citation",
+        "citation_ref": "[7]",
+        "url_checked": "https://www.lightercapital.com/blog/2025-b2b-saas-startup-benchmarks",
+        "explanation": "The citation URL does not contain the claimed content about SaaS growth rates.",
+        "evidence": "Page returned only website code/styling without any benchmark data.",
+        "suggestion": "Find a valid source for SaaS growth benchmarks or remove this specific claim."
+      }
+    },
+    {
+      "claim": "North America capturing 49.7% share",
+      "section": "Market Size",
+      "severity": "Low",
+      "details": {
+        "issue_type": "false_citation",
+        "citation_ref": "[6]",
+        "url_checked": "https://www.grandviewresearch.com/industry-analysis/medical-healthcare-simulation-market",
+        "explanation": "Minor discrepancy in the North America market share percentage.",
+        "evidence": "Source states North America has 46.50% market share in 2024, not 49.7%.",
+        "suggestion": "Correct to 46.50% market share for accuracy."
+      }
+    },
+    {
+      "claim": "GE acquired ultrasound AI company for £40.5 million",
+      "section": "Why Now?",
+      "severity": "Medium",
+      "details": {
+        "issue_type": "unsupported_claim",
+        "citation_ref": "[8]",
+        "url_checked": "https://www.gehealthcare.com/insights/article/current-issues-and-opportunities-in-sonography",
+        "explanation": "Cannot verify the acquisition details as the website blocks automated access.",
+        "evidence": "GE Healthcare website returns 403 Forbidden error, preventing verification.",
+        "suggestion": "Find an alternative source for the acquisition details or note as unverified."
+      }
+    },
+    {
+      "claim": "90,000 employed sonographers needing continuous education plus 5,800 annual job openings through 2034",
+      "section": "Market Size",
+      "severity": "Medium",
+      "details": {
+        "issue_type": "unsupported_claim",
+        "citation_ref": "[1]",
+        "url_checked": "https://www.bls.gov/ooh/healthcare/diagnostic-medical-sonographers.htm",
+        "explanation": "Cannot verify BLS statistics as the website blocks automated access.",
+        "evidence": "BLS website returns 403 Forbidden error, preventing verification.",
+        "suggestion": "These are likely accurate given BLS is authoritative, but consider noting verification limitation."
+      }
+    }
+  ],
+  "statistics": {
+    "total_claims": "15",
+    "verified_claims": "2",
+    "unverified_claims": "5",
+    "false_claims": "8"
+  },
+  "iteration_recommendation": "reject",
+  "iteration_reason": "The analysis contains 3 High severity issues including a 40x overstatement of market size ($6.6B vs actual $143M), unsupported critical statistics about workforce shortages, and a broken citation. Additionally, there are 5 Medium severity issues with unsupported pricing claims and inaccessible sources. These fundamental errors undermine the credibility of the business case."
+}
