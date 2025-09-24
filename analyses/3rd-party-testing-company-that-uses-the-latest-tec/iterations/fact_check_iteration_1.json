@@ -1,0 +1,64 @@
+{
+  "issues": [
+    {
+      "claim": "Food recalls hit 740 in 2024—double 2023's count",
+      "section": "The Problem",
+      "severity": "High",
+      "details": {
+        "issue_type": "false_citation",
+        "citation_ref": "[1]",
+        "url_checked": "https://www.newfoodmagazine.com/news/247701/label-errors-dominate-2024-us-food-recalls-costing-industry-1-92-billion/",
+        "explanation": "The cited source states 422 recall events in 2024, not 740. The claim of doubling 2023's count cannot be verified from this source.",
+        "evidence": "The article reports 422 recall events in the FDA Enforcement Report Database with 1,478 total products affected. No comparison to 2023 is provided in the source.",
+        "suggestion": "Correct the recall count to 422 and either find a source for the 2023 comparison or remove that claim"
+      }
+    },
+    {
+      "claim": "One-third exceeded heavy metal safety limits, with Hershey's at 125% above the threshold for lead",
+      "section": "The Problem",
+      "severity": "Medium",
+      "details": {
+        "issue_type": "unsupported_claim",
+        "citation_ref": "[2]",
+        "url_checked": "https://www.consumerreports.org/health/food-safety/a-third-of-chocolate-products-are-high-in-heavy-metals-a4844566398/",
+        "explanation": "The URL could not be accessed (403 error) to verify the specific claims about one-third exceeding limits and Hershey's at 125%.",
+        "evidence": "Unable to access the Consumer Reports article to verify the specific percentages and Hershey's data",
+        "suggestion": "Either find an accessible source for these statistics or mark them as unverifiable"
+      }
+    },
+    {
+      "claim": "DART-MS (Direct Analysis Real Time Mass Spectrometry) that detects contaminants in 30 minutes without sample preparation",
+      "section": "The Solution",
+      "severity": "Low",
+      "details": {
+        "issue_type": "unsupported_claim",
+        "citation_ref": "[4]",
+        "url_checked": "https://ift.onlinelibrary.wiley.com/doi/10.1111/1541-4337.13398",
+        "explanation": "Could not access the scientific journal article (403 error) to verify DART-MS capabilities.",
+        "evidence": "Unable to access the Wiley journal article to verify the 30-minute detection claim",
+        "suggestion": "Consider finding an alternative accessible source for DART-MS capabilities"
+      }
+    },
+    {
+      "claim": "75% of consumers now pay premiums for clean-label products",
+      "section": "Why Now?",
+      "severity": "Low",
+      "details": {
+        "issue_type": "unsupported_claim",
+        "citation_ref": "[6]",
+        "url_checked": "https://www.supplysidefbj.com/market-trends-analysis/75-of-consumers-will-pay-extra-for-clean-label-ingredients",
+        "explanation": "Unable to access the source (403 error) to verify the 75% consumer willingness statistic.",
+        "evidence": "Could not access the Supply Side article to verify consumer premium payment statistics",
+        "suggestion": "Find an alternative source or mark as unverified"
+      }
+    }
+  ],
+  "statistics": {
+    "total_claims": "10",
+    "verified_claims": "3",
+    "unverified_claims": "4",
+    "false_claims": "1"
+  },
+  "iteration_recommendation": "reject",
+  "iteration_reason": "The analysis contains one High severity issue with false recall statistics (claiming 740 recalls when source says 422) and multiple Medium/Low severity issues with unverifiable citations. The recall statistic error significantly undermines the urgency argument, requiring correction before approval."
+}

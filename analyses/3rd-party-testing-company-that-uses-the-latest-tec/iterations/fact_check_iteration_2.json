@@ -1,0 +1,64 @@
+{
+  "issues": [
+    {
+      "claim": "Food brands lost $1.92 billion to recalls in 2024",
+      "section": "The Problem",
+      "severity": "High",
+      "details": {
+        "issue_type": "unsupported_claim",
+        "citation_ref": "[1]",
+        "url_checked": "https://www.food-safety.com/articles/10126-hospitalizations-deaths-caused-by-foodborne-illnesses-more-than-doubled-in-2024",
+        "explanation": "The cited source does not mention the $1.92 billion figure anywhere. This appears to be a fabricated statistic.",
+        "evidence": "The Food Safety Magazine article discusses deaths and hospitalizations but contains no mention of total recall costs for 2024.",
+        "suggestion": "Remove this claim or find a valid source that supports the $1.92 billion figure."
+      }
+    },
+    {
+      "claim": "Portable XRF units now cost $27K (down from $500K)",
+      "section": "The Solution",
+      "severity": "High",
+      "details": {
+        "issue_type": "false_citation",
+        "citation_ref": "[4]",
+        "url_checked": "https://www.bruker.com/en/products-and-solutions/elemental-analyzers/handheld-xrf-spectrometers/S1-TITAN.html",
+        "explanation": "The Bruker website does not list any pricing information, neither the $27K current price nor the $500K historical price.",
+        "evidence": "The Bruker S1 TITAN page provides specifications and features but no pricing information whatsoever.",
+        "suggestion": "Either find a source that confirms the pricing or remove the specific price claims."
+      }
+    },
+    {
+      "claim": "California's AB 899 mandates heavy metal disclosure for baby food starting January 2025",
+      "section": "Market Size",
+      "severity": "Low",
+      "details": {
+        "issue_type": "unsupported_claim",
+        "citation_ref": "none",
+        "url_checked": "N/A",
+        "explanation": "While the claim is accurate based on web search results, it lacks a citation in the analysis.",
+        "evidence": "Multiple sources confirm AB 899 requires disclosure starting January 1, 2025, but the analysis doesn't cite any source for this important regulatory claim.",
+        "suggestion": "Add a citation to support this regulatory claim, such as the official California legislative website."
+      }
+    },
+    {
+      "claim": "Consumer Reports found one-third of chocolate products contain dangerous levels of lead and cadmium, with Hershey's cocoa testing at 125% of California's safety limit",
+      "section": "The Problem",
+      "severity": "Low",
+      "details": {
+        "issue_type": "unsupported_claim",
+        "citation_ref": "[2]",
+        "url_checked": "https://www.consumerreports.org/health/food-safety/a-third-of-chocolate-products-are-high-in-heavy-metals-a4844566398/",
+        "explanation": "Unable to verify the specific claims due to access restrictions, but the claim aligns with known Consumer Reports reporting.",
+        "evidence": "The Consumer Reports website returned a 403 error preventing verification, though the general claim about one-third of chocolate products is widely reported.",
+        "suggestion": "Consider adding an alternative accessible source or noting that the specific Hershey's 125% figure needs additional verification."
+      }
+    }
+  ],
+  "statistics": {
+    "total_claims": "8",
+    "verified_claims": "4",
+    "unverified_claims": "2",
+    "false_claims": "2"
+  },
+  "iteration_recommendation": "reject",
+  "iteration_reason": "Two high-severity issues were found: the unsupported $1.92 billion recall cost claim and the false citation for XRF analyzer pricing. These are critical factual errors that undermine the analysis credibility. The document needs revision to either provide accurate citations or remove these unsupported claims."
+}
